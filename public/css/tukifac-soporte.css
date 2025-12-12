@@ -1,0 +1,308 @@
+.tutorial-container {
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 12px;
+}
+
+.section-header {
+    background-image: url("https://incp.org.co/wp-content/uploads/2024/08/Nota-2-11.png");
+    background-size: cover;
+    background-position: center;
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 40px 20px;
+    border-radius: 10px;
+    position: relative;
+    min-height: 200px;
+}
+
+.section-header::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6); /* Capa gris con opacidad */
+    border-radius: 10px;
+}
+
+.section-header-content {
+    position: relative;
+    z-index: 2;
+}
+
+.section-header h2 {
+    color: #fff;
+    margin-bottom: 10px;
+    font-size: 2.2rem;
+}
+
+.section-header h2 i {
+    color: #00a657;
+    margin-right: 10px;
+}
+
+.section-header p {
+    color: #f0f0f0;
+    font-size: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.search-container {
+    margin-bottom: 30px;
+}
+
+.search-box {
+    position: relative;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.search-box i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #7f8c8d;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 12px 20px 12px 45px;
+    border: 2px solid #e1e8ed;
+    border-radius: 25px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #004387;
+}
+
+.tutorial-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.accordion-soporte {
+    background: #eeeff1;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border-left: 4px solid #d7d7d7;
+}
+
+.accordion-header {
+    border-bottom: 1px solid #e1e8ed;
+}
+
+.accordion-button {
+    width: 100%;
+    padding: 15px 20px;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+    transition: background-color 0.3s;
+}
+
+.accordion-button:hover {
+    background-color: #f8f9fa;
+}
+
+.accordion-button.active {
+    background-color: #e8f4fd;
+    color: #004387;
+}
+.accordion-button:focus {
+    outline: none !important;
+}
+.accordion-button span {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.category-counter {
+    background: #00a657;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.accordion-icon {
+    transition: transform 0.3s;
+}
+
+.accordion-button.active .accordion-icon {
+    transform: rotate(180deg);
+}
+
+.accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.accordion-content.active {
+    max-height: 500px;
+    background: #fff;
+    overflow-y: auto;
+}
+
+.video-list {
+    padding: 10px;
+}
+
+.video-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-bottom: 5px;
+}
+
+.video-item:hover {
+    background-color: #f0f7ff;
+}
+
+.video-thumbnail {
+    width: 60px;
+    height: 40px;
+    background: linear-gradient(135deg, #004387 0%, #00a657 100%);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    color: white;
+}
+
+.video-info {
+    flex: 1;
+}
+
+.video-title {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.video-duration {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-bottom: 3px;
+}
+
+.video-meta {
+    font-size: 11px;
+    color: #95a5a6;
+    display: flex;
+    gap: 10px;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 25px;
+    border-radius: 12px;
+    width: 85%;
+    max-width: 900px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    cursor: pointer;
+    z-index: 10001;
+    transition: color 0.3s;
+}
+
+.close:hover,
+.close:focus {
+    color: #004387;
+    text-decoration: none;
+}
+
+.video-container {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+    margin-bottom: 20px;
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+}
+
+.video-info-modal h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.video-info-modal p {
+    color: #7f8c8d;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .tutorial-columns {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+
+    .section-header h2 {
+        font-size: 1.8rem;
+    }
+}
