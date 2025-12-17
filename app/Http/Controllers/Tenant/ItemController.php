@@ -112,7 +112,8 @@ class ItemController extends Controller
         // dd($request->all());
         $records = $this->getRecords($request);
 
-        return new ItemCollection($records->paginate(config('tenant.items_per_page')));
+        //return new ItemCollection($records->paginate(config('tenant.items_per_page')));
+        return new ItemCollection($records->paginate(20));
     }
 
 
@@ -127,6 +128,22 @@ class ItemController extends Controller
         $isEcommerce = filter_var($request->query('isEcommerce'), FILTER_VALIDATE_BOOLEAN);
         // $records = Item::whereTypeUser()->whereNotIsSet();
         $records = $this->getInitialQueryRecords($isEcommerce);
+
+        $withRelations = ['brand', 'category', 'item_colors.color', 'cat_digemid', 'item_unit_types', 'tags', 'warehouses.warehouse', 'warehousePrices.warehouse', 'supplies.individual_item', 'supplies.item'];
+        $conf = Configuration::first();
+        if ($conf->show_extra_info_to_item) {
+            $withRelations = array_merge($withRelations, [
+                'item_unit_business',
+                'item_mold_properties',
+                'item_product_families',
+                'item_units_per_package',
+                'item_mold_cavities',
+                'item_package_measurements',
+                'item_status',
+                'item_sizes'
+            ]);
+        }
+        $records->with($withRelations);
 
         $sortField = $request->get('sort_field', 'id');
         $sortDirection = $request->get('sort_direction', 'desc');

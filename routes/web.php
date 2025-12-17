@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Models\System\Configuration;
+use Illuminate\Support\Facades\Auth;
 
 $hostname = app(Hyn\Tenancy\Contracts\CurrentHostname::class);
 

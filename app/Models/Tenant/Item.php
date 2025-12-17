@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Modules\Account\Models\Account;
 use Modules\Digemid\Models\CatDigemid;
 use Modules\Inventory\Helpers\InventoryValuedKardex;
@@ -585,6 +586,78 @@ class Item extends ModelTenant
     /**
      * @return HasMany
      */
+    public function item_colors()
+    {
+        return $this->hasMany(ItemColor::class, 'item_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function item_units_per_package()
+    {
+        return $this->hasMany(ItemUnitsPerPackage::class, 'item_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function item_mold_properties()
+    {
+        return $this->hasMany(ItemMoldProperty::class, 'item_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function item_product_families()
+    {
+        return $this->hasMany(ItemProductFamily::class, 'item_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function item_mold_cavities()
+    {
+        return $this->hasMany(ItemMoldCavity::class, 'item_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function item_package_measurements()
+    {
+        return $this->hasMany(ItemPackageMeasurement::class, 'item_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function item_status()
+    {
+        return $this->hasMany(ItemStatus::class, 'item_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function item_unit_business()
+    {
+        return $this->hasMany(ItemUnitBusiness::class, 'item_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function item_sizes()
+    {
+        return $this->hasMany(ItemSize::class, 'item_id');
+    }
+
+    /**
+     * @return HasMany
+     */
     public function lots_group()
     {
         return $this->hasMany(ItemLotsGroup::class, 'item_id');
@@ -1105,13 +1178,13 @@ class Item extends ModelTenant
      *
      * @return array
      */
-    public function getCollectionData(Configuration $configuration = null){
+    public function getCollectionData(Configuration $configuration = null, $stockData = null){
         if(empty($configuration)){
             $configuration =  Configuration::first();
         }
         $brand = null;
         if (!empty($this->brand_id)) {
-            $brand = $this->brand()->first()->name;
+            $brand = $this->relationLoaded('brand') ? $this->brand->name : $this->brand()->first()->name;
         }
         $has_igv_description = null;
         $purchase_has_igv_description = null;
@@ -1132,12 +1205,29 @@ class Item extends ModelTenant
         $digemid_exportable = false;
         $name_disa = '';
         $laboratory = '';
-        $currentColors = ItemColor::where('item_id', $this->id)->get()->transform(function ($row) {
-            return $row->TransformDatatoEdit();
-        });
+        $currentColors = collect([]);
+        $stockPerCategory = [];
+
+        if($configuration->show_extra_info_to_item){
+             if($this->relationLoaded('item_colors')){
+                 $currentColors = $this->item_colors->transform(function ($row) {
+                    return $row->TransformDatatoEdit();
+                });
+             }else{
+                 $currentColors = ItemColor::where('item_id', $this->id)->get()->transform(function ($row) {
+                    return $row->TransformDatatoEdit();
+                });
+             }
+
+             if ($stockData !== null) {
+                 $stockPerCategory = $stockData;
+             } else {
+                 $stockPerCategory = ItemMovement::getStockByCategory($this->id,auth()->user()->establishment_id);
+             }
+        }
 
         if($configuration->isPharmacy()) {
-            $digemid = $this->getCatDigemid();
+            $digemid = $this->relationLoaded('cat_digemid') ? $this->cat_digemid : $this->getCatDigemid();
             if (!empty($digemid)) {
                 $digemid_exportable = (bool)$digemid->active;
                 $name_disa = $digemid->getNomProd();
@@ -1146,7 +1236,7 @@ class Item extends ModelTenant
         }
 
         $decimal_units = (int)$configuration->decimal_quantity;
-        $stockPerCategory = ItemMovement::getStockByCategory($this->id,auth()->user()->establishment_id);
+        //$stockPerCategory = ItemMovement::getStockByCategory($this->id,auth()->user()->establishment_id);
         $has_igv = (bool)$this->has_igv;
         $igv = 1.18; // El igv es de 18%
         $affectation_igv_types_exonerated_unaffected = self::AffectationIgvTypesExoneratedUnaffected();
@@ -1475,6 +1565,9 @@ class Item extends ModelTenant
     }
 
     public function getItemUnitsPerPackage(){
+        if($this->relationLoaded('item_units_per_package')){
+            return $this->item_units_per_package->where('active',1);
+        }
         return ItemUnitsPerPackage::where('item_id', $this->id)->where('active',1)->get();
     }
     /**
@@ -1489,6 +1582,9 @@ class Item extends ModelTenant
     }
 
     public function getItemColor(){
+        if($this->relationLoaded('item_colors')){
+            return $this->item_colors->where('active',1);
+        }
         return ItemColor::where('item_id', $this->id)->where('active',1)->get();
     }
 
@@ -1496,6 +1592,9 @@ class Item extends ModelTenant
         return $this->setExtraData(ItemMoldProperty::class,'cat_item_mold_properties_id',$data);
     }
     public function getItemMoldProperty(){
+        if($this->relationLoaded('item_mold_properties')){
+            return $this->item_mold_properties->where('active',1);
+        }
         return ItemMoldProperty::where('item_id', $this->id)->where('active',1)->get();
     }
     public function setItemUnitBusiness($data = []) {
@@ -1503,6 +1602,9 @@ class Item extends ModelTenant
     }
 
     public function getItemUnitBusiness(){
+        if($this->relationLoaded('item_unit_business')){
+            return $this->item_unit_business->where('active',1);
+        }
         return ItemUnitBusiness::where('item_id', $this->id)->where('active',1)->get();
     }
     public function setItemStatus($data = []) {
@@ -1510,6 +1612,9 @@ class Item extends ModelTenant
     }
 
     public function getItemStatus(){
+        if($this->relationLoaded('item_status')){
+            return $this->item_status->where('active',1);
+        }
         return ItemStatus::where('item_id', $this->id)->where('active',1)->get();
     }
 
@@ -1518,6 +1623,9 @@ class Item extends ModelTenant
     }
 
     public function getItemPackageMeasurement(){
+        if($this->relationLoaded('item_package_measurements')){
+            return $this->item_package_measurements->where('active',1);
+        }
         return ItemPackageMeasurement::where('item_id', $this->id)->where('active',1)->get();
     }
     public function setItemMoldCavity($data = []) {
@@ -1525,6 +1633,9 @@ class Item extends ModelTenant
     }
 
     public function getItemMoldCavity(){
+        if($this->relationLoaded('item_mold_cavities')){
+            return $this->item_mold_cavities->where('active',1);
+        }
         return ItemMoldCavity::where('item_id', $this->id)->where('active',1)->get();
     }
     public function setItemProductFamily($data = []) {
@@ -1535,9 +1646,15 @@ class Item extends ModelTenant
     }
 
     public function getItemProductFamily(){
+        if($this->relationLoaded('item_product_families')){
+            return $this->item_product_families->where('active',1);
+        }
         return ItemProductFamily::where('item_id', $this->id)->where('active',1)->get();
     }
     public function getItemSize(){
+        if($this->relationLoaded('item_sizes')){
+            return $this->item_sizes->where('active',1);
+        }
         return ItemSize::where('item_id', $this->id)->where('active',1)->get();
     }
 
@@ -2077,7 +2194,7 @@ class Item extends ModelTenant
      */
     public function getNewStock($establisnment_id = 0)
     {
-        $query = \DB::connection('tenant')
+        $query = DB::connection('tenant')
             ->table('item_movement')
             ->where('countable', 1)
             ->where('item_id', $this->id);
@@ -2085,7 +2202,7 @@ class Item extends ModelTenant
             $query->where('establishment_id', $establisnment_id);
         }
         // Validacion para almacen?
-        $query = $query->select(\DB::raw(' sum(quantity) as total'))->first();
+        $query = $query->select(DB::raw(' sum(quantity) as total'))->first();
 
         return $query->total;
     }

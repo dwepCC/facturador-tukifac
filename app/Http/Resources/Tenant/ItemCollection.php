@@ -18,10 +18,17 @@ class ItemCollection extends ResourceCollection
 
         $configuration =  Configuration::first();
 
-        return $this->collection->transform(function($row, $key) use($configuration){
+        $stocks = [];
+        if($configuration->show_extra_info_to_item){
+             $item_ids = $this->collection->pluck('id')->toArray();
+             $establishment_id = auth()->user()->establishment_id;
+             $stocks = \App\Models\Tenant\ItemMovement::getStocksByItems($item_ids, $establishment_id);
+        } 
+
+        return $this->collection->transform(function($row, $key) use($configuration, $stocks){
             /** @var \App\Models\Tenant\Item  $row */
 
-            return $row->getCollectionData($configuration);
+            return $row->getCollectionData($configuration, $stocks[$row->id] ?? null);
             /** Se ha movido la salida, al modelo */
             $brand = null;
             if(!empty($row->brand_id)) {
