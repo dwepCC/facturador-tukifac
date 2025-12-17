@@ -534,7 +534,7 @@ class Item extends ModelTenant
      */
     public function sets()
     {
-        return $this->hasMany(ItemSet::class);
+        return $this->hasMany(ItemSet::class)->with('individual_item');
     }
 
     /**
@@ -884,12 +884,18 @@ class Item extends ModelTenant
 
 
         if($search_item_by_series){
-
-            $lots = $this->item_lots()->where('has_sale', false)
-                                ->where('warehouse_id', $warehouse->id)
-                                ->where('series', $series)
-                                ->take(1)
-                                ->get();
+            if($this->relationLoaded('item_lots')){
+                $lots = $this->item_lots->where('has_sale', false)
+                    ->where('warehouse_id', $warehouse->id)
+                    ->where('series', $series)
+                    ->take(1);
+            }else{
+                $lots = $this->item_lots()->where('has_sale', false)
+                    ->where('warehouse_id', $warehouse->id)
+                    ->where('series', $series)
+                    ->take(1)
+                    ->get();
+            }
 
         // dd($search_item_by_series, $lots, $this->item_lots);
         }
@@ -915,7 +921,8 @@ class Item extends ModelTenant
         $extended_description = false,
         $series = null,
         $search_item_by_series = false,
-        $aditional_data = true
+        $aditional_data = true,
+        $stockData = null
     ) {
 
         if ($warehouse == null) {
@@ -1001,7 +1008,11 @@ class Item extends ModelTenant
             $stock = $stockItemWarehouse->stock;
         }
 
-        $stockPerCategory = ItemMovement::getStockByCategory($this->id,auth()->user()->establishment_id);
+        if ($stockData !== null) {
+            $stockPerCategory = $stockData;
+        } else {
+            $stockPerCategory = ItemMovement::getStockByCategory($this->id,auth()->user()->establishment_id);
+        }
         $currency = $this->currency_type;
         if(empty($currency )){
             $currency = new CurrencyType();
@@ -1098,7 +1109,7 @@ class Item extends ModelTenant
                     'date_of_due' => $lots_group->date_of_due,
                     'checked'     => false,
                     'compromise_quantity' => 0
-                ];
+                ]; 
             }),
             'lots'           => $lots,
             'lots_enabled'   => (bool)$this->lots_enabled,
@@ -1178,7 +1189,7 @@ class Item extends ModelTenant
      *
      * @return array
      */
-    public function getCollectionData(Configuration $configuration = null, $stockData = null){
+    public function getCollectionData(Configuration $configuration = null, $stockData = null, $warehouse = null){
         if(empty($configuration)){
             $configuration =  Configuration::first();
         }
@@ -1285,7 +1296,7 @@ class Item extends ModelTenant
             'internal_id' => $this->internal_id,
             'item_code' => $this->item_code,
             'item_code_gs1' => $this->item_code_gs1,
-            'stock' => $this->getStockByWarehouse(),
+            'stock' => $this->getStockByWarehouse($warehouse),
             'stock_min' => $this->stock_min,
             'currency_type_id' => $this->currency_type_id,
             'currency_type_symbol' => $currency->symbol,
@@ -2284,14 +2295,14 @@ class Item extends ModelTenant
      */
     public function supplies()
     {
-        return $this->hasMany(ItemSupply::class);
+        return $this->hasMany(ItemSupply::class)->with(['item', 'individual_item']);
     }
     /**
      * @return HasMany
      */
     public function supplies_items()
     {
-        return $this->hasMany(ItemSupply::class,'individual_item_id');
+        return $this->hasMany(ItemSupply::class,'individual_item_id')->with('item');
     }
 
     /**

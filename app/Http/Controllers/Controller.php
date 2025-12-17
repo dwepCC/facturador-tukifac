@@ -10,7 +10,6 @@
     use Illuminate\Http\Request;
     use Illuminate\Routing\Controller as BaseController;
     use Illuminate\Support\Collection;
-    use Log;
     use function Config;
     use Illuminate\Support\Facades\Route;
     use Modules\Report\Models\ReportConfiguration;
@@ -27,7 +26,7 @@
         DocumentType
     };
     use Exception;
-
+use Illuminate\Support\Facades\Log;
 
     /**
      * Class Controller
@@ -180,7 +179,8 @@
                     $identity_document_type_id = ['6', '4', '1', '0'];
                 }
             }
-            $customers = Person::where('number', 'like', "%{$request->input}%")
+            $customers = Person::with(['seller', 'zone', 'person_type', 'addresses'])
+                ->where('number', 'like', "%{$request->input}%")
                 ->orWhere('name', 'like', "%{$request->input}%")
                 ->whereType('customers')->orderBy('name')
                 ->whereIn('identity_document_type_id', $identity_document_type_id)

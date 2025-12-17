@@ -9,8 +9,12 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
     cors: true,
-    origin: 'http://1.facturaloperu-pro7.oo',
-    strictPort: true,
+    strictPort: false,
+    hmr: {
+      host: '127.0.0.1',
+      protocol: 'http',
+      port: 5173,
+    },
   },
   build: {
     // OPTIMIZACIÓN: Configuración para máximo rendimiento y compatibilidad

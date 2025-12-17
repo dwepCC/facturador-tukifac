@@ -113,7 +113,7 @@ class ItemController extends Controller
         $records = $this->getRecords($request);
 
         //return new ItemCollection($records->paginate(config('tenant.items_per_page')));
-        return new ItemCollection($records->paginate(20));
+        return new ItemCollection($records->paginate(10));
     }
 
 
@@ -130,6 +130,7 @@ class ItemController extends Controller
         $records = $this->getInitialQueryRecords($isEcommerce);
 
         $withRelations = ['brand', 'category', 'item_colors.color', 'cat_digemid', 'item_unit_types', 'tags', 'warehouses.warehouse', 'warehousePrices.warehouse', 'supplies.individual_item', 'supplies.item'];
+        /*
         $conf = Configuration::first();
         if ($conf->show_extra_info_to_item) {
             $withRelations = array_merge($withRelations, [
@@ -143,6 +144,7 @@ class ItemController extends Controller
                 'item_sizes'
             ]);
         }
+        */
         $records->with($withRelations);
 
         $sortField = $request->get('sort_field', 'id');

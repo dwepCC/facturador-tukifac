@@ -254,24 +254,8 @@
          */
         public static function getStockByCategory($item_id = 0, $establisnment_id = 0)
         {
-
-            $data = [];
-            $data['total'] = (float)self::getQueryToStock($item_id, $establisnment_id)->select(DB::raw(' sum(item_movement.quantity) as total'))->first()->total;
-
-            self::getFormatedStockData($data, 'CatItemStatus', 'item_status_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemUnitBusiness', 'item_unit_business_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemMoldCavity', 'item_mold_cavities_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemPackageMeasurement', 'item_package_measurements_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemUnitsPerPackage', 'item_units_per_package_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemMoldProperty', 'item_mold_properties_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemProductFamily', 'item_product_family_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'colors', 'item_color_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemSize', 'item_size_id', $item_id, $establisnment_id);
-
-
-            if ($data['total'] == 0) $data['total'] = null;
-            return $data;
-
+            $stocks = self::getStocksByItems([$item_id], $establisnment_id);
+            return $stocks[$item_id] ?? [];
         }
 
         /**
@@ -1100,5 +1084,4 @@
             return $data;
 
         }
-
     }
