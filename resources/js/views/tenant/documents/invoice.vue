@@ -7,7 +7,20 @@
         />
         <Keypress key-event="keyup" :multiple-keys="multiple" @success="checkKeyWithAlt" />
 
-        <div v-if="loading_form">
+        <!-- Mostrar skeleton loader mientras carga -->
+        <div v-if="!loading_form && !form_initialized" class="invoice-loading-skeleton">
+            <div class="skeleton-header">
+                <div class="skeleton-logo"></div>
+                <div class="skeleton-address"></div>
+                <div class="skeleton-dates"></div>
+            </div>
+            <div class="skeleton-body">
+                <div class="skeleton-form-row"></div>
+                <div class="skeleton-form-row"></div>
+                <div class="skeleton-form-row"></div>
+            </div>
+        </div>
+        <div v-if="loading_form || form_initialized">
             <form autocomplete="off"
                   class="row no-gutters"
                   @submit.prevent="submit">
@@ -1456,6 +1469,82 @@
 .content-body {
     padding: 20px;
 }
+
+/* Skeleton loader para carga inicial */
+.invoice-loading-skeleton {
+    padding: 2rem;
+    min-height: 400px;
+}
+
+.skeleton-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.skeleton-logo {
+    width: 120px;
+    height: 60px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-address {
+    flex: 1;
+    height: 80px;
+    margin: 0 1rem;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-dates {
+    width: 200px;
+    height: 60px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-body {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.skeleton-form-row {
+    height: 50px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.skeleton-form-row:nth-child(2) {
+    width: 80%;
+}
+
+.skeleton-form-row:nth-child(3) {
+    width: 60%;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
 </style>
 <script>
 import DocumentFormItem from './partials/item.vue'
@@ -1527,6 +1616,7 @@ export default {
             showDialogOptions: false,
             loading_submit: false,
             loading_form: false,
+            form_initialized: false, // Flag para saber si el formulario básico está listo
             errors: {},
             form: {},
             document_types: [],
@@ -1621,71 +1711,88 @@ export default {
         },
     },
     async created() {
+        // OPTIMIZACIÓN: Inicializar formulario básico primero para mostrar UI inmediatamente
         this.loadConfiguration()
         this.$store.commit('setConfiguration', this.configuration)
         await this.initForm()
-        await this.$http.get(`/${this.resource}/tables`)
+        
+        // Marcar formulario como inicializado para mostrar UI básica INMEDIATAMENTE
+        this.form_initialized = true
+        this.loading_form = true
+        
+        // OPTIMIZACIÓN: Cargar datos de forma asíncrona SIN BLOQUEAR el renderizado
+        // Cargar tables primero (crítico para el formulario)
+        this.$http.get(`/${this.resource}/tables`)
             .then(response => {
-                this.document_types = response.data.document_types_invoice;
-                this.document_types_guide = response.data.document_types_guide;
-                this.currency_types = response.data.currency_types
-                this.business_turns = response.data.business_turns
-                this.establishments = response.data.establishments
-                this.operation_types = response.data.operation_types
-                this.$store.commit('setAllSeries',response.data.series)
-                // this.all_series = response.data.series
-                this.all_customers = response.data.customers
-                this.sellers = response.data.sellers
-                this.discount_types = response.data.discount_types
-                this.charges_types = response.data.charges_types
-                this.payment_method_types = response.data.payment_method_types
-                this.enabled_discount_global = response.data.enabled_discount_global
-                this.company = response.data.company;
-                this.user = response.data.user;
-                this.document_type_03_filter = response.data.document_type_03_filter;
-                this.select_first_document_type_03 = response.data.select_first_document_type_03
-                // this.form.currency_type_id = (this.currency_types.length > 0)?this.currency_types[0].id:null;
+                const data = response.data;
+                this.document_types = data.document_types_invoice;
+                this.document_types_guide = data.document_types_guide;
+                this.currency_types = data.currency_types
+                this.business_turns = data.business_turns
+                this.establishments = data.establishments
+                this.operation_types = data.operation_types
+                this.$store.commit('setAllSeries', data.series)
+                this.all_customers = data.customers
+                this.sellers = data.sellers
+                this.discount_types = data.discount_types
+                this.charges_types = data.charges_types
+                this.payment_method_types = data.payment_method_types
+                this.enabled_discount_global = data.enabled_discount_global
+                this.company = data.company;
+                this.user = data.user;
+                this.document_type_03_filter = data.document_type_03_filter;
+                this.select_first_document_type_03 = data.select_first_document_type_03
                 this.form.establishment_id = (this.establishments.length > 0) ? this.establishments[0].id : null;
                 this.form.document_type_id = (this.document_types.length > 0) ? this.document_types[0].id : null;
                 this.form.operation_type_id = (this.operation_types.length > 0) ? this.operation_types[0].id : null;
                 this.form.seller_id = (this.sellers.length > 0) ? this.idUser : null;
-                this.affectation_igv_types = response.data.affectation_igv_types
-                // this.prepayment_documents = response.data.prepayment_documents;
-                this.is_client = response.data.is_client;
-                // this.cat_payment_method_types = response.data.cat_payment_method_types;
-                // this.all_detraction_types = response.data.detraction_types;
-                this.payment_destinations = response.data.payment_destinations
-                this.payment_conditions = response.data.payment_conditions;
+                this.affectation_igv_types = data.affectation_igv_types
+                this.is_client = data.is_client;
+                this.payment_destinations = data.payment_destinations
+                this.payment_conditions = data.payment_conditions;
 
                 this.seller_class = (this.user == 'admin') ? 'col-lg-4 pb-2' : 'col-lg-6 pb-2';
 
-                // this.default_document_type = response.data.document_id;
-                // this.default_series_type = response.data.series_id;
-                this.selectDocumentType()
-
-                this.changeEstablishment()
-                this.changeDateOfIssue()
-                this.changeDocumentType()
-                this.changeDestinationSale()
-                this.changeCurrencyType()
-                this.setDefaultDocumentType();
+                // Ejecutar métodos pesados después de que los datos estén listos
+                this.$nextTick(() => {
+                    this.selectDocumentType()
+                    this.changeEstablishment()
+                    this.changeDateOfIssue()
+                    this.changeDocumentType()
+                    this.changeDestinationSale()
+                    this.changeCurrencyType()
+                    this.setDefaultDocumentType();
+                });
             })
-        await this.getPercentageIgv();
-        this.loading_form = true
+            .catch(error => {
+                console.error('Error cargando tables:', error);
+            });
+        
+        // Cargar percentage IGV de forma asíncrona (no crítico para renderizado inicial)
+        this.getPercentageIgv().catch(error => {
+            console.error('Error cargando percentage IGV:', error);
+        });
         this.$eventHub.$on('reloadDataPersons', (customer_id) => {
             this.reloadDataCustomers(customer_id)
         })
         this.$eventHub.$on('initInputPerson', () => {
             this.initInputPerson()
         });
+        
+        // OPTIMIZACIÓN: Cargar datos adicionales de forma asíncrona sin bloquear
+        // Solo esperar si realmente es necesario (documentId para edición)
         if (this.documentId) {
             this.btnText = 'Actualizar';
             this.loading_submit = true;
-            await this.$http.get(`/documents/${this.documentId}/show`).then(response => {
+            // Esta petición SÍ necesita esperar porque es para edición
+            this.$http.get(`/documents/${this.documentId}/show`).then(response => {
                 this.onSetFormData(response.data.data);
+            }).catch(error => {
+                console.error('Error cargando documento:', error);
             }).finally(() => this.loading_submit = false);
         }
 
+        // Cargar items desde localStorage de forma asíncrona
         const itemsFromDispatches = localStorage.getItem('items');
         if (itemsFromDispatches) {
             const itemsParsed = JSON.parse(itemsFromDispatches);
@@ -1694,13 +1801,16 @@ export default {
                 items_id: items
             }
             localStorage.removeItem('items');
-            await this.$http.get('/documents/search-items', {params}).then(response => {
+            // No bloquear - cargar en background
+            this.$http.get('/documents/search-items', {params}).then(response => {
                 const itemsResponse = response.data.items.map(i => {
                     return this.setItemFromResponse(i, itemsParsed);
                 });
                 this.form.items = itemsResponse.map(i => {
                     return calculateRowItem(i, this.form.currency_type_id, this.form.exchange_rate_sale, this.percentage_igv)
                 });
+            }).catch(error => {
+                console.error('Error cargando items desde dispatches:', error);
             });
         }
 
@@ -1712,18 +1822,23 @@ export default {
                 items_id: items
             }
             localStorage.removeItem('itemsForNotes');
-            await this.$http.get('/documents/search-items', {params}).then(response => {
+            // No bloquear - cargar en background
+            this.$http.get('/documents/search-items', {params}).then(response => {
                 const itemsResponse = response.data.items.map(i => {
                     return this.setItemFromResponse(i, itemsParsed);
                 });
                 this.form.items = itemsResponse.map(i => {
                     return calculateRowItem(i, this.form.currency_type_id, this.form.exchange_rate_sale, this.percentage_igv)
                 });
+            }).catch(error => {
+                console.error('Error cargando items desde notes:', error);
             });
         }
 
-        //parse items from multiple sale notes not group
-        this.processItemsForNotesNotGroup()
+        //parse items from multiple sale notes not group (asíncrono)
+        this.processItemsForNotesNotGroup().catch(error => {
+            console.error('Error procesando items de notas:', error);
+        });
 
         const clientfromDispatchesOrNotes = localStorage.getItem('client');
         if (clientfromDispatchesOrNotes) {

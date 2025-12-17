@@ -3,7 +3,8 @@
 @section('content')
 
 <div class="tukifac-dashboard">
-    <div class="tukifac-hero-banner" style="background: #f4f4f4 url('{{ asset('storage/EMPRENDEDOR-TK1.webp') }}');">
+    <!-- OPTIMIZACIÓN LCP: Hero banner con carga optimizada -->
+    <div class="tukifac-hero-banner" style="background: #f4f4f4 url('{{ asset('storage/EMPRENDEDOR-TK1.webp') }}'); background-size: cover; background-repeat: no-repeat; background-position: center;">
         <div class="tukifac-hero-content">
             <span class="tukifac-hero-title">Aprende a utilizar Tukifac <br> con <span class="tukifac-hero-highlight">nuestros tutoriales</span></span>
         </div>
@@ -44,7 +45,7 @@
             <a class="tukifac-tool-card tukifac-tool-products" href="/items">
                 <div class="tukifac-tool-content">
                     <div class="tukifac-tool-image-left">
-                        <img alt="Gestión de productos" loading="lazy" decoding="async" src="{{ asset('storage/stock-tukifac-img.webp') }}">
+                        <img alt="Gestión de productos" loading="lazy" width="150" height="150" decoding="async" src="{{ asset('storage/stock-tukifac-img.webp') }}">
                     </div>
                     <div class="tukifac-tool-info-right">
                         <span class="tukifac-tool-badge">Herramienta</span>

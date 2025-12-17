@@ -15,6 +15,7 @@ class SaleNoteLightCollection extends ResourceCollection
                 'date_of_issue' => $row->date_of_issue ? $row->date_of_issue->format('Y-m-d') : null,
                 'full_number' => $row->series.'-'.$row->number,
                 'number_full' => $row->number_full,
+                'seller_name' => optional($row->user)->name,
                 'customer_name' => optional($row->person)->name,
                 'customer_number' => optional($row->person)->number,
                 'currency_type_id' => $row->currency_type_id,

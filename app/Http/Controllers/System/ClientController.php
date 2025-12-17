@@ -870,9 +870,17 @@ public function records(Request $request)
             \Log::info('Establishment insertado', ['establishment_id' => $establishment_id]);
 
             \Log::info('Insertando warehouse...');
+            // Asegurar que la conexión use UTF-8 correctamente
+            DB::connection('tenant')->statement('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
+            // Asegurar codificación UTF-8 correcta para la descripción
+            $warehouseDescription = 'Almacén Oficina Principal';
+            // Verificar y limpiar la codificación si es necesario
+            if (!mb_check_encoding($warehouseDescription, 'UTF-8')) {
+                $warehouseDescription = mb_convert_encoding($warehouseDescription, 'UTF-8', 'UTF-8//IGNORE');
+            }
             DB::connection('tenant')->table('warehouses')->insertGetId([
                 'establishment_id' => $establishment_id,
-                'description' => 'Almacén Oficina Principal',
+                'description' => $warehouseDescription,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

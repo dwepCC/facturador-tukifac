@@ -40,7 +40,8 @@ export function applyThemeAndShowContent(savedTheme) {
 
 // 2. Scripts de header (de header.blade.php)
 export function setupHeaderDomEvents() {
-    document.addEventListener('DOMContentLoaded', function () {
+    // Función para inicializar eventos del header
+    const initHeaderEvents = () => {
         const optionsUserMobile = document.querySelector('.options-user-mobile');
         const headerRight = document.querySelector('.header-right');
         const closeContainerUser = document.querySelector('.close-container-user');
@@ -65,22 +66,80 @@ export function setupHeaderDomEvents() {
                 }
             });
         }
+        
         // script para manejo de dropdown-menu-desktop
-        const userProfile = document.querySelector('.check-double');
-        const dropdownMenu = document.querySelector('.dropdown-menu-desktop');
-        if (userProfile && dropdownMenu) {
-            userProfile.addEventListener('click', function (event) {
-                event.preventDefault();
-                event.stopPropagation();
-                dropdownMenu.classList.toggle('active');
-            });
-            document.addEventListener('click', function (event) {
-                if (!userProfile.contains(event.target) && !dropdownMenu.contains(event.target)) {
-                    dropdownMenu.classList.remove('active');
+        // OPTIMIZACIÓN: Usar múltiples selectores y reintentar si no se encuentra
+        const setupUserDropdown = () => {
+            const userProfile = document.querySelector('.check-double') || 
+                               document.querySelector('#userbox .user-profile-content') ||
+                               document.querySelector('#userbox > a');
+            const userbox = document.querySelector('#userbox');
+            const dropdownMenu = document.querySelector('.dropdown-menu-desktop');
+            
+            if (userProfile && dropdownMenu) {
+                // Verificar si ya tiene un listener (evitar duplicados)
+                if (userProfile.dataset.dropdownBound === 'true') {
+                    return true; // Ya está configurado
                 }
-            });
+                
+                // Marcar como configurado
+                userProfile.dataset.dropdownBound = 'true';
+                
+                // Agregar evento al elemento del usuario
+                userProfile.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    dropdownMenu.classList.toggle('active');
+                    // También agregar clase show al userbox si existe (para compatibilidad)
+                    if (userbox) {
+                        userbox.classList.toggle('show');
+                    }
+                });
+                
+                // Cerrar dropdown al hacer click fuera (solo una vez)
+                if (!document.dropdownCloseHandler) {
+                    document.dropdownCloseHandler = (event) => {
+                        const isClickInside = (userProfile && userProfile.contains(event.target)) || 
+                                             (dropdownMenu && dropdownMenu.contains(event.target)) ||
+                                             (userbox && userbox.contains(event.target));
+                        if (!isClickInside && dropdownMenu && dropdownMenu.classList.contains('active')) {
+                            dropdownMenu.classList.remove('active');
+                            if (userbox) {
+                                userbox.classList.remove('show');
+                            }
+                        }
+                    };
+                    // Usar capture para asegurar que se ejecute antes que otros handlers
+                    document.addEventListener('click', document.dropdownCloseHandler, true);
+                }
+                
+                return true; // Éxito
+            } else {
+                return false; // No se encontraron elementos
+            }
+        };
+        
+        // Intentar configurar el dropdown, reintentar si falla
+        if (!setupUserDropdown()) {
+            // Reintentar después de un breve delay (por si Vue aún está montando)
+            setTimeout(() => {
+                if (!setupUserDropdown()) {
+                    // Último intento después de más tiempo
+                    setTimeout(() => {
+                        setupUserDropdown();
+                    }, 1000);
+                }
+            }, 500);
         }
-    });
+    };
+    
+    // Ejecutar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initHeaderEvents);
+    } else {
+        // DOM ya está listo, pero esperar un poco para que Vue monte los componentes
+        setTimeout(initHeaderEvents, 100);
+    }
 }
 
 // 3. Scripts de autenticación del eCommerce (desde footer.blade.php)

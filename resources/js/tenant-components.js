@@ -737,3 +737,9 @@ Vue.component('tenant-remember-change-password', TenantRememberChangePassword)
 Vue.component('tenant-report-pending-account-commissions-index', TenantReportPendingAccountCommissionsIndex)
 
 Vue.component('tenant-profile-index', TenantProfileIndex)
+
+// OPTIMIZACIÓN: Eliminar logs en producción para mejorar rendimiento
+if (process.env.NODE_ENV !== 'production') {
+    console.log('✅ tenant-components.js ejecutado completamente');
+    console.log('✅ Total componentes registrados:', Object.keys(Vue.options.components).filter(c => c.startsWith('tenant-') || c.startsWith('x-') || c.startsWith('inventory-') || c.startsWith('warehouses-') || c.startsWith('cash-') || c.startsWith('data-table-')).length);
+}

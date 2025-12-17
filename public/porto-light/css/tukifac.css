@@ -124,6 +124,10 @@ a:active {
     left: 0 !important;
     width: 100% !important;
     z-index: 1000 !important;
+    /* OPTIMIZACIÓN LCP: Renderizado más rápido */
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
 }
 /* Ocultar en dispositivos móviles  */
 @media (max-width: 767px) {
@@ -22204,9 +22208,9 @@ opacity: 1 !important;
     color: var(--black-dark) !important;
 }
 
-.text-success {
+/*.text-success {
     color: #18181b !important;
-}
+}*/
 
 .divider-theme-black,
 .user-profile-li {

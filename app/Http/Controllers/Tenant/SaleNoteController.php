@@ -446,34 +446,40 @@ class SaleNoteController extends Controller
      */
     public function records(Request $request)
     {
-
         $records = $this->getRecords($request);
 
-        //if ($request && ($request->has('light') && filter_var($request->light, FILTER_VALIDATE_BOOLEAN))) {
-            $records->setEagerLoads([]);
-            $records->with([
-                'person:id,name,number',
-                'state_type:id,description',
-            ]);
-            $records->select([
-                'id',
-                'external_id',
-                'date_of_issue',
-                'series',
-                'number',
-                'customer_id',
-                'currency_type_id',
-                'total',
-                'state_type_id',
-                'paid',
-                'total_canceled',
-            ]);
-            //return new \App\Http\Resources\Tenant\SaleNoteLightCollection($records->paginate(config('tenant.items_per_page')));
-            return new \App\Http\Resources\Tenant\SaleNoteLightCollection($records->paginate(10));
-        //}
-
-        //return new SaleNoteCollection($records->paginate(config('tenant.items_per_page')));
-
+        // OPTIMIZACIÓN: Eager loading de relaciones necesarias para evitar N+1
+        // Seleccionar solo campos necesarios en relaciones para reducir el tamaño de la respuesta
+        $records->setEagerLoads([]);
+        $records->with([
+            'person:id,name,number,telephone,email',
+            'state_type:id,description',
+            'user:id,name,email',
+            'seller:id,name',
+            'currency_type:id,description,symbol',
+            'sale_note_payments:id,sale_note_id,date_of_payment,payment',
+        ]);
+        
+        $records->select([
+            'id',
+            'external_id',
+            'date_of_issue',
+            'series',
+            'number',
+            'customer_id',
+            'user_id',
+            'seller_id',
+            'currency_type_id',
+            'total',
+            'state_type_id',
+            'paid',
+            'total_canceled',
+            'observation',
+            'license_plate',
+            'purchase_order',
+        ]);
+        
+        return new \App\Http\Resources\Tenant\SaleNoteLightCollection($records->paginate(10));
     }
 
 

@@ -844,14 +844,18 @@
 <div id="supportBackdrop" class="support-backdrop" onclick="toggleSupportSidebar()"></div>
 @endif
 
+@push('scripts')
 <script>
     function toggleSupportSidebar() {
         const sidebar = document.getElementById('supportSidebar');
         const backdrop = document.getElementById('supportBackdrop');
-        sidebar.classList.toggle('show');
-        backdrop.classList.toggle('show');
+        if (sidebar && backdrop) {
+            sidebar.classList.toggle('show');
+            backdrop.classList.toggle('show');
+        }
     }
 </script>
+@endpush
 {{--
 <div class="container d-none d-sm-block">
     <div id="switcher-top" class="d-flex justify-content-center switcher-hover">
@@ -889,19 +893,35 @@ function renderInfoPlan(data){
         $('#status_plan').text(data.status_plan);
         $('#payment_date').text(data.payment_date);
         const daysInfoElement = $('#days_indicator');
+        
+        // Remover todas las clases de color
         daysInfoElement.removeClass('text-warning text-danger text-success');
+        
         if (data.days_overdue > 0) {
+            // Días vencidos - Rojo
             daysInfoElement.text(data.days_overdue + ' día(s) de atraso');
-            daysInfoElement.addClass('text-danger');
+            daysInfoElement.addClass(data.days_indicator_class || 'text-danger');
             $('#days_indicator').show();
         } else if (data.days_remaining > 0) {
+            // Días restantes - Usar la clase del backend (sistema de semáforo)
             daysInfoElement.text(data.days_remaining + ' día(s) restantes');
-            daysInfoElement.addClass('text-warning');
+            // Usar la clase de color que viene del backend
+            if (data.days_indicator_class) {
+                daysInfoElement.addClass(data.days_indicator_class);
+            } else {
+                // Fallback: usar lógica en frontend si no viene del backend
+                if (data.days_remaining > 5) {
+                    daysInfoElement.addClass('text-success'); // Verde: más de 5 días
+                } else {
+                    daysInfoElement.addClass('text-warning'); // Naranja: 5 días o menos
+                }
+            }
             $('#days_indicator').show();
         } else {
             if (data.has_pending_payment) {
+                // Es hoy - Naranja
                 daysInfoElement.text('Fecha de pago hoy');
-                daysInfoElement.addClass('text-warning');
+                daysInfoElement.addClass(data.days_indicator_class || 'text-warning');
                 $('#days_indicator').show();
             } else {
                 $('#days_indicator').hide();

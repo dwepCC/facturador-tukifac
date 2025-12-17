@@ -122,7 +122,7 @@ class DocumentController extends Controller
         $records = $this->getRecords($request);
 
         //return new DocumentCollection($records->paginate(config('tenant.items_per_page')));
-        return new DocumentCollection($records->paginate(50));
+        return new DocumentCollection($records->paginate(10));
     }
 
     /**
@@ -135,33 +135,34 @@ class DocumentController extends Controller
      */
     public function recordsTotal(Request $request)
     {
+        // OPTIMIZACIÓN: Una sola consulta con GROUP BY en lugar de 4 consultas separadas
+        $records = $this->getRecords($request)
+            ->select('document_type_id', DB::raw('SUM(total) as total_sum'))
+            ->where('currency_type_id', 'PEN')
+            ->groupBy('document_type_id')
+            ->pluck('total_sum', 'document_type_id');
 
         $FT_t = DocumentType::find('01');
         $BV_t = DocumentType::find('03');
         $NC_t = DocumentType::find('07');
         $ND_t = DocumentType::find('08');
 
-        $BV = $this->getRecords($request)->where('document_type_id', $BV_t->id)->where('currency_type_id', 'PEN')->sum('total');
-        $FT = $this->getRecords($request)->where('document_type_id', $FT_t->id)->where('currency_type_id', 'PEN')->sum('total');
-        $NC = $this->getRecords($request)->where('document_type_id', $NC_t->id)->where('currency_type_id', 'PEN')->sum('total');
-        $ND = $this->getRecords($request)->where('document_type_id', $ND_t->id)->where('currency_type_id', 'PEN')->sum('total');
         return [
             [
                 'name' => $FT_t->description,
-                'total' => "S/ " . ReportHelper::setNumber($FT),
+                'total' => "S/ " . ReportHelper::setNumber($records->get('01', 0)),
             ],
             [
                 'name' => $BV_t->description,
-                'total' => "S/ " . ReportHelper::setNumber($BV),
-
+                'total' => "S/ " . ReportHelper::setNumber($records->get('03', 0)),
             ],
             [
                 'name' => $NC_t->description,
-                'total' => "S/ " . ReportHelper::setNumber($NC),
+                'total' => "S/ " . ReportHelper::setNumber($records->get('07', 0)),
             ],
             [
                 'name' => $ND_t->description,
-                'total' => "S/ " . ReportHelper::setNumber($ND),
+                'total' => "S/ " . ReportHelper::setNumber($records->get('08', 0)),
             ],
         ];
     }
@@ -1276,6 +1277,27 @@ class DocumentController extends Controller
         if ($purchase_order) {
             $records->where('purchase_order', $purchase_order);
         }
+        
+        // OPTIMIZACIÓN: Eager loading de relaciones necesarias para evitar N+1
+        // Seleccionar solo campos necesarios en relaciones para reducir el tamaño de la respuesta
+        $records->with([
+            'person:id,name,number,telephone,email', // La relación se llama 'person', no 'customer'
+            'state_type:id,description',
+            'document_type:id,description',
+            'soap_type:id,description',
+            'user:id,name,email',
+            'payments:id,document_id,payment,date_of_payment',
+            'invoice:id,document_id,date_of_due',
+            'affected_documents:id,document_id,note_credit_type_id',
+            'affected_documents.document:id,series,number',
+            'affected_documents.note_credit_type:id,description',
+            'reference_guides:id,series,number',
+            'dispatch:id,series,number',
+            'note:id,document_id,affected_document_id',
+            'note.affected_document:id,series,number',
+            'sale_note:id,number,series,state_type_id',
+        ]);
+        
         $records->whereTypeUser()->latest();
 
         if ($pending_payment) {

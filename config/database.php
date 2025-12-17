@@ -95,7 +95,11 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-                PDO::ATTR_EMULATE_PREPARES => false
+                PDO::ATTR_EMULATE_PREPARES => false,
+                // OPTIMIZACIÓN: Timeout de conexión (segundos)
+                PDO::ATTR_TIMEOUT => env('DB_TIMEOUT', 10),
+                // OPTIMIZACIÓN: NO usar conexiones persistentes para evitar acumulación
+                PDO::ATTR_PERSISTENT => false,
             ]) : [],
         ]
     ],

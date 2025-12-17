@@ -15,7 +15,14 @@ class DocumentCollection extends ResourceCollection
      */
     public function toArray($request)
     {
-        return $this->collection->transform(function ($row, $key) {
+        // OPTIMIZACIÓN: Cargar todos los EmailSendLog en una sola consulta en lugar de N consultas
+        $documentIds = $this->collection->pluck('id')->toArray();
+        $emailLogs = EmailSendLog::Document()
+            ->whereIn('relation_id', $documentIds)
+            ->get()
+            ->groupBy('relation_id');
+        
+        return $this->collection->transform(function ($row, $key) use ($emailLogs) {
             $has_xml = true;
             $has_pdf = true;
             $has_cdr = false;
@@ -123,11 +130,11 @@ class DocumentCollection extends ResourceCollection
             $nvs = $row->getNvCollection();
 
             $order_note = $row->getOrderNoteCollection();
-            // Regresa si se hn enviado correos
+            // OPTIMIZACIÓN: Usar logs precargados en lugar de consulta individual
             $email_send_it = false;
             $email_send_it_array = [];
-            $send_it = EmailSendLog::Document()->FindRelationId($row->id)->get();
-            if (count($send_it) > 0) {
+            $send_it = $emailLogs->get($row->id, collect());
+            if ($send_it->count() > 0) {
                 /** @var EmailSendLog $log*/
                 foreach ($send_it as $log) {
                     $email_send_it_array[] = [
@@ -158,10 +165,11 @@ class DocumentCollection extends ResourceCollection
                 'date_of_issue' => $row->date_of_issue->format('d-m-Y'),
                 'date_of_due' => (in_array($row->document_type_id, ['01', '03'])) ? $row->invoice->date_of_due->format('d-m-Y') : null,
                 'number' => $row->number_full,
-                'customer_name' => $row->customer->name,
-                'customer_number' => $row->customer->number,
-                'customer_telephone' => $row->customer->telephone,
-                'customer_email' => optional($row->customer)->email,
+                // Usar la relación 'person' (optimizada con eager loading) en lugar del accessor 'customer' (JSON)
+                'customer_name' => $row->person->name ?? '',
+                'customer_number' => $row->person->number ?? '',
+                'customer_telephone' => $row->person->telephone ?? '',
+                'customer_email' => $row->person->email ?? '',
                 'currency_type_id' => $row->currency_type_id,
                 'exchange_rate_sale' => $row->exchange_rate_sale,
                 'total_exportation' => $row->total_exportation,

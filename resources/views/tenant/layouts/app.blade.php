@@ -35,6 +35,16 @@
     <title>TUKIFAC - Facturación Electrónica</title>
     <meta name="googlebot" content="noindex">
     <meta name="robots" content="noindex">
+    
+    <!-- OPTIMIZACIÓN LCP: Preload de imágenes críticas -->
+    <link rel="preload" as="image" href="{{ asset('storage/top_nav_s445.png') }}" fetchpriority="high">
+    <!-- Preload de imagen hero banner (solo si estamos en la página de inicio) -->
+    @php
+        $isInicioPage = request()->is('inicio') || request()->is('dashboard/inicio') || request()->is('*/inicio') || (isset($path[0]) && $path[0] === 'inicio');
+    @endphp
+    @if($isInicioPage)
+    <link rel="preload" as="image" href="{{ asset('storage/EMPRENDEDOR-TK1.webp') }}" fetchpriority="high">
+    @endif
 
     <!-- Pixel Code - https://foculus.work/ -->
     {{--<script defer src="https://foculus.work/pixel/oKIA68Lt0e5WSnMf"></script>--}}
@@ -47,8 +57,10 @@
 
     @vite(['resources/js/app.js'])
 
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- OPTIMIZACIÓN: Preconnect para fuentes y carga asíncrona -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 
     {{-- <link rel="stylesheet" href="{{ asset('porto-light/vendor/bootstrap/css/bootstrap.css') }}" /> --}}
     <link rel="stylesheet" href="{{ asset('porto-light/vendor/animate/animate.css') }}" />
@@ -238,13 +250,13 @@ html.dark .global-loader p {
     data-tenant="true"
     data-company-title="{{ $vc_company->title_web }}">
 
-<!-- Spinner de carga global TUKIFAC-->
-<div id="global-loader" class="global-loader">
+{{-- Spinner de carga global TUKIFAC - Deshabilitado, ahora solo se muestra en la tabla --}}
+{{-- <div id="global-loader" class="global-loader">
     <div class="loader-content">
         <img src="{{ asset('storage/tuki-load.webp') }}" alt="TUKIFAC" class="loader-image">
         <p class="">Cargando...</p>
     </div>
-</div>
+</div> --}}
 
     <section class="body">
         @php
@@ -253,7 +265,8 @@ html.dark .global-loader p {
         <!-- start: header -->
         {{-- @include('tenant.layouts.partials.header') --}}
         <!-- end: header -->
-        <div class="header-background" style="background: #f4f4f4 url('{{ asset('storage/top_nav_s445.png') }}');"></div>
+        <!-- OPTIMIZACIÓN LCP: Header background con carga optimizada -->
+        <div class="header-background" style="background: #f4f4f4 url('{{ asset('storage/top_nav_s445.png') }}'); background-size: 100% auto; background-repeat: no-repeat; background-position: top center;"></div>
         <div class="inner-wrapper">
             <!-- start: sidebar -->
             @include('tenant.layouts.partials.sidebar')
@@ -283,28 +296,31 @@ html.dark .global-loader p {
 
 
     <!-- Vendor -->
+    <!-- OPTIMIZACIÓN: Scripts críticos sin defer (jQuery debe estar disponible inmediatamente) -->
     <script src="{{ asset('porto-light/vendor/jquery/jquery.js')}}"></script>
-    <script src="{{ asset('porto-light/vendor/jquery-browser-mobile/jquery.browser.mobile.js')}}"></script>
-    <script src="{{ asset('porto-light/vendor/jquery-cookie/jquery-cookie.js')}}"></script>
+    <script src="{{ asset('porto-light/vendor/jquery-browser-mobile/jquery.browser.mobile.js')}}" defer></script>
+    <script src="{{ asset('porto-light/vendor/jquery-cookie/jquery-cookie.js')}}" defer></script>
     {{--
     <script src="{{ asset('porto-light/master/style-switcher/style.switcher.js')}}"></script> --}}
-    <script src="{{ asset('porto-light/vendor/popper/umd/popper.min.js')}}"></script>
+    <!-- OPTIMIZACIÓN: Scripts no críticos con defer para no bloquear renderizado -->
+    <script src="{{ asset('porto-light/vendor/popper/umd/popper.min.js')}}" defer></script>
     {{-- <script src="{{ asset('porto-light/vendor/bootstrap/js/bootstrap.js')}}"></script> --}}
     {{--
     <script src="{{ asset('porto-light/vendor/common/common.js')}}"></script> --}}
-    <script src="{{ asset('porto-light/vendor/nanoscroller/nanoscroller.js')}}"></script>
-    <script src="{{ asset('porto-light/vendor/magnific-popup/jquery.magnific-popup.js')}}"></script>
-    <script src="{{ asset('porto-light/vendor/jquery-placeholder/jquery-placeholder.js')}}"></script>
-    <script src="{{ asset('porto-light/vendor/select2/js/select2.js') }}"></script>
-    <script src="{{ asset('porto-light/vendor/datatables/media/js/jquery.dataTables.min.js')}}"></script>
-    <script src="{{ asset('porto-light/vendor/datatables/media/js/dataTables.bootstrap4.min.js')}}"></script>
+    <script src="{{ asset('porto-light/vendor/nanoscroller/nanoscroller.js')}}" defer></script>
+    <script src="{{ asset('porto-light/vendor/magnific-popup/jquery.magnific-popup.js')}}" defer></script>
+    <script src="{{ asset('porto-light/vendor/jquery-placeholder/jquery-placeholder.js')}}" defer></script>
+    <script src="{{ asset('porto-light/vendor/select2/js/select2.js') }}" defer></script>
+    <script src="{{ asset('porto-light/vendor/datatables/media/js/jquery.dataTables.min.js')}}" defer></script>
+    <script src="{{ asset('porto-light/vendor/datatables/media/js/dataTables.bootstrap4.min.js')}}" defer></script>
 
     {{-- Specific Page Vendor --}}
-    <script src="{{asset('porto-light/vendor/jquery-ui/jquery-ui.js')}}"></script>
-    <script src="{{asset('porto-light/vendor/jqueryui-touch-punch/jqueryui-touch-punch.js')}}"></script>
+    <!-- OPTIMIZACIÓN: Scripts de UI con defer -->
+    <script src="{{asset('porto-light/vendor/jquery-ui/jquery-ui.js')}}" defer></script>
+    <script src="{{asset('porto-light/vendor/jqueryui-touch-punch/jqueryui-touch-punch.js')}}" defer></script>
     <!--<script src="{{asset('porto-light/vendor/select2/js/select2.js')}}"></script>-->
 
-    <script src="{{asset('porto-light/vendor/jquery-loading/dist/jquery.loading.js')}}"></script>
+    <script src="{{asset('porto-light/vendor/jquery-loading/dist/jquery.loading.js')}}" defer></script>
 
     <!--<script src="assets/vendor/select2/js/select2.js"></script>-->
     {{--
@@ -338,11 +354,12 @@ html.dark .global-loader p {
     {{-- <script src="{{ asset('js/manifest.js') }}"></script> --}}
     {{-- <script src="{{ asset('js/vendor.js') }}"></script> --}}
     <!-- Theme Base, Components and Settings -->
-    <script src="{{asset('porto-light/js/theme.js')}}"></script>
+    <!-- OPTIMIZACIÓN: Scripts de tema con defer -->
+    <script src="{{asset('porto-light/js/theme.js')}}" defer></script>
 
     <!-- Theme Custom -->
-    <script src="{{asset('porto-light/js/custom.js')}}"></script>
-    <script src="{{asset('porto-light/js/jquery.xml2json.js')}}"></script>
+    <script src="{{asset('porto-light/js/custom.js')}}" defer></script>
+    <script src="{{asset('porto-light/js/jquery.xml2json.js')}}" defer></script>
 
     <script>
 
@@ -371,48 +388,16 @@ html.dark .global-loader p {
 
     <!--tukifac-->
     <script>
-        // Control del spinner global
+        // Control del spinner global - Deshabilitado, ahora solo se muestra en la tabla
         document.addEventListener('DOMContentLoaded', function() {
-            const globalLoader = document.getElementById('global-loader');
-            
-            // Ocultar spinner cuando la página esté completamente cargada
-            window.addEventListener('load', function() {
-                setTimeout(() => {
-                    if(globalLoader) {
-                        globalLoader.classList.add('hidden');
-                        // Remover completamente después de la animación
-                        setTimeout(() => {
-                            globalLoader.remove();
-                        }, 300);
-                    }
-                }, 500);
-            });
-
-            // Mostrar body cuando el spinner se oculte
+            // Mostrar body inmediatamente
             document.body.classList.add('visible');
         });
 
-        // Función global para mostrar/ocultar spinner
+        // Función global para mostrar/ocultar spinner (mantenida por compatibilidad)
         window.showLoader = function(show = true) {
-            let loader = document.getElementById('global-loader');
-            
-            if (!loader && show) {
-                // Crear loader si no existe
-                loader = document.createElement('div');
-                loader.id = 'global-loader';
-                loader.className = 'global-loader';
-                loader.innerHTML = `
-                    <div class="loader-content">
-                        <img src="{{ asset('img/tukifac-logo-loader.png') }}" alt="TUKIFAC" class="loader-image">
-                        <p class="mt-2">Procesando TUKIFAC...</p>
-                    </div>
-                `;
-                document.body.prepend(loader);
-            }
-            
-            if (loader) {
-                loader.classList.toggle('hidden', !show);
-            }
+            // Función deshabilitada - el loader ahora solo se muestra en componentes específicos
+            console.log('showLoader llamado pero deshabilitado - usar loader de componente');
         };
 </script>
 <!--scripT TUKIFAC-->

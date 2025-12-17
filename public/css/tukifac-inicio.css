@@ -25,12 +25,25 @@
     align-items: center;
     padding: 1rem;
     position: relative;
+    /* OPTIMIZACIÓN CLS: Altura fija para evitar layout shift */
+    height: 200px;
     min-height: 200px;
+    max-height: 200px;
+    /* OPTIMIZACIÓN LCP: Aceleración de hardware para renderizado más rápido */
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    /* Asegurar que el contenido se renderice inmediatamente */
+    content-visibility: auto;
 }
 
 @media (min-width: 1024px) {
     .tukifac-hero-banner {
         padding: 2.5rem 5rem;
+        /* OPTIMIZACIÓN CLS: Mantener altura consistente en desktop */
+        height: 250px;
+        min-height: 250px;
+        max-height: 250px;
     }
 }
 
@@ -381,6 +394,9 @@
     align-items: flex-end;
     justify-content: flex-end;
     padding-right: 2.5rem;
+    /* OPTIMIZACIÓN CLS: Dimensiones mínimas para reservar espacio */
+    min-width: 150px;
+    min-height: 150px;
 }
 
 @media (min-width: 1024px) {
@@ -394,6 +410,8 @@
     display: flex;
     align-items: center;
     padding-left: 1.25rem;
+    /* OPTIMIZACIÓN CLS: Altura mínima para reservar espacio */
+    min-height: 150px;
 }
 
 @media (min-width: 1280px) {
@@ -417,6 +435,9 @@
     align-items: flex-end;
     justify-content: flex-end;
     padding-right: 5rem;
+    /* OPTIMIZACIÓN CLS: Dimensiones mínimas para reservar espacio */
+    min-width: 150px;
+    min-height: 130px;
 }
 
 @media (min-width: 1024px) {
@@ -458,4 +479,26 @@
 
 .tukifac-tool-image-left img {
     width: inherit;
+    /* OPTIMIZACIÓN CLS: Aspect ratio para reservar espacio y evitar layout shift */
+    aspect-ratio: 1 / 1;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
+/* OPTIMIZACIÓN CLS: Aspect ratio para todas las imágenes de herramientas */
+.tukifac-tool-image img {
+    aspect-ratio: 1 / 1;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.tukifac-tool-image-bottom img {
+    aspect-ratio: 15 / 13; /* 150/130 */
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
 }

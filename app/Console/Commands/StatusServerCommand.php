@@ -40,23 +40,18 @@ class StatusServerCommand extends Command
      */
     public function handle()
     {
-
         $this->info('The command was started');
 
-        // se repite el guardado varias veces
+        // Validar si ya hay un registro en este minuto para evitar duplicados
         $last = HistoryResource::orderBy('created_at', 'desc')->first();
         $now = Carbon::now();
-        // valido si ya hay un registro en este minuto
-        if($last && $now->diffInMinutes($last->created_at))
-        {
+        
+        // Solo guardar si no hay registro o si el último registro es de hace más de 1 minuto
+        if ($last == null || $now->diffInMinutes($last->created_at) >= 1) {
             $this->saveRecord();
         } else {
-            if($last == null){
-                $this->saveRecord();
-            }
+            $this->info('Ya existe un registro en este minuto, omitiendo guardado');
         }
-
-
 
         $this->info("The command is finished");
     }
@@ -73,6 +68,8 @@ class StatusServerCommand extends Command
         $history->memory_free = $memory['free'];
         $history->memory_used = $memory['used'];
         $history->save();
-        sleep(15);
+        
+        // ELIMINADO: sleep(15) - Esto estaba bloqueando procesos innecesariamente
+        // Si necesitas múltiples muestras, ejecuta el comando varias veces con delay
     }
 }

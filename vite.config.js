@@ -12,6 +12,37 @@ export default defineConfig({
     origin: 'http://1.facturaloperu-pro7.oo',
     strictPort: true,
   },
+  build: {
+    // OPTIMIZACIÓN: Configuración para máximo rendimiento y compatibilidad
+    rollupOptions: {
+      output: {
+        // Optimizar nombres de chunks
+        chunkFileNames: 'js/[name]-[hash].js',
+        entryFileNames: 'js/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
+        // No especificar format - Laravel Vite plugin usa IIFE por defecto
+        // IIFE es más compatible con Vue 2 y plugins antiguos como vue-clipboard2
+      },
+      // Optimizar árbol de dependencias pero mantener efectos secundarios necesarios
+      treeshake: {
+        moduleSideEffects: (id) => {
+          // Mantener efectos secundarios para vue-clipboard2 y otros plugins
+          return id.includes('vue-clipboard') || id.includes('element-ui');
+        }
+      }
+    },
+    // Optimizar tamaño de chunks
+    chunkSizeWarningLimit: 1000,
+    // Minificar con esbuild (más rápido que terser)
+    minify: 'esbuild',
+    // Optimizar source maps (solo en desarrollo)
+    sourcemap: process.env.NODE_ENV === 'development',
+    // CommonJS interop para compatibilidad con plugins antiguos
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true
+    }
+  },
   plugins: [
     laravel({
       input: [

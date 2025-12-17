@@ -178,61 +178,88 @@ class AccountController extends Controller
     {
         $configuration = Configuration::first();
         $plan = $configuration->plan;
-        $records = AccountPayment::all();
-        $payments = $records;
-
-        // Encontrar el próximo pago pendiente (state = false)
-        $pendingPayment = $payments->first(function ($payment) {
-            return $payment['state'] === false || $payment['state'] == 0;
-        });
+        
+        $today = \Carbon\Carbon::now()->startOfDay();
+        
+        // Buscar el próximo pago pendiente: sin fecha real de pago Y sin estado pagado
+        // Ordenar por fecha de pago ascendente para obtener el próximo pendiente
+        $nextPayment = AccountPayment::where('state', false)
+            ->whereNull('date_of_payment_real')
+            ->orderBy('date_of_payment', 'asc')
+            ->first();
 
         // Inicializar variables para días
         $daysOverdue = 0;
         $daysRemaining = 0;
         $paymentDateText = 'Al corriente';
         $statusPlan = 'Estás al día en tus pagos';
+        $hasPendingPayment = false;
+        $daysIndicatorClass = ''; // Clase CSS para el color del indicador
 
-        if ($pendingPayment) {
-            $statusPlan = 'Pendiente de pago';
+        if ($nextPayment) {
+            // Obtener la fecha de pago (ya es un objeto Carbon por el cast del modelo)
+            $paymentDate = \Carbon\Carbon::parse($nextPayment->date_of_payment)->startOfDay();
             
-            // Verificar si date_of_payment existe y no está vacío
-            if (!empty($pendingPayment['date_of_payment'])) {
-                try {
-                    // Parsear la fecha en formato Y-m-d H:i:s (formato de base de datos)
-                    $paymentDate = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $pendingPayment['date_of_payment']);
-                    $today = \Carbon\Carbon::now();
-                    
-                    // Formatear la fecha para mostrar (d/m/Y)
-                    $paymentDateText = $paymentDate->format('d/m/Y');
-                    
-                    if ($paymentDate->greaterThan($today)) {
-                        // Días faltantes para el pago
-                        $daysRemaining = $today->diffInDays($paymentDate);
-                        $daysOverdue = 0;
-                    } else {
-                        // Días vencidos
-                        $daysOverdue = $today->diffInDays($paymentDate);
-                        $daysRemaining = 0;
-                        $statusPlan = 'Pago vencido';
-                    }
-                } catch (\Exception $e) {
-                    // Si hay error en el formato de fecha, usar la fecha original
-                    $paymentDateText = $pendingPayment['date_of_payment'];
-                    $daysOverdue = 0;
-                    $daysRemaining = 0;
+            // Formatear la fecha para mostrar (d/m/Y)
+            $paymentDateText = $paymentDate->format('d/m/Y');
+            
+            if ($paymentDate->greaterThan($today)) {
+                // El pago está en el futuro, el cliente está al día
+                $statusPlan = 'Estás al día en tus pagos';
+                $daysRemaining = $today->diffInDays($paymentDate);
+                $daysOverdue = 0;
+                $hasPendingPayment = true; // Hay un pago futuro pendiente
+                
+                // Determinar el color según días restantes (sistema de semáforo)
+                if ($daysRemaining > 5) {
+                    $daysIndicatorClass = 'text-success'; // Verde: más de 5 días
+                } else {
+                    $daysIndicatorClass = 'text-warning'; // Naranja/Amarillo: 5 días o menos
+                }
+            } else {
+                // El pago ya venció, está pendiente o vencido
+                $daysOverdue = $today->diffInDays($paymentDate);
+                $daysRemaining = 0;
+                $hasPendingPayment = true;
+                $daysIndicatorClass = 'text-danger'; // Rojo: días vencidos
+                
+                if ($daysOverdue > 0) {
+                    $statusPlan = 'Pago vencido';
+                } else {
+                    // Es hoy
+                    $statusPlan = 'Pago pendiente';
+                    $daysIndicatorClass = 'text-warning'; // Naranja si es hoy
                 }
             }
         }
 
-        // Formatear datos para la vista
+        // Función auxiliar para limpiar UTF-8 y eliminar caracteres mal formados
+        $cleanUtf8 = function($string) {
+            if (is_null($string) || !is_string($string)) {
+                return is_string($string) ? $string : '';
+            }
+            // Asegurar que sea UTF-8 válido, eliminando caracteres inválidos
+            if (!mb_check_encoding($string, 'UTF-8')) {
+                $string = mb_convert_encoding($string, 'UTF-8', 'UTF-8//IGNORE');
+            }
+            // Filtrar caracteres de control no válidos
+            $string = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $string);
+            return $string;
+        };
+
+        // Obtener el nombre del plan de forma segura
+        $planName = ($plan && isset($plan->name)) ? $cleanUtf8($plan->name) : 'Sin plan';
+
+        // Formatear datos para la vista asegurando codificación UTF-8 correcta
         $response = [
             'success' => true,
-            'plan_name' => $plan->name,
-            'status_plan' => $statusPlan,
-            'payment_date' => $paymentDateText,
-            'days_overdue' => $daysOverdue,
-            'days_remaining' => $daysRemaining,
-            'has_pending_payment' => (bool)$pendingPayment
+            'plan_name' => $planName,
+            'status_plan' => $cleanUtf8($statusPlan),
+            'payment_date' => $cleanUtf8($paymentDateText),
+            'days_overdue' => (int)$daysOverdue,
+            'days_remaining' => (int)$daysRemaining,
+            'has_pending_payment' => $hasPendingPayment,
+            'days_indicator_class' => $daysIndicatorClass // Clase CSS para el color
         ];
 
         return $response;

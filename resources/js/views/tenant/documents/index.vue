@@ -259,7 +259,7 @@
                         ></th>
                     </tr>
                     <tr
-                        slot-scope="{ index, row }"
+                        slot-scope="{ row }"
                         :class="{
                             'text-danger': row.state_type_id === '11',
                             'text-warning': row.state_type_id === '13',
@@ -317,28 +317,25 @@
                             ></small>
                         </td>
                         <td v-if="columns.notes.visible">
-                            <template v-for="(row, index) in row.notes">
-                                <label class="d-block" :key="index"
-                                    >{{ row.note_type_description }}:
-                                    {{ row.description }}</label
-                                >
-                            </template>
+                            <label 
+                                v-for="(note, index) in row.notes" 
+                                :key="index"
+                                class="d-block"
+                            >{{ note.note_type_description }}: {{ note.description }}</label>
                         </td>
                         <td v-if="columns.dispatch.visible">
-                            <template v-for="(row, index) in row.dispatches">
-                                <label class="d-block" :key="index">{{
-                                    row.description
-                                }}</label>
-                            </template>
+                            <label 
+                                v-for="(dispatch, index) in row.dispatches" 
+                                :key="index"
+                                class="d-block"
+                            >{{ dispatch.description }}</label>
                         </td>
                         <td v-if="columns.sales_note.visible">
-                            <template v-for="(row, index) in row.sales_note">
-                                <label class="d-block" :key="index"
-                                    >{{ row.number_full }} ({{
-                                        row.state_type_description
-                                    }})</label
-                                >
-                            </template>
+                            <label 
+                                v-for="(saleNote, index) in row.sales_note" 
+                                :key="index"
+                                class="d-block"
+                            >{{ saleNote.number_full }} ({{ saleNote.state_type_description }})</label>
                         </td>
                         <td v-if="columns.order_note.visible">
                             <template
@@ -819,9 +816,6 @@ export default {
         "view_apiperudev_validator_cpe",
         "view_validator_cpe"
     ],
-    computed: {
-        ...mapState(["config"])
-    },
     components: {
         DocumentsVoided,
         ItemsImport,
@@ -853,6 +847,9 @@ export default {
             recordId: null,
             showDialogOptions: false,
             showDialogPayments: false,
+            // OPTIMIZACIÓN: Cache para evitar cálculos repetidos
+            _todayCache: null,
+            _todayCacheDate: null,
             columns: {
                 notes: {
                     title: "Notas C/D",
@@ -945,6 +942,9 @@ export default {
         this.$store.commit("setConfiguration", this.configuration);
         this.loadConfiguration();
         this.getColumnsToShow();
+    },
+    computed: {
+        ...mapState(["config"]),
     },
     methods: {
         formatDate(date) {
@@ -1051,24 +1051,31 @@ export default {
                     this.$message.error(error.response.data.message);
                 });
         },
+        // OPTIMIZACIÓN: Cachear resultados de tooltip para evitar cálculos repetidos
         tooltip(row, message = true) {
-            if (message) {
-                if (row.shipping_status) return row.shipping_status.message;
-
-                if (row.sunat_shipping_status)
-                    return row.sunat_shipping_status.message;
-
-                if (row.query_status) return row.query_status.message;
+            // Cachear el resultado si ya fue calculado
+            if (row._tooltipCache && row._tooltipCache.message === message) {
+                return row._tooltipCache.result;
             }
-
-            if (
-                row.shipping_status ||
-                row.sunat_shipping_status ||
-                row.query_status
-            )
-                return true;
-
-            return false;
+            
+            let result;
+            if (message) {
+                if (row.shipping_status) {
+                    result = row.shipping_status.message;
+                } else if (row.sunat_shipping_status) {
+                    result = row.sunat_shipping_status.message;
+                } else if (row.query_status) {
+                    result = row.query_status.message;
+                } else {
+                    result = false;
+                }
+            } else {
+                result = !!(row.shipping_status || row.sunat_shipping_status || row.query_status);
+            }
+            
+            // Guardar en cache
+            row._tooltipCache = { message, result };
+            return result;
         },
         clickPayment(recordId) {
             this.recordId = recordId;
@@ -1122,9 +1129,15 @@ export default {
             this.recordId = recordId;
             this.showDialogRetention = true;
         },
+        // OPTIMIZACIÓN: Cachear fecha de hoy para evitar recalcular
         isDateWarning(date_due) {
-            let today = Date.now();
-            return moment(date_due).isBefore(today);
+            if (!date_due) return false;
+            // Cachear la fecha de hoy durante el ciclo de vida del componente
+            if (!this._todayCache || this._todayCacheDate !== moment().format('YYYY-MM-DD')) {
+                this._todayCache = Date.now();
+                this._todayCacheDate = moment().format('YYYY-MM-DD');
+            }
+            return moment(date_due).isBefore(this._todayCache);
         },
         go(url) {
           window.location.href = url;

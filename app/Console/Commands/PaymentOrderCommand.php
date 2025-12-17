@@ -44,24 +44,29 @@ class PaymentOrderCommand extends Command
      */
     public function handle()
     {
-        $clients = Client::where('locked_tenant', false)
-                    ->whereNotNull('ending_billing_cycle')
-                    ->get();
         $config = Configuration::first();
-
-        if ($config->active_cron) {
-            $now = now();
-            foreach ($clients as $client) {
-                $this->createOrderPayment($client, $config);
-            }
-
-            $midnight = $now->format('H:i');
-            if ($midnight === '00:00') {
-                $this->verifiedOrder($client);
-            }
-
+        
+        if (!$config || !$config->active_cron) {
+            $this->info('Cron de ordenes de pago desactivado');
+            return;
         }
 
+        $now = now();
+        
+        // OPTIMIZACIÓN: Usar chunk para procesar clientes en lotes y evitar cargar todos en memoria
+        Client::where('locked_tenant', false)
+            ->whereNotNull('ending_billing_cycle')
+            ->chunk(100, function ($clients) use ($config) {
+                foreach ($clients as $client) {
+                    $this->createOrderPayment($client, $config);
+                }
+            });
+
+        // CORRECCIÓN: verifiedOrder() no necesita $client como parámetro
+        $midnight = $now->format('H:i');
+        if ($midnight === '00:00') {
+            $this->verifiedOrder();
+        }
     }
 
     private function createOrderPayment(Client $client, Configuration $config)

@@ -23,11 +23,29 @@ class Kernel extends ConsoleKernel
      * @return void
      */
     protected function schedule(Schedule $schedule) {
+        // OPTIMIZACIÓN: Agregar withoutOverlapping() para evitar ejecuciones simultáneas
+        // y timeouts para evitar procesos colgados
+        
+        // Ejecutar tareas de tenants cada minuto (con protección contra solapamiento)
         $schedule->command('tenancy:run tenant:run')
-            ->everyMinute();
+            ->everyMinute()
+            ->withoutOverlapping(5) // Máximo 5 minutos de ejecución
+            ->runInBackground(); // Ejecutar en background para no bloquear
+        
         // Se ejecutara por hora guardando estado de cpu y memoria (windows/linux)
-        $schedule->command('status:server')->everyMinute();
-        $schedule->command('order:payments')->everyMinute()->appendOutputTo(storage_path('logs/order_create.log'));
+        // OPTIMIZACIÓN: Cambiar a cada hora como indica el comentario
+        $schedule->command('status:server')
+            ->hourly()
+            ->withoutOverlapping(2) // Máximo 2 minutos de ejecución
+            ->runInBackground();
+        
+        // Comando de ordenes de pago cada minuto (con protección)
+        $schedule->command('order:payments')
+            ->everyMinute()
+            ->withoutOverlapping(10) // Máximo 10 minutos de ejecución
+            ->appendOutputTo(storage_path('logs/order_create.log'))
+            ->runInBackground();
+        
         // Llena las tablas para libro mayor - Se desactiva CMAR - buscar opcion de url
         // $schedule->command('account_ledger:fill')->hourly();
         
