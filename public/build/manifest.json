@@ -33,14 +33,14 @@
     "src": "resources/js/app.js"
   },
   "resources/js/system.css": {
-    "file": "assets/system-ac18c182.css",
+    "file": "assets/system-a2410380.css",
     "src": "resources/js/system.css"
   },
   "resources/js/system.js": {
     "css": [
-      "assets/system-ac18c182.css"
+      "assets/system-a2410380.css"
     ],
-    "file": "js/system-df6afa70.js",
+    "file": "js/system-1653f11a.js",
     "imports": [
       "_vue-clipboard-9b0efce2.js"
     ],
