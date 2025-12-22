@@ -439,7 +439,7 @@
                     }
                 }
             @endphp
-            <li>
+            {{--<li>
                 <a href="@if(in_array('configuration', $vc_modules)){{route('tenant.companies.create')}}@else # @endif"
                    class="btn-sunat"
                    data-toggle="tooltip" data-placement="bottom"
@@ -458,7 +458,7 @@
                         @endif
                     </span>
                 </a>
-            </li>
+            </li>--}}
         </ul>
 
         @inject('systemUser', 'App\Models\System\User')
