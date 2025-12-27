@@ -52,11 +52,13 @@ class PersonController extends Controller
 
         $value = $request->value;
         if ($request->column == 'document_type') {
-            $records = Person::whereHas('identity_document_type', function($query) use($value){
-                $query->where('description', 'like', "%{$value}%");
-            });
+            $records = Person::with(['identity_document_type', 'country', 'department', 'province', 'district', 'person_type', 'seller', 'zone', 'addresses'])
+                            ->whereHas('identity_document_type', function($query) use($value){
+                                $query->where('description', 'like', "%{$value}%");
+                            });
         } else {
-            $records = Person::where($request->column, 'like', "%{$request->value}%");
+            $records = Person::with(['identity_document_type', 'country', 'department', 'province', 'district', 'person_type', 'seller', 'zone', 'addresses'])
+                            ->where($request->column, 'like', "%{$request->value}%");
         }
         $records = $records->where('type', $type)
             ->whereFilterCustomerBySeller($type);
@@ -396,7 +398,8 @@ class PersonController extends Controller
         /* dd($request); */
         $value = $request;
 
-        $customers = Person::with('addresses')->whereType('customers')
+        $customers = Person::with(['identity_document_type', 'country', 'department', 'province', 'district', 'person_type', 'seller', 'zone', 'addresses'])
+            ->whereType('customers')
             ->where('id', $value)->get()->transform(function ($row) {
                 /** @var  Person $row */
                 return $row->getCollectionData();

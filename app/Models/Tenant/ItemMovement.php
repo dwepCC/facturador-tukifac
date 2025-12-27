@@ -254,24 +254,8 @@
          */
         public static function getStockByCategory($item_id = 0, $establisnment_id = 0)
         {
-
-            $data = [];
-            $data['total'] = (float)self::getQueryToStock($item_id, $establisnment_id)->select(DB::raw(' sum(item_movement.quantity) as total'))->first()->total;
-
-            self::getFormatedStockData($data, 'CatItemStatus', 'item_status_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemUnitBusiness', 'item_unit_business_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemMoldCavity', 'item_mold_cavities_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemPackageMeasurement', 'item_package_measurements_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemUnitsPerPackage', 'item_units_per_package_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemMoldProperty', 'item_mold_properties_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemProductFamily', 'item_product_family_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'colors', 'item_color_id', $item_id, $establisnment_id);
-            self::getFormatedStockData($data, 'CatItemSize', 'item_size_id', $item_id, $establisnment_id);
-
-
-            if ($data['total'] == 0) $data['total'] = null;
-            return $data;
-
+            $stocks = self::getStocksByItems([$item_id], $establisnment_id);
+            return $stocks[$item_id] ?? [];
         }
 
         /**
@@ -314,8 +298,106 @@
             return $query;
         }
 
-        protected static function getFormatedStockData(&$array, $index, $columna, $item_id, $establisnment_id)
+        /**
+         * Optimized method to get stock by categories for multiple items at once.
+         * Reduces N+1 queries.
+         *
+         * @param array $item_ids
+         * @param int $establishment_id
+         * @return array
+         */
+        public static function getStocksByItems($item_ids, $establishment_id = 0)
         {
+            $result = [];
+            foreach ($item_ids as $id) {
+                $result[$id] = ['total' => null];
+            }
+
+            // Get global totals per item
+            $totalsQuery = DB::connection('tenant')
+                ->table('item_movement')
+                ->join('item_movement_rel_extra', 'item_movement.id', '=', 'item_movement_rel_extra.item_movement_id')
+                ->whereIn('item_movement.item_id', $item_ids)
+                ->where('item_movement.countable', 1);
+
+            if ($establishment_id != 0) {
+                $totalsQuery->where('item_movement.establishment_id', $establishment_id);
+            }
+
+            $totals = $totalsQuery->groupBy('item_movement.item_id')
+                ->select('item_movement.item_id', DB::raw('sum(item_movement.quantity) as total'))
+                ->get();
+
+            foreach ($totals as $row) {
+                $result[$row->item_id]['total'] = (float)$row->total;
+                if ($result[$row->item_id]['total'] == 0) $result[$row->item_id]['total'] = null;
+            }
+
+            // Categories mapping
+            $categories = [
+                'CatItemStatus' => ['col' => 'item_status_id', 'table' => 'cat_item_status'],
+                'CatItemUnitBusiness' => ['col' => 'item_unit_business_id', 'table' => 'cat_item_unit_business'],
+                'CatItemMoldCavity' => ['col' => 'item_mold_cavities_id', 'table' => 'cat_item_mold_cavities'],
+                'CatItemPackageMeasurement' => ['col' => 'item_package_measurements_id', 'table' => 'cat_item_package_measurements'],
+                'CatItemUnitsPerPackage' => ['col' => 'item_units_per_package_id', 'table' => 'cat_item_units_per_package'],
+                'CatItemMoldProperty' => ['col' => 'item_mold_properties_id', 'table' => 'cat_item_mold_properties'],
+                'CatItemProductFamily' => ['col' => 'item_product_family_id', 'table' => 'cat_item_product_family'],
+                'CatItemSize' => ['col' => 'item_size_id', 'table' => 'cat_item_size'],
+                'colors' => ['col' => 'item_color_id', 'table' => 'cat_colors_items'],
+            ];
+
+            foreach ($categories as $index => $config) {
+                $col = $config['col'];
+                $table = $config['table'];
+
+                $query = DB::connection('tenant')
+                    ->table('item_movement')
+                    ->join('item_movement_rel_extra', 'item_movement.id', '=', 'item_movement_rel_extra.item_movement_id')
+                    ->whereIn('item_movement.item_id', $item_ids)
+                    ->where('item_movement.countable', 1)
+                    ->where('item_movement_rel_extra.' . $col, '!=', 0);
+
+                if ($establishment_id != 0) {
+                    $query->where('item_movement.establishment_id', $establishment_id);
+                }
+
+                $query->join($table, 'item_movement_rel_extra.' . $col, '=', $table . '.id')
+                    ->select(
+                        'item_movement.item_id',
+                        'item_movement_rel_extra.' . $col . ' as rel_id',
+                        "$table.name",
+                        DB::raw('sum(item_movement.quantity) as total')
+                    )
+                    ->groupBy('item_movement.item_id', 'item_movement_rel_extra.' . $col, "$table.name");
+
+                $rows = $query->get();
+
+                // Initialize category array for all items
+                foreach ($item_ids as $id) {
+                    $result[$id][$index] = ['detailed' => [], 'total' => null];
+                }
+
+                foreach ($rows as $row) {
+                    $result[$row->item_id][$index]['detailed'][] = $row;
+                    
+                    // Sum up for total of this category
+                    if ($result[$row->item_id][$index]['total'] === null) {
+                        $result[$row->item_id][$index]['total'] = 0;
+                    }
+                    $result[$row->item_id][$index]['total'] += $row->total;
+                }
+                
+                // Convert 0 totals back to null if needed (to match original behavior)
+                foreach ($item_ids as $id) {
+                     if ($result[$id][$index]['total'] === 0) $result[$id][$index]['total'] = null;
+                }
+            }
+
+            return $result;
+        }
+
+        protected static function getFormatedStockData(&$array, $index, $columna, $item_id, $establisnment_id)
+        { 
 
             $tableNames = null;
             if ($index == 'CatItemStatus') {
@@ -330,9 +412,9 @@
                 $tableNames = 'cat_item_units_per_package';
             } elseif ($index == 'CatItemMoldProperty') {
                 $tableNames = 'cat_item_mold_properties';
-            } elseif ($index == 'CatItemMoldProperty') {
+            } elseif ($index == 'CatItemProductFamily') {
                 $tableNames = 'cat_item_product_family';
-            } elseif ($index == 'CatItemMoldProperty') {
+            } elseif ($index == 'CatItemSize') {
                 $tableNames = 'cat_item_size';
             } elseif ($index == 'colors') {
                 $tableNames = 'cat_colors_items';
@@ -990,7 +1072,7 @@
          * @return array
          */
         public static function getStockByVariantSizeColor($item_id, $establisnment_id)
-        {
+        { 
 
             $data = [];
             $data['total'] = (float)self::getQueryToStock($item_id, $establisnment_id)->select(DB::raw(' sum(item_movement.quantity) as total'))->first()->total;
@@ -1002,5 +1084,4 @@
             return $data;
 
         }
-
     }

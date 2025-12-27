@@ -143,7 +143,7 @@
          * @return array
          */
         public function TransformDatatoEdit(): array
-        {
+        { 
             $color = $this->getColor();
             return [
                 'id' => $this->id,
@@ -154,15 +154,26 @@
         }
 
         /**
+         * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+         */
+        public function color()
+        {
+            return $this->belongsTo(CatColorsItem::class, 'cat_colors_item_id');
+        } 
+
+        /**
          * @return CatColorsItem
          */
         public function getColor(): CatColorsItem
         {
+            if($this->relationLoaded('color')){
+                return $this->color;
+            }
             $e = CatColorsItem::find($this->cat_colors_item_id);
             if (empty($e)) $e = new CatColorsItem();
-            $this->color = $e;
-            $this->cat_colors_item_id = $e->id;
-            return $this->color;
+            // $this->color = $e; // Do not overwrite relationship
+            // $this->cat_colors_item_id = $e->id;
+            return $e;
         }
         /**
          * @return \Illuminate\Database\Eloquent\Relations\HasMany

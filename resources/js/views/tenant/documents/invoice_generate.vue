@@ -1,5 +1,5 @@
 <template>
-    <div :class="{ 'content-opacity': isVisible }" @click.self="toggleInformation">
+    <div :class="{ 'content-opacity': isVisible }" class="position-relative" :style="{ minHeight: !loading_form ? '400px' : 'auto' }" @click.self="toggleInformation">
         <span class="module-title-marker" data-page-title="Nuevo Comprobante"></span>
         <Keypress key-event="keyup" @success="checkKey" />
         <Keypress
@@ -7,6 +7,14 @@
             :multiple-keys="multiple"
             @success="checkKeyWithAlt"
         />
+        <!-- Overlay con imagen PNG para carga inicial -->
+        <div v-if="!loading_form" class="table-loading-overlay">
+            <div class="table-loader-content">
+                <img :src="loaderImageUrl" alt="TUKIFAC" class="table-loader-image">
+                <p class="table-loader-text">Cargando...</p>
+            </div>
+        </div>
+
         <div class="tab-content tab-content-light row-new" v-if="loading_form">
             <div class="invoice p-0">
                 <form
@@ -4183,7 +4191,12 @@ export default {
                 return this.sellers.filter(seller => !seller.name.includes('(SUSPENDIDO)'));
             }
             return this.sellers;
-        }
+        },
+                    loaderImageUrl() {
+                // La imagen está en public/logo/tuki-load.webp
+                // En Laravel, public es la raíz del servidor web, así que la ruta es /logo/tuki-load.webp
+                return '/logo/tuki-load.webp';
+            },
     },
     async created() {
         this.selected_option_price = this.price_options[0].id;

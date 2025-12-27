@@ -17,11 +17,19 @@ class ItemCollection extends ResourceCollection
     {
 
         $configuration =  Configuration::first();
+        $establishment_id = auth()->user()->establishment_id;
+        $warehouse = \App\Models\Tenant\Warehouse::where('establishment_id', $establishment_id)->first();
 
-        return $this->collection->transform(function($row, $key) use($configuration){
+        $stocks = [];
+        if($configuration->show_extra_info_to_item){
+             $item_ids = $this->collection->pluck('id')->toArray();
+             $stocks = \App\Models\Tenant\ItemMovement::getStocksByItems($item_ids, $establishment_id);
+        } 
+
+        return $this->collection->transform(function($row, $key) use($configuration, $stocks, $warehouse){
             /** @var \App\Models\Tenant\Item  $row */
 
-            return $row->getCollectionData($configuration);
+            return $row->getCollectionData($configuration, $stocks[$row->id] ?? null, $warehouse);
             /** Se ha movido la salida, al modelo */
             $brand = null;
             if(!empty($row->brand_id)) {

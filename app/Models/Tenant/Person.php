@@ -521,48 +521,49 @@
                     $optional_mail_send[] = $temp;
                 }
             }
-            /** @var \App\Models\Tenant\Catalogs\Department  $department */
-            $department = \App\Models\Tenant\Catalogs\Department::find($this->department_id);
-            if(!empty($department)){
-                $department = [
-                "id" => $department->id,
-                "description" => $department->description,
-                "active" => $department->active,
-                ];
-            }
-
+            
             $location_id = [];
+            
             /** @var \App\Models\Tenant\Catalogs\Department  $department */
-            $department = \App\Models\Tenant\Catalogs\Department::find($this->department_id);
+            $department = $this->department;
             if(!empty($department)){
-                $department = [
-                "id" => $department->id,
-                "description" => $department->description,
-                "active" => $department->active,
+                $department_data = [
+                    "id" => $department->id,
+                    "description" => $department->description,
+                    "active" => $department->active,
                 ];
-                array_push($location_id, $department['id']);
+                array_push($location_id, $department->id);
+            } else {
+                $department_data = null;
             }
-            $province = \App\Models\Tenant\Catalogs\Province::find($this->province_id);
+            
+            $province = $this->province;
 
             if(!empty($province)){
-                $province = [
+                $province_data = [
                     "id" => $province->id,
                     "description" => $province->description,
                     "active" => $province->active,
                 ];
-                array_push($location_id, $province['id']);
+                array_push($location_id, $province->id);
+            } else {
+                $province_data = null;
             }
-            $district = \App\Models\Tenant\Catalogs\District::find($this->district_id);
+
+            $district = $this->district;
 
             if(!empty($district)){
-                $district = [
+                $district_data = [
                     "id" => $district->id,
                     "description" => $district->description,
                     "active" => $district->active,
                 ];
-                array_push($location_id, $district['id']);
+                array_push($location_id, $district->id);
+            } else {
+                $district_data = null;
             }
-            $seller = User::find($this->seller_id);
+
+            $seller = $this->seller;
             if(!empty($seller)){
                 $seller = $seller->getCollectionData();
             }
@@ -580,7 +581,7 @@
                 'barcode' => $this->barcode,
                 'observation' => $this->observation,
                 'seller' => $seller,
-                'zone' => $this->getZone(),
+                'zone' => $this->zone,
                 'zone_id' => $this->zone_id,
                 'seller_id' => $this->seller_id,
                 'website' => $this->website,
@@ -592,13 +593,13 @@
                 'trade_name' => $this->trade_name,
                 'country_id' => $this->country_id,
                 'nationality_id' => $this->nationality_id,
-                'department_id' => $department['id']??null,
-                'department' => $department,
+                'department_id' => $department_data['id']??null,
+                'department' => $department_data,
 
-                'province_id' => $province['id']??null,
-                'province' => $province,
-                'district_id' => $district['id']??null,
-                'district' => $district,
+                'province_id' => $province_data['id']??null,
+                'province' => $province_data,
+                'district_id' => $district_data['id']??null,
+                'district' => $district_data,
 
                 'telephone' => $this->telephone,
                 'email' => $this->email,
