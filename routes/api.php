@@ -1,8 +1,6 @@
 <?php
 use App\Http\Controllers\Tenant\ConfigurationImageController;
 
-Route::get('services/search-company/{number}', 'System\Api\CompanySearchController@search');
-
 Route::get('generate_token', 'Tenant\Api\MobileController@getSeries');
 
 $hostname = app(Hyn\Tenancy\Contracts\CurrentHostname::class);
@@ -121,7 +119,7 @@ if ($hostname) {
 } else {
     Route::domain(env('APP_URL_BASE'))->group(function () {
 
-
+        Route::get('services/search-company/{number}', 'System\Api\CompanySearchController@search');
         Route::middleware(['auth:system_api'])->group(function () {
 
             //reseller
