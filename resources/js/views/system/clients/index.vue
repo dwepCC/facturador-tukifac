@@ -233,6 +233,14 @@
                     <div class="right-wrapper pull-right">
                         <div class="btn-group flex-wrap">
                             <button
+                                class="btn btn-sm mt-2 me-2 mb-3 btn-success pull-end"
+                                type="button"
+                                @click.prevent="exportToExcel"
+                                :disabled="filteredRecords.length === 0"
+                            >
+                                <i class="fa fa-file-excel"></i> Exportar a Excel
+                            </button>
+                            <button
                                 class="btn btn-custom btn-sm mt-2 me-2 mb-3 primary-buton pull-end"
                                 type="button"
                                 @click.prevent="clickCreate()"
@@ -1014,6 +1022,7 @@ import DemoConfiguration from "./partials/demo_configuration.vue";
 import AccountStatus from "./partials/account_status.vue";
 import ClientDelete from "./partials/delete.vue";
 import DataLimitNotification from "./partials/DataLimitNotification.vue";
+import * as XLSX from 'xlsx';
 
 export default {
     mixins: [
@@ -1802,6 +1811,192 @@ export default {
         clickDemoConfiguration(recordId = null) {
             this.recordId = recordId;
             this.showDemoConfiguration = true;
+        },
+        exportToExcel() {
+            try {
+                // Obtener todos los registros filtrados (no solo la página actual)
+                const dataToExport = this.filteredRecords;
+                
+                if (dataToExport.length === 0) {
+                    this.$message.warning('No hay datos para exportar');
+                    return;
+                }
+
+                // Definir las columnas y sus títulos según la visibilidad
+                const columnDefinitions = [
+                    { key: 'hostname', title: 'Hostname', visible: true },
+                    { key: 'bloquear_cuenta', title: 'Bloquear cuenta', visible: this.columns.bloquear_cuenta.visible },
+                    { key: 'nombre', title: 'Nombre', visible: this.columns.nombre.visible },
+                    { key: 'ruc', title: 'RUC', visible: this.columns.ruc.visible },
+                    { key: 'plan', title: 'Plan', visible: this.columns.plan.visible },
+                    { key: 'correo', title: 'Correo', visible: this.columns.correo.visible },
+                    { key: 'entorno', title: 'Entorno', visible: this.columns.entorno.visible },
+                    { key: 'total_comprobantes', title: 'Total de Comprobantes', visible: this.columns.total_comprobantes.visible },
+                    { key: 'notificaciones', title: 'Notificaciones', visible: this.columns.notificaciones.visible },
+                    { key: 'inicio_ciclo', title: 'Inicio Ciclo Facturación', visible: this.columns.inicio_ciclo.visible },
+                    { key: 'comprobantes_ciclo', title: 'Comprobantes Ciclo Facturación', visible: this.columns.comprobantes_ciclo.visible },
+                    { key: 'usuarios', title: 'Usuarios', visible: this.columns.usuarios.visible },
+                    { key: 'sucursales', title: 'Sucursales', visible: this.columns.sucursales.visible },
+                    { key: 'ventas_mes', title: 'Ventas (Mes)', visible: this.columns.ventas_mes.visible },
+                    { key: 'fecha_creacion', title: 'F.Creación', visible: this.columns.fecha_creacion.visible },
+                    { key: 'consultas_api', title: 'Consultas API Peru (mes)', visible: this.columns.consultas_api.visible },
+                    { key: 'notas_venta', title: 'Cant. Notas de venta', visible: this.columns.notas_venta.visible },
+                    { key: 'total_mes', title: 'Total (Comprobantes por mes)', visible: this.columns.total_mes.visible },
+                    { key: 'total_pse', title: 'Total (Comprobantes a PSE-GIOR)', visible: this.columns.total_pse.visible },
+                    { key: 'total_notas', title: 'Total (Comprobantes notas de venta)', visible: this.columns.total_notas.visible },
+                    { key: 'limitar_doc', title: 'Limitar Doc.', visible: this.columns.limitar_doc.visible },
+                    { key: 'limitar_usuarios', title: 'Limitar Usuarios', visible: this.columns.limitar_usuarios.visible },
+                    { key: 'limitar_sucursales', title: 'Limitar Sucursales', visible: this.columns.limitar_sucursales.visible },
+                    { key: 'limitar_ventas', title: 'Limitar Ventas (Mes)', visible: this.columns.limitar_ventas.visible }
+                ];
+
+                // Filtrar solo las columnas visibles
+                const visibleColumns = columnDefinitions.filter(col => col.visible);
+
+                // Preparar los datos para exportar
+                const excelData = dataToExport.map((row, index) => {
+                    const rowData = {};
+                    
+                    // Agregar número de fila
+                    rowData['#'] = index + 1;
+                    
+                    // Agregar hostname siempre
+                    rowData['Hostname'] = row.hostname || '';
+                    
+                    // Agregar las demás columnas visibles
+                    visibleColumns.forEach(col => {
+                        let value = '';
+                        
+                        switch(col.key) {
+                            case 'bloquear_cuenta':
+                                value = row.locked_tenant ? 'Sí' : 'No';
+                                break;
+                            case 'nombre':
+                                value = row.name || '';
+                                break;
+                            case 'ruc':
+                                value = row.number || '';
+                                break;
+                            case 'plan':
+                                value = row.plan || '';
+                                break;
+                            case 'correo':
+                                value = row.email || '';
+                                break;
+                            case 'entorno':
+                                if (row.soap_type == '01') value = 'Demo';
+                                else if (row.soap_type == '02') value = 'Producción';
+                                else if (row.soap_type == '03') value = 'Interno';
+                                else value = row.soap_type || '';
+                                break;
+                            case 'total_comprobantes':
+                                value = row.count_doc || 0;
+                                break;
+                            case 'notificaciones':
+                                const notSent = parseInt(row.document_not_sent) || 0;
+                                const toRegularize = parseInt(row.document_to_be_regularized) || 0;
+                                const toCancel = parseInt(row.document_to_be_canceled) || 0;
+                                const total = notSent + toRegularize + toCancel;
+                                value = total > 0 ? `Por enviar: ${notSent}, Rectificar: ${toRegularize}, Anular: ${toCancel}` : 'Todo OK';
+                                break;
+                            case 'inicio_ciclo':
+                                value = row.start_billing_cycle || '';
+                                break;
+                            case 'comprobantes_ciclo':
+                                const countDocMonth = row.count_doc_month || 0;
+                                const saleNotesQty = row.sale_notes_quantity_if_include || 0;
+                                const totalDocs = saleNotesQty > 0 ? (countDocMonth + saleNotesQty) : countDocMonth;
+                                const maxDocs = row.max_documents == 0 ? '∞' : row.max_documents;
+                                value = `${totalDocs} / ${maxDocs}`;
+                                break;
+                            case 'usuarios':
+                                const countUser = row.count_user || 0;
+                                const maxUsers = row.max_users == 0 ? '∞' : row.max_users;
+                                value = `${countUser} / ${maxUsers}`;
+                                break;
+                            case 'sucursales':
+                                const qtyEst = row.quantity_establishments || 0;
+                                const maxEst = row.establishments_unlimited ? '∞' : (row.max_quantity_establishments || 0);
+                                value = `${qtyEst} / ${maxEst}`;
+                                break;
+                            case 'ventas_mes':
+                                const salesTotal = parseFloat(row.monthly_sales_total) || 0;
+                                const maxSales = row.sales_unlimited ? '∞' : (row.max_sales_limit || 0);
+                                value = `${salesTotal} / ${maxSales}`;
+                                break;
+                            case 'fecha_creacion':
+                                value = row.created_at || '';
+                                break;
+                            case 'consultas_api':
+                                value = row.queries_to_apiperu || 0;
+                                break;
+                            case 'notas_venta':
+                                value = row.count_sales_notes || 0;
+                                break;
+                            case 'total_mes':
+                                value = row.current_count_doc_month || 0;
+                                break;
+                            case 'total_pse':
+                                value = row.count_doc_pse || 0;
+                                break;
+                            case 'total_notas':
+                                value = (row.count_doc_month || 0) + (row.count_sales_notes_month || 0);
+                                break;
+                            case 'limitar_doc':
+                                value = row.locked_emission ? 'Sí' : 'No';
+                                break;
+                            case 'limitar_usuarios':
+                                value = row.locked_users ? 'Sí' : 'No';
+                                break;
+                            case 'limitar_sucursales':
+                                value = row.locked_create_establishments ? 'Sí' : 'No';
+                                break;
+                            case 'limitar_ventas':
+                                value = row.restrict_sales_limit ? 'Sí' : 'No';
+                                break;
+                            default:
+                                value = '';
+                        }
+                        
+                        rowData[col.title] = value;
+                    });
+                    
+                    return rowData;
+                });
+
+                // Crear el libro de trabajo
+                const wb = XLSX.utils.book_new();
+                
+                // Crear la hoja de trabajo
+                const ws = XLSX.utils.json_to_sheet(excelData);
+                
+                // Ajustar el ancho de las columnas
+                const colWidths = [
+                    { wch: 5 },  // #
+                    { wch: 20 }, // Hostname
+                ];
+                visibleColumns.forEach(() => {
+                    colWidths.push({ wch: 20 });
+                });
+                ws['!cols'] = colWidths;
+                
+                // Agregar la hoja al libro
+                XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
+                
+                // Generar el nombre del archivo con fecha y hora
+                const now = new Date();
+                const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+                const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '');
+                const fileName = `clientes_${dateStr}_${timeStr}.xlsx`;
+                
+                // Descargar el archivo
+                XLSX.writeFile(wb, fileName);
+                
+                this.$message.success(`Archivo exportado exitosamente: ${fileName}`);
+            } catch (error) {
+                console.error('Error al exportar a Excel:', error);
+                this.$message.error('Error al exportar el archivo Excel');
+            }
         },
     }
 };
