@@ -1,6 +1,6 @@
 /node_modules
 /public/hot
-/public/build
+/public/build/*
 /public/downloads
 public/cookie.txt
 /public/storage
