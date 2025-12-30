@@ -35,7 +35,9 @@
         </div>
     </div> 
     
+@push('scripts')
     <script>
+        console.log("tutoriales");
         // Datos de ejemplo para las categorías y videos con información manual
         const tutorialCategories = [
             {
@@ -798,33 +800,12 @@
         ];
 
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM cargado, iniciando soporte...');
             // Cargar las categorías y videos
             renderTutorials();
             
             // Configurar el modal
             const modal = document.getElementById('videoModal');
-            const closeBtn = document.querySelector('.close');
-            const videoPlayer = document.getElementById('videoPlayer');
-            
-            // Cerrar modal al hacer clic en la X
-            closeBtn.addEventListener('click', function() {
-                modal.style.display = 'none';
-                videoPlayer.src = ''; // Detener el video
-            });
-            
-            // Cerrar modal al hacer clic fuera del contenido
-            window.addEventListener('click', function(event) {
-                if (event.target === modal) {
-                    modal.style.display = 'none';
-                    videoPlayer.src = ''; // Detener el video
-                }
-            });
-            
-            // Configurar búsqueda
-            const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', function() {
-                filterTutorials(this.value);
-            });
         });
         
         // Función para formatear el número de vistas
@@ -862,6 +843,7 @@
         }
         
         function renderTutorials(categories = tutorialCategories) {
+            console.log('Renderizando tutoriales...');
             const container = document.getElementById('tutorial-columns');
             
             // Dividir las categorías en tres columnas
@@ -884,16 +866,16 @@
                     const videoCount = category.videos.length;
                     
                     columnHTML += `
-                        <div class="accordion-soporte" data-category="${category.id}">
-                            <div class="accordion-header">
-                                <button class="accordion-button">
+                        <div class="tf-accordion" data-category="${category.id}">
+                            <div class="tf-accordion-header">
+                                <button type="button" class="tf-accordion-btn">
                                     <span><i class="${category.icon}"></i> ${category.title} <span class="category-counter">${videoCount}</span></span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tf-accordion-icon">
                                         <path d="m6 9 6 6 6-6"></path>
                                     </svg>
                                 </button>
                             </div>
-                            <div class="accordion-content">
+                            <div class="tf-accordion-content">
                                 <div class="video-list">
                     `;
                     
@@ -930,50 +912,76 @@
             });
             
             container.innerHTML = columnsHTML;
-            
-            // Configurar acordeones después de renderizar
-            setupAccordions();
-            
-            // Agregar event listeners a los videos
-            document.querySelectorAll('.video-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const videoUrl = this.getAttribute('data-video-url');
-                    const videoTitle = this.getAttribute('data-video-title');
-                    const videoDescription = this.getAttribute('data-video-description');
-                    
-                    openVideoModal(videoUrl, videoTitle, videoDescription);
-                });
-            });
         }
         
-        function setupAccordions() {
-            const accordionButtons = document.querySelectorAll('.accordion-button');
+        // Configurar eventos globales (Modal y Búsqueda) fuera de DOMContentLoaded para mayor robustez
+        document.addEventListener('click', function(e) {
+            // Delegación para items de video
+            const videoItem = e.target.closest('.video-item');
+            if (videoItem) {
+                console.log('Click detectado en video (delegación)');
+                e.preventDefault();
+                
+                const videoUrl = videoItem.getAttribute('data-video-url');
+                const videoTitle = videoItem.getAttribute('data-video-title');
+                const videoDescription = videoItem.getAttribute('data-video-description');
+                
+                openVideoModal(videoUrl, videoTitle, videoDescription);
+                return; // Evitar que se propague a otros handlers si es necesario
+            }
+
+            // Cerrar modal al hacer clic en la X
+            if (e.target.closest('.close')) {
+                const modal = document.getElementById('videoModal');
+                const videoPlayer = document.getElementById('videoPlayer');
+                if (modal) {
+                    modal.style.display = 'none';
+                    if (videoPlayer) videoPlayer.src = '';
+                }
+            }
             
-            accordionButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const content = button.parentElement.nextElementSibling;
-                    
-                    // Cerrar otros acordeones si está abierto
-                    if (!content.classList.contains('active')) {
-                        document.querySelectorAll('.accordion-content.active').forEach(item => {
-                            item.classList.remove('active');
-                        });
-                        document.querySelectorAll('.accordion-button.active').forEach(item => {
-                            item.classList.remove('active');
-                        });
-                    }
-                    
-                    // Alternar el acordeón actual
-                    button.classList.toggle('active');
-                    content.classList.toggle('active');
-                });
-            });
+            // Cerrar modal al hacer clic fuera del contenido
+            if (e.target.id === 'videoModal') {
+                const modal = document.getElementById('videoModal');
+                const videoPlayer = document.getElementById('videoPlayer');
+                modal.style.display = 'none';
+                if (videoPlayer) videoPlayer.src = '';
+            }
+        });
+        
+        // Configurar delegación de eventos para el acordeón
+        document.addEventListener('click', function(e) {
+            const button = e.target.closest('.tf-accordion-btn');
             
-            // Abrir el primer acordeón por defecto
-            /*if (accordionButtons.length > 0) {
-                accordionButtons[0].click();
-            }*/
-        }
+            if (button) {
+                console.log('Click detectado en botón de acordeón (delegación)');
+                e.preventDefault(); // Prevenir comportamiento por defecto si lo hubiera
+                
+                const content = button.parentElement.nextElementSibling;
+                
+                // Cerrar otros acordeones si está abierto
+                if (!content.classList.contains('active')) {
+                    document.querySelectorAll('.tf-accordion-content.active').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    document.querySelectorAll('.tf-accordion-btn.active').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                }
+                
+                // Alternar el acordeón actual
+                button.classList.toggle('active');
+                content.classList.toggle('active');
+            }
+        });
+
+        // Configurar delegación de eventos para la búsqueda (Solución para Vue/Reemplazo de DOM)
+        document.addEventListener('input', function(e) {
+            if (e.target && e.target.id === 'searchInput') {
+                console.log('Búsqueda detectada (delegación):', e.target.value);
+                filterTutorials(e.target.value);
+            }
+        });
         
         function openVideoModal(videoUrl, title, description) {
             const modal = document.getElementById('videoModal');
@@ -997,14 +1005,17 @@
         }
         
         function filterTutorials(searchTerm) {
-            if (!searchTerm) {
-                renderTutorials();
+            console.log('Filtrando por:', searchTerm);
+            if (!searchTerm || searchTerm.trim() === '') {
+                renderTutorials(tutorialCategories);
                 return;
             }
             
+            const term = searchTerm.toLowerCase().trim();
+            
             const filteredCategories = tutorialCategories.map(category => {
                 const filteredVideos = category.videos.filter(video => 
-                    video.title.toLowerCase().includes(searchTerm.toLowerCase())
+                    video.title.toLowerCase().includes(term)
                 );
                 
                 return {
@@ -1013,11 +1024,27 @@
                 };
             }).filter(category => category.videos.length > 0);
             
+            console.log('Categorías encontradas:', filteredCategories.length);
+            
+            if (filteredCategories.length === 0) {
+                const container = document.getElementById('tutorial-columns');
+                container.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
+                        <i class="fas fa-search" style="font-size: 48px; margin-bottom: 20px; color: #ccc;"></i>
+                        <h3>No se encontraron resultados</h3>
+                        <p>Intenta con otros términos de búsqueda</p>
+                    </div>
+                `;
+                return;
+            }
+
             renderTutorials(filteredCategories);
             
             // Abrir todos los acordeones cuando se filtra
             setTimeout(() => {
-                document.querySelectorAll('.accordion-button').forEach(button => {
+                const buttons = document.querySelectorAll('.tf-accordion-btn');
+                console.log('Expandiendo', buttons.length, 'acordeones');
+                buttons.forEach(button => {
                     const content = button.parentElement.nextElementSibling;
                     button.classList.add('active');
                     content.classList.add('active');
@@ -1025,74 +1052,6 @@
             }, 100);
         }
     </script>
+@endpush
 
-    <style>
-        .video-thumbnail {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            /*padding-top: 56.25%;*/ /* Relación de aspecto 16:9 */
-            overflow: hidden;
-            border-radius: 4px;
-        }
-        
-        .video-thumbnail img {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-        
-        .video-item:hover .video-thumbnail img {
-            transform: scale(1.05);
-        }
-        
-        .video-duration {
-            position: absolute;
-            bottom: 8px;
-            right: 8px;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        
-        .video-item {
-            display: flex;
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
-        
-        .video-item:hover {
-            transform: translateY(-2px);
-        }
-        
-        .video-info {
-            padding: 0 10px;
-            flex: 1;
-        }
-        
-        .video-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        
-        .video-meta {
-            font-size: 12px;
-            color: #666;
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-    </style>
 @endsection

@@ -89,7 +89,7 @@
 
     <link rel="stylesheet" href="{{ asset('porto-light/css/tukifac.css') }}?v=0.0.12" /><!--tukifac-->
     <link rel="stylesheet" href="{{ asset('css/tukifac-inicio.css') }}?v=0.0.07" /><!--tukifac-->
-    <link rel="stylesheet" href="{{ asset('css/tukifac-soporte.css') }}?v=0.0.04" /><!--tukifac-->
+    <link rel="stylesheet" href="{{ asset('css/tukifac-soporte.css') }}?v=0.0.05" /><!--tukifac-->
     {{--<link rel="stylesheet" href="{{ asset('porto-light/css/theme.css') }}" />--}}
     {{--<link rel="stylesheet" href="{{ asset('porto-light/css/custom.css') }}" />
 
