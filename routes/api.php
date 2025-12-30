@@ -119,7 +119,7 @@ if ($hostname) {
 } else {
     Route::domain(env('APP_URL_BASE'))->group(function () {
 
-
+        Route::get('services/search-company/{number}', 'System\Api\CompanySearchController@search');
         Route::middleware(['auth:system_api'])->group(function () {
 
             //reseller

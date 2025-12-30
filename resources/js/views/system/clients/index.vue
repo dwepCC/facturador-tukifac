@@ -486,7 +486,37 @@
                             <th class="text-end">Acciones</th>
                         </tr>
                         </thead>
-                        <tbody>
+                        <tbody v-if="loading">
+                            <tr v-for="i in 5" :key="i">
+                                <td><div class="shimmer-wrapper" style="width: 20px"></div></td>
+                                <td class="sticky-column"><div class="shimmer-wrapper" style="width: 150px;"></div></td>
+                                <td v-if="columns.bloquear_cuenta.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.nombre.visible"><div class="shimmer-wrapper" style="width: 200px;"></div></td>
+                                <td v-if="columns.ruc.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.plan.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.correo.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.entorno.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.total_comprobantes.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.notificaciones.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.inicio_ciclo.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.comprobantes_ciclo.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.usuarios.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.sucursales.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.ventas_mes.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.fecha_creacion.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.consultas_api.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.notas_venta.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.total_mes.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.total_pse.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.total_notas.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.limitar_doc.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.limitar_usuarios.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.limitar_sucursales.visible"><div class="shimmer-wrapper"></div></td>
+                                <td v-if="columns.limitar_ventas.visible"><div class="shimmer-wrapper"></div></td>
+                                <td><div class="shimmer-wrapper"></div></td>
+                            </tr>
+                        </tbody>
+                        <tbody v-else>
                             <tr v-for="(row, index) in paginatedRecords" :key="index">
                             <td>{{ ((pagination.currentPage - 1) * pagination.itemsPerPage) + index + 1 }}</td>
                             <td class="sticky-column">
@@ -1019,6 +1049,7 @@ export default {
             records: [],
             text_limit_doc: null,
             text_limit_users: null,
+            loading: false,
             loaded: false,
             chartDataLoaded: false,
             year: moment().format('YYYY'),
@@ -1670,6 +1701,7 @@ export default {
                 });
         },
         getData() {
+            this.loading = true;
             // Construir parámetros para la petición
             let params = {};
             
@@ -1686,6 +1718,8 @@ export default {
             }).catch(error => {
                 console.error('Error al obtener datos:', error);
                 this.$message.error('Error al cargar los datos');
+            }).finally(() => {
+                this.loading = false;
             });
         },
         clickCreate(recordId = null) {
@@ -1774,6 +1808,31 @@ export default {
 </script>
 
 <style scoped>
+/* Shimmer Effect */
+.shimmer-wrapper {
+    animation-duration: 1.5s;
+    animation-fill-mode: forwards;
+    animation-iteration-count: infinite;
+    animation-name: shimmer;
+    animation-timing-function: linear;
+    background: #f6f6f6;
+    background: linear-gradient(to right, #f6f6f6 8%, #e0e0e0 18%, #f6f6f6 33%);
+    background-size: 1000px 104px;
+    height: 20px;
+    position: relative;
+    width: 100%;
+    border-radius: 4px;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -468px 0;
+    }
+    100% {
+        background-position: 468px 0;
+    }
+}
+
 /* Estilos para ordenamiento */
 .sortable-header {
     cursor: pointer;
