@@ -172,10 +172,6 @@ export default {
     created() {
         this.initForm()
         this.loadConfiguration(this.$store)
-        this.configuration = this.$store.state.config;
-        console.log('this.configuration asignado:', this.configuration);
-        this.$store.commit('setConfiguration', this.configuration)
-
     },
     mounted() {
         if(navigator.userAgent.indexOf("Safari") != -1) {

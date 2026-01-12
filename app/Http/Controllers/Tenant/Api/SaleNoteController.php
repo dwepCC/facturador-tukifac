@@ -37,6 +37,7 @@ use App\CoreFacturalo\Helpers\Number\NumberLetter;
 use App\CoreFacturalo\Helpers\Storage\StorageDocument;
 use App\CoreFacturalo\Requests\Inputs\Common\PersonInput;
 use App\CoreFacturalo\Requests\Inputs\Common\EstablishmentInput;
+use App\Models\Tenant\BankAccount;
 use Illuminate\Support\Arr;
 
 
@@ -122,6 +123,9 @@ class SaleNoteController extends Controller
             $this->createPdf($this->sale_note, 'a4', $this->sale_note->filename);
         });
 
+        // Construir print_data según la estructura documentada
+        $printData = $this->buildPrintData($this->sale_note);
+
         return [
             'success' => true,
             'data' => [
@@ -139,7 +143,8 @@ class SaleNoteController extends Controller
                 "pdf_a4_filename" => url('')."/api/document-file/salenote/{$this->sale_note->external_id}/a4",
                 "full_filename" => $this->sale_note->filename.".pdf",
                 "customer_telephone" => optional($this->sale_note->person)->telephone
-            ] 
+            ],
+            'print_data' => $printData,
         ];
     }
 
@@ -729,5 +734,269 @@ class SaleNoteController extends Controller
     private function getStateTypeDescription($id)
     {
         return StateType::find($id)->description;
+    }
+
+    /**
+     * Construye la estructura print_data según la documentación ESTRUCTURA_PRINT_DATA.md
+     *
+     * @param SaleNote $saleNote
+     * @return array
+     */
+    private function buildPrintData($saleNote)
+    {
+        // Asegurar que las relaciones necesarias estén cargadas
+        $saleNote->load([
+            'items', 
+            'payments.payment_method_type', 
+            'person',
+            'establishment.district',
+            'establishment.province',
+            'establishment.department',
+            'seller',
+            'payment_condition'
+        ]);
+
+        // Obtener información de la empresa (igual que en el PDF)
+        $company = Company::active();
+        $companyData = null;
+        if ($company) {
+            // En SaleNote, establishment es una relación real
+            $establishment = $saleNote->establishment;
+            
+            // Obtener logo (igual que en el PDF)
+            $logoBase64 = null;
+            $logo = null;
+            if ($company->logo) {
+                $logo = "storage/uploads/logos/{$company->logo}";
+            }
+            // Si el establishment tiene logo, se usa ese (igual que en el PDF)
+            if ($establishment && $establishment->logo) {
+                $logo = $establishment->logo;
+            }
+            
+            // Convertir logo a base64 (igual que en el PDF)
+            if ($logo && file_exists(public_path($logo))) {
+                try {
+                    $logoBase64 = base64_encode(file_get_contents(public_path($logo)));
+                } catch (\Exception $e) {
+                    // Si falla la lectura, dejar null
+                    $logoBase64 = null;
+                }
+            }
+            
+            // Construir dirección completa como en el PDF
+            $address = '';
+            if ($establishment && $establishment->address && $establishment->address !== '-') {
+                $address = $establishment->address;
+                if ($establishment->district) {
+                    $address .= ', ' . $establishment->district->description;
+                }
+                if ($establishment->province) {
+                    $address .= ', ' . $establishment->province->description;
+                }
+                if ($establishment->department) {
+                    $address .= ' - ' . $establishment->department->description;
+                }
+            }
+            
+            $companyData = [
+                'name' => $company->name ?? '',
+                'ruc' => $company->number ?? '',
+                'address' => $address,
+                'commercial_address' => ($establishment && $establishment->trade_address && $establishment->trade_address !== '-') ? $establishment->trade_address : '',
+                'phone' => ($establishment && $establishment->telephone && $establishment->telephone !== '-') ? $establishment->telephone : '',
+                'email' => ($establishment && $establishment->email && $establishment->email !== '-') ? $establishment->email : '',
+                'web' => ($establishment && $establishment->web_address && $establishment->web_address !== '-') ? $establishment->web_address : '',
+                'slogan' => ($establishment && $establishment->aditional_information && $establishment->aditional_information !== '-') ? $establishment->aditional_information : '',
+                'logo' => $logoBase64,
+            ];
+        }
+
+        // Tipo de documento (Nota de Venta)
+        $documentType = 'NOTA DE VENTA';
+
+        // Construir items
+        $items = $saleNote->items->map(function ($item) {
+            // Obtener el nombre del producto desde el atributo item (objeto JSON)
+            $itemName = '';
+            $itemCode = '';
+            $unitType = 'NIU';
+            
+            if ($item->item) {
+                $itemName = $item->item->description ?? '';
+                $itemCode = $item->item->internal_id ?? $item->item->item_code ?? '';
+                $unitType = $item->item->unit_type_id ?? 'NIU';
+            }
+            
+            return [
+                'code' => $itemCode,
+                'cod' => $itemCode,
+                'name' => $itemName,
+                'description' => $itemName,
+                'product_name' => $itemName,
+                'quantity' => (float) $item->quantity,
+                'qty' => (float) $item->quantity,
+                'amount' => (float) $item->quantity,
+                'unit' => $unitType,
+                'unidad' => $unitType,
+                'price' => (float) $item->unit_price,
+                'unit_price' => (float) $item->unit_price,
+                'sale_unit_price' => (float) $item->unit_price,
+                'subtotal' => (float) $item->total,
+                'total' => (float) $item->total,
+            ];
+        })->toArray();
+
+        // Obtener información de pagos
+        $firstPayment = $saleNote->payments->first();
+        $paymentMethod = null;
+        
+        if ($firstPayment && $firstPayment->payment_method_type) {
+            $paymentMethod = $firstPayment->payment_method_type->description;
+        } elseif ($saleNote->payment_method_type) {
+            $paymentMethod = $saleNote->payment_method_type->description;
+        }
+        
+        // Calcular efectivo (suma de todos los pagos)
+        $cash = (float) $saleNote->payments->sum('payment');
+        
+        // Calcular cambio (suma de todos los cambios o del primero)
+        $change = 0;
+        if ($firstPayment) {
+            $change = (float) ($firstPayment->change ?? 0);
+        }
+
+        // Construir fecha con hora si está disponible
+        $date = '';
+        $issueTime = '';
+        if ($saleNote->date_of_issue) {
+            if (is_string($saleNote->date_of_issue)) {
+                $date = $saleNote->date_of_issue;
+            } else {
+                $date = $saleNote->date_of_issue->format('Y-m-d');
+            }
+            
+            if ($saleNote->time_of_issue) {
+                $issueTime = $saleNote->time_of_issue;
+                $date .= ' ' . $issueTime;
+            }
+        }
+
+        // Fecha de vencimiento
+        $dueDate = null;
+        if ($saleNote->due_date) {
+            $dueDate = is_string($saleNote->due_date) 
+                ? $saleNote->due_date 
+                : $saleNote->due_date->format('Y-m-d');
+        }
+
+        // Construir datos del cliente si existe
+        $customer = null;
+        if ($saleNote->person) {
+            $customer = [
+                'name' => $saleNote->person->name ?? '',
+                'number' => $saleNote->person->number ?? '',
+                'address' => $saleNote->person->address ?? '',
+                'email' => $saleNote->person->email ?? '',
+                'telephone' => $saleNote->person->telephone ?? '',
+                'doc_trib_no_dom_sin_ruc' => $saleNote->person->number ?? '',
+            ];
+        }
+
+        // Total en palabras - obtener desde legends directamente (igual que en el PDF)
+        // En el PDF se usa: array_reverse((array) $document->legends)
+        $totalInWords = '';
+        
+        // Acceder directamente al atributo sin usar el accessor que puede causar error
+        $legendsRaw = $saleNote->attributes['legends'] ?? null;
+        
+        if ($legendsRaw !== null) {
+            $legendsArray = json_decode($legendsRaw, true);
+            if (is_array($legendsArray)) {
+                $legend = collect($legendsArray)->where('code', '1000')->first();
+                if ($legend && isset($legend['value'])) {
+                    $totalInWords = $legend['value'];
+                }
+            }
+        }
+        
+        // Si no existe en legends, generar automáticamente
+        if (empty($totalInWords) && $saleNote->total) {
+            $converted = NumberLetter::convertToLetter($saleNote->total, 'Soles');
+            if ($converted && $converted !== 'No es posible convertir el numero en letras') {
+                $totalInWords = 'Son: ' . ucfirst(trim($converted));
+            }
+        }
+
+        // Condición de pago
+        $paymentCondition = 'Contado';
+        if ($saleNote->payment_condition) {
+            $paymentCondition = $saleNote->payment_condition->name;
+        } elseif ($paymentMethod) {
+            $paymentCondition = $paymentMethod;
+        }
+
+        // Cuentas bancarias
+        $bankAccounts = [];
+        $bankAccountsData = BankAccount::where('show_in_documents', true)
+            ->where('status', 1)
+            ->with('bank')
+            ->get();
+        
+        foreach ($bankAccountsData as $bankAccount) {
+            if ($bankAccount->bank) {
+                $bankAccounts[] = [
+                    'bank_name' => $bankAccount->bank->description ?? '',
+                    'account_number' => $bankAccount->number ?? '',
+                    'cci' => $bankAccount->cci ?? '',
+                ];
+            }
+        }
+
+        // QR Data (las notas de venta no tienen QR)
+        $qrData = null;
+
+        // Hash code (las notas de venta no tienen hash)
+        $hashCode = null;
+
+        // Vendedor
+        $seller = null;
+        if ($saleNote->seller) {
+            $seller = $saleNote->seller->name ?? '';
+        }
+
+        return [
+            'company' => $companyData,
+            'document_type' => $documentType,
+            'number' => $saleNote->series."-".str_pad($saleNote->number, 8, '0', STR_PAD_LEFT),
+            'date' => $date,
+            'date_of_issue' => $date,
+            'issue_time' => $issueTime,
+            'due_date' => $dueDate,
+            'customer' => $customer,
+            'items' => $items,
+            'subtotal' => (float) ($saleNote->total_value ?? 0),
+            'total_value' => (float) ($saleNote->total_value ?? 0),
+            'taxable_operations' => (float) ($saleNote->total_taxed ?? 0),
+            'tax' => (float) ($saleNote->total_igv ?? 0),
+            'total_igv' => (float) ($saleNote->total_igv ?? 0),
+            'total_taxes' => (float) ($saleNote->total_igv ?? 0),
+            'total' => (float) ($saleNote->total ?? 0),
+            'total_venta' => (float) ($saleNote->total ?? 0),
+            'total_in_words' => $totalInWords,
+            'payment_method' => $paymentMethod,
+            'paymentMethod' => $paymentMethod,
+            'payment_method_name' => $paymentMethod,
+            'payment_condition' => $paymentCondition,
+            'cash' => $cash,
+            'efectivo' => $cash,
+            'change' => $change,
+            'vuelto' => $change,
+            'bank_accounts' => $bankAccounts,
+            'qr_data' => $qrData,
+            'hash_code' => $hashCode,
+            'seller' => $seller,
+            'vendedor' => $seller,
+        ];
     }
 }

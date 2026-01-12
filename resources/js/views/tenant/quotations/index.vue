@@ -331,7 +331,6 @@
                                 PDF
                             </button>
                         </td>
-
                         <td class="text-end">
                             <el-dropdown trigger="click" placement="bottom-end">
                                 <el-button class="btn-dropdown">
@@ -419,35 +418,6 @@
                                     </el-dropdown-item>
                                 </el-dropdown-menu>
                             </el-dropdown>
-
-                            
-
-                            <a v-if="row.documents.length == 0 && row.state_type_id != '11'"
-                               :href="`/${resource}/edit/${row.id}`" type="button"
-                               class="btn waves-effect waves-light btn-xs btn-info">Editar</a>
-
-                            <button v-if="row.documents.length == 0 && row.state_type_id != '11'" type="button"
-                                    class="btn waves-effect waves-light btn-xs btn-danger"
-                                    @click.prevent="clickAnulate(row.id)">Anular
-                            </button>
-
-                            <button @click="duplicate(row.id)" type="button"
-                                    class="btn waves-effect waves-light btn-xs btn-info">Duplicar
-                            </button>
-
-                            <a :href="`/dispatches/create/${row.id}/q`"
-                               class="btn waves-effect waves-light btn-xs btn-warning m-1__2">Guía</a>
-
-                            <template v-if="row.btn_generate_cnt && row.state_type_id != '11'">
-                                <a :href="`/contracts/generate-quotation/${row.id}`"
-                                   class="btn waves-effect waves-light btn-xs btn-primary m-1__2">Generar contrato</a>
-                            </template>
-                            <template v-else>
-                                <button type="button" @click="clickPrintContract(row.external_id_contract)"
-                                        class="btn waves-effect waves-light btn-xs btn-primary m-1__2">Ver contrato
-                                </button>
-                            </template> 
-
                         </td>
                     </tr>
                 </data-table>
