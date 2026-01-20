@@ -27,6 +27,7 @@ class RestaurantItemOrderStatusController extends Controller
         $orderStatus->note = $request->note;
         $orderStatus->status = $request->status;
         $orderStatus->status_description = $request->status_description;
+        $orderStatus->customer_name = $request->customer_name;
         $orderStatus->save();
 
         return [
@@ -86,10 +87,11 @@ class RestaurantItemOrderStatusController extends Controller
             'note' => $order->note ?? null,
             'status' => $order->status,
             'status_description' => $order->status_description,
+            'customer_name' => $order->customer_name,
             'mesa_id' => $order->table_id,
-            'mesa' => $order->table->label ?? null,
-            'environment_id' => $order->table->environment_id ?? null,
-            'environment' => $order->table->environment ?? null,
+            'mesa' => optional($order->table)->label,
+            'environment_id' => optional($order->table)->environment_id,
+            'environment' => optional($order->table)->environment,
         ];
     }
 

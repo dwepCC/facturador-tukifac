@@ -15,7 +15,8 @@ class RestaurantItemOrderStatus extends ModelTenant
         'quantity',
         'note',
         'status',
-        'status_description'
+        'status_description',
+        'customer_name'
     ];
     
     public function table()
