@@ -98,14 +98,27 @@ class RestaurantItemOrderStatusController extends Controller
     public function setStatusItem($id)
     {
         $order = RestaurantItemOrderStatus::where('id', $id)->first();
-        if($order->status < 4){
-            $order->status += 1; 
+
+        if ($order) {
+            if ($order->status < 4) {
+                $order->status += 1;
+            }
+            $order->save();
+
+            // Lógica para pedidos rápidos (sin mesa): Eliminar al entregar (Estado 4)
+            if (is_null($order->table_id) && $order->status == 4) {
+                $order->delete();
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Estado cambiado con éxito'
+            ];
         }
-        $order->save();
-        
+
         return [
-            'success' => ($order)?true:false,
-            'message' => 'Estado cambiado con éxito'
+            'success' => false,
+            'message' => 'Pedido no encontrado'
         ];
     }
 
