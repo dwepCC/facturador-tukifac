@@ -9,10 +9,31 @@ use App\Models\Tenant\Document;
 use App\Models\Tenant\SaleNote;
 use App\Models\Tenant\CashDocumentCredit;
 use App\Models\Tenant\CashDocumentPayment;
-
+use App\Http\Resources\Tenant\CashCollection;
 
 class CashController extends Controller
 {
+
+    public function records(Request $request)
+    {
+        $query = Cash::withOut(['cash_documents'])
+                ->whereTypeUser();
+                
+        if ($request->column == 'user') {   
+            $query->whereHas('user', function($q) use($request) {
+                $q->where('name', 'like', "%{$request->value}%");
+            });
+        } else {
+            if ($request->has('column') && $request->has('value')) {
+                $query->where($request->column, 'like', "%{$request->value}%");
+            }
+        }
+    
+        $query->orderBy('date_opening', 'DESC')
+                ->orderBy('time_opening','desc');
+
+        return new CashCollection($query->paginate(config('tenant.items_per_page')));
+    }
 
     /**
      * web service para recibo de documentos junto con caja

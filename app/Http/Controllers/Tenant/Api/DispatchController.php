@@ -136,8 +136,10 @@ class DispatchController extends Controller
     public function records(Request $request)
     {
         $input = $request->input;
+        $document_type_id = $request->input('document_type_id', '09');
+
         $records = Dispatch::query()
-            ->where('document_type_id', '09')
+            ->where('document_type_id', $document_type_id)
             ->when($input, function ($query) use ($input) {
                 return $query
                     ->where('series', 'like', '%' . $input . '%')

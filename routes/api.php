@@ -81,6 +81,7 @@ if ($hostname) {
             Route::get('cash/opening_cash', 'Tenant\Api\CashController@opening_cash');
             Route::get('cash/opening_cash_check/{cash_id}', 'Tenant\Api\CashController@opening_cash_check');
             Route::get('cash/available-restaurant', 'Tenant\Api\CashController@cash_available');
+            Route::get('cash/records', 'Tenant\Api\CashController@records');
             Route::post('cash/open', 'Tenant\CashController@store');
             Route::get('cash/close/{cash}', 'Tenant\Api\CashController@close');
 
