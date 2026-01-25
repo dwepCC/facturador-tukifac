@@ -435,12 +435,17 @@ class MobileController extends Controller
         }
         else
         {
-            $item_query->where('description', 'like', "%{$request->input}%")->orWhere('internal_id', 'like', "%{$request->input}%");
+            $item_query->where(function($q) use($request){
+                $q->where('description', 'like', "%{$request->input}%")
+                  ->orWhere('internal_id', 'like', "%{$request->input}%")
+                  ->orWhere('barcode', $request->input);
+            });
 
             if($limit) $item_query->limit($limit);
         }
 
-        $items = $item_query->whereHasInternalId()
+        $items = $item_query
+                    // ->whereHasInternalId()
                     ->whereWarehouse()
                     // ->whereNotIsSet()
                     ->filterByCategory($category_id)

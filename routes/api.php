@@ -84,6 +84,15 @@ if ($hostname) {
             Route::post('cash/open', 'Tenant\CashController@store');
             Route::get('cash/close/{cash}', 'Tenant\Api\CashController@close');
 
+            //Users
+            Route::get('users/tables', 'Tenant\UserController@tables');
+            Route::get('users/record/{user}', 'Tenant\UserController@record');
+            Route::post('users', 'Tenant\UserController@store');
+            Route::post('users/token/{user}', 'Tenant\UserController@regenerateToken');
+            Route::get('users/records', 'Tenant\UserController@records');
+            Route::delete('users/{user}', 'Tenant\UserController@destroy');
+            Route::post('users/change-active', 'Tenant\UserController@changeActive');
+
             //Vendeya
             Route::prefix('sellnow')->group(function () {
                 Route::get('/items', 'Tenant\Api\SellnowController@items');
