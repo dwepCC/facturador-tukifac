@@ -279,7 +279,7 @@
                 $iut = $item;
                 $data = [
                     'customer_id' => $plan->parent_customer_id,
-                    'customer' => json_decode(json_encode($customer), true),
+                    'customer' => $customer,
                     'exchange_rate_sale' => $plan->getExchangeRate(),
                     'currency_type_id' => $plan->currency_type_id,
                     'date_of_issue' => $date_of_issue->format('Y-m-d'),
@@ -296,25 +296,25 @@
                     'time_of_issue' => $time_of_issue,
 
 
-                    "total_prepayment" => (float)($plan->total_prepayment ?? 0),
-                    "total_charge" => (float)($plan->total_charge ?? 0),
-                    "total_discount" => (float)($plan->total_discount ?? 0),
-                    "total_free" => (float)($plan->total_free ?? 0),
-                    "total_exportation" => (float)($plan->total_exportation ?? 0),
-                    "total_taxed" => (float)($plan->total_taxed ?? 0),
-                    "total_unaffected" => (float)($plan->total_unaffected ?? 0),
-                    "total_exonerated" => (float)($plan->total_exonerated ?? 0),
+                    "total_prepayment" => $plan->total_prepayment,
+                    "total_charge" => $plan->total_charge,
+                    "total_discount" => $plan->total_discount,
+                    "total_free" => $plan->total_free,
+                    "total_exportation" => $plan->total_exportation,
+                    "total_taxed" => $plan->total_taxed,
+                    "total_unaffected" => $plan->total_unaffected,
+                    "total_exonerated" => $plan->total_exonerated,
 
 
-                    "total_igv" => (float)($plan->total_igv ?? 0),
-                    "total_base_isc" => (float)($plan->total_base_isc ?? 0),
-                    "total_isc" => (float)($plan->total_isc ?? 0),
-                    "total_base_other_taxes" => (float)($plan->total_base_other_taxes ?? 0),
-                    "total_other_taxes" => (float)($plan->total_other_taxes ?? 0),
-                    "total_taxes" => (float)($plan->total_taxes ?? 0),
-                    "total_value" => (float)($plan->total_value ?? 0),
+                    "total_igv" => $plan->total_igv,
+                    "total_base_isc" => $plan->total_base_isc,
+                    "total_isc" => $plan->total_isc,
+                    "total_base_other_taxes" => $plan->total_base_other_taxes,
+                    "total_other_taxes" => $plan->total_other_taxes,
+                    "total_taxes" => $plan->total_taxes,
+                    "total_value" => $plan->total_value,
                     // "subtotal" => $plan->subtotal,
-                    "total" => (float)($plan->total ?? 0),
+                    "total" => $plan->total,
                     "operation_type_id" => null,
 
 

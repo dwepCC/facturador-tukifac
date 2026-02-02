@@ -15,7 +15,7 @@
         </template>
     </el-input>
 </template>
-<style>
+<style scoped>
 .btn-sunat-reniec{
     position: absolute;
     top: -3px;

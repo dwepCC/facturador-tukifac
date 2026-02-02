@@ -28,6 +28,7 @@ use Modules\LevelAccess\Models\ModuleLevel;
 use App\Models\Tenant\Skin;
 use Modules\Finance\Helpers\UploadFileHelper;
 use App\Models\Tenant\ConfigurationEcommerce;
+use App\Models\Tenant\TemplateColumnsConfig;
 
 
 class ConfigurationController extends Controller
@@ -269,6 +270,65 @@ class ConfigurationController extends Controller
         ];
     }
 
+    /**
+     * Guardar configuración de columnas para plantilla personalizable
+     */
+    public function saveColumnsConfig(Request $request)
+    {
+        $request->validate([
+            'establishment' => 'required|integer',
+            'columns' => 'required|array',
+        ]);
+
+        // Verificar que el establecimiento existe en la base de datos del tenant
+        $establishment = Establishment::find($request->establishment);
+        
+        if (!$establishment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Establecimiento no encontrado'
+            ], 404);
+        }
+
+        $config = TemplateColumnsConfig::updateOrCreate(
+            [
+                'establishment_id' => $request->establishment,
+                'template_name' => 'Plantilla_personalizable',
+            ],
+            [
+                'columns_config' => $request->columns,
+            ]
+        );
+
+        return [
+            'success' => true,
+            'message' => 'Configuración de columnas guardada exitosamente',
+            'data' => $config
+        ];
+    }
+
+    /**
+     * Obtener configuración de columnas para plantilla personalizable
+     */
+    public function getColumnsConfig(Request $request)
+    {
+        $establishmentId = $request->get('establishment_id');
+        
+        if (!$establishmentId) {
+            return [
+                'success' => false,
+                'message' => 'ID de establecimiento requerido'
+            ];
+        }
+
+        $config = TemplateColumnsConfig::getOrCreateConfig($establishmentId);
+
+        return [
+            'success' => true,
+            'data' => $config->columns_config
+        ];
+    }
+
     public function getFormats()
     {
         $formats = FormatTemplate::get()->transform(function($row) {
@@ -326,6 +386,7 @@ class ConfigurationController extends Controller
                     'default_image' => $configuration->product_default_image,
                     'restaurant_tip_factor' => $configuration->restaurant_tip_factor,
                     'is_restaurant_active' => $is_restaurant_active,
+                    'sidebar_mode' => $configuration->sidebar_mode ?? 'light',
                 ]
             )
         ];
@@ -427,6 +488,8 @@ class ConfigurationController extends Controller
             'bg'       => 'light',
             'header'   => 'light',
             'sidebars' => 'light',
+            'sidebar_margin' => true,
+            'show_welcome_panel' => true,
         ];
         $configuration = Configuration::first();
         $configuration->visual = $defaults;
@@ -440,16 +503,42 @@ class ConfigurationController extends Controller
 
     public function visualSettings(Request $request)
     {
+        $configuration = Configuration::find(1);
+
+        $currentVisual = $configuration->visual;
+        $currentSidebarMargin = (is_object($currentVisual) && property_exists($currentVisual, 'sidebar_margin'))
+            ? (bool)$currentVisual->sidebar_margin
+            : true;
+
+        $currentShowWelcome = true;
+        if (is_object($currentVisual) && property_exists($currentVisual, 'show_welcome_panel')) {
+            $currentShowWelcome = (bool)$currentVisual->show_welcome_panel;
+        } elseif (is_array($currentVisual) && array_key_exists('show_welcome_panel', $currentVisual)) {
+            $currentShowWelcome = (bool)$currentVisual['show_welcome_panel'];
+        }
+
+        $sidebarMargin = $currentSidebarMargin;
+        if ($request->has('sidebar_margin')) {
+            $parsed = filter_var($request->sidebar_margin, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            $sidebarMargin = is_null($parsed) ? $currentSidebarMargin : $parsed;
+        }
+
         $visuals = [
-            'bg'       => $request->bg,
-            'header'   => $request->header,
+            'bg' => $request->bg,
+            'header' => $request->header,
             'sidebars' => $request->sidebars,
             'navbar' => $request->navbar,
-            'sidebar_theme' => $request->sidebar_theme
+            'sidebar_theme' => $request->sidebar_theme,
+            'black_theme' => $request->black_theme,
+            'sidebar_margin' => $sidebarMargin,
+            'show_welcome_panel' => $request->has('show_welcome_panel')
+                ? (filter_var($request->show_welcome_panel, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $currentShowWelcome)
+                : $currentShowWelcome,
         ];
-
-        $configuration = Configuration::find(1);
         $configuration->visual = $visuals;
+        if ($request->has('sidebar_mode')) {
+            $configuration->sidebar_mode = $request->sidebar_mode;
+        }
         $configuration->save();
 
         return [

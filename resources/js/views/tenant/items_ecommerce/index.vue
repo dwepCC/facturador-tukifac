@@ -126,7 +126,7 @@
                                 </button>
                                 <button
                                     type="button"
-                                    class="btn waves-effect waves-light btn-xs btn-danger"
+                                    class="btn waves-effect waves-light btn-xs btn-danger ms-1"
                                     @click.prevent="clickDelete(row.id)"
                                 >
                                     Eliminar

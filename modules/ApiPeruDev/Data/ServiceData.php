@@ -160,6 +160,7 @@ class ServiceData
                     $address = $data['direccion'];
                 }
 
+                $is_agent_retention = $this->getAgentRetention($response, $data);
                 $res_data = [
                     'name' => $data['nombre_o_razon_social'],
                     'trade_name' => '',
@@ -170,6 +171,7 @@ class ServiceData
                     'location_id' => $data['ubigeo'],
                     'condition' => $data['condicion'],
                     'state' => $data['estado'],
+                    'is_agent_retention' => $is_agent_retention,
                 ];
             }
             $response['data'] = $res_data;
@@ -186,6 +188,21 @@ class ServiceData
         $this->saveService(2);
 
         return json_decode($res->getBody()->getContents(), true);
+    }
+    private function getAgentRetention($response, $data)
+    {
+        $is_agent_retention = false;
+
+        if(isset($data['es_agente_de_retencion']))
+        {
+            $is_agent_retention = ($data['es_agente_de_retencion'] === 'SI');
+        }
+        else if(isset($response['es_agente_de_retencion']))
+        {
+            $is_agent_retention = ($response['es_agente_de_retencion'] === 'SI');
+        }
+
+        return $is_agent_retention;
     }
 
     public function cpe($company_number, $document_type_id, $series, $number, $date_of_issue, $total)

@@ -70,6 +70,7 @@ class UserController extends Controller
         }])
                          ->orderBy('order_menu')
                          ->whereIn('id', $modulesTenant)
+                         ->where('value', '!=', 'production_app')
                          ->get()
                          ->each(function ($module) {
                              return $this->prepareModules($module);

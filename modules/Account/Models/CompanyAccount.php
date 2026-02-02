@@ -15,7 +15,9 @@ class CompanyAccount extends ModelTenant
         'igv_pen', 
         'subtotal_usd', 
         'total_usd', 
-        'igv_usd', 
+        'igv_usd',
+        'exonerated',
+        'unaffected'
     ];
   
 

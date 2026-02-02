@@ -42,7 +42,7 @@
                             </div>
                         </template>
                         <template v-else>
-                            <div class="tooltips-container" style="top: 44px;" v-show="hasSelectedItem">
+                            <div class="tooltips-container" style="top: 46px;" v-show="hasSelectedItem">
                                 <el-tooltip
                                     slot="append"
                                     :disabled="recordItem != null"
@@ -81,17 +81,17 @@
                                 :class="{ 'has-danger': errors.item_id }"
                                 class="form-group more-width-input"
                             >
-                                <label class="control-label">
+                                <label class="control-label d-flex align-items-center">
                                     Producto/Servicio
-                                    <a
+                                    <span
+                                        class="btn-add-new-product"
                                         v-if="can_add_new_product"
-                                        href="#"
                                         @click.prevent="
                                             showDialogNewItem = true
                                         "
                                     >
-                                        [+ Nuevo]
-                                    </a>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                                    </span>
                                 </label>
 
                                 <template
@@ -138,6 +138,23 @@
                                                     :value="option.id"
                                                 ></el-option>
                                             </el-tooltip>
+                                            <template slot="empty">
+                                                <p v-if="loading_search" class="el-select-dropdown__empty">
+                                                    Cargando...
+                                                </p>
+                                            
+                                                <p v-else class="el-select-dropdown__empty">
+                                                    No se encontraron resultados
+                                                </p>
+                                            
+                                                <div
+                                                    v-if="!loading_search"
+                                                    class="el-select-dropdown__item new-option"
+                                                    @click.stop="openNewItemDialog"
+                                                >
+                                                    <span>{{ itemSearchTerm ? `Crear producto "${itemSearchTerm}"` : 'Crear producto' }}</span>
+                                                </div>
+                                            </template>
                                         </el-select>
                                     </el-input>
                                 </template>
@@ -531,13 +548,13 @@
                                             </th>
                                             <th class="text-center">Factor</th>
                                             <th class="text-center">
-                                                Precio 1
+                                                {{ config.price1_label }}
                                             </th>
                                             <th class="text-center">
-                                                Precio 2
+                                                {{ config.price2_label }}
                                             </th>
                                             <th class="text-center">
-                                                Precio 3
+                                                {{ config.price3_label }}
                                             </th>
                                             <!-- <th class="text-center">Precio Default</th>
                                         <th></th> -->
@@ -892,43 +909,12 @@
             </div>
             <!-- @todo: Mejorar evitando duplicar codigo -->
             <!-- Mostrar en cel -->
-
-            <div class="row d-md-none form-actions text-center">
-                <div class="col-12"></div>
-                <div class="col-6">
-                    <el-popover
-                        placement="top-start"
-                        :open-delay="1000"
-                        width="145"
-                        trigger="hover"
-                        content="Presiona ESC"
-                    >
-                        <el-button
-                            slot="reference"
-                            class="second-buton"
-                            @click.prevent="close()"
-                        >
-                            Cerrar
-                        </el-button>
-                    </el-popover>
-                </div>
-                <div class="col-6">
-                    <el-button
-                        v-if="form.item_id"
-                        class="add form-control btn btn-primary"
-                        native-type="submit"
-                        type="primary"
-                    >
-                        {{ titleAction }}
-                    </el-button>
-                </div>
-            </div>
             <!-- @todo: Mejorar evitando duplicar codigo -->
             <!-- Mostrar en cel -->
             <!-- @todo: Mejorar evitando duplicar codigo -->
             <!-- Ocultar en cel -->
 
-            <div class="form-actions text-end pt-2 d-none d-md-block">
+            <div class="form-actions text-end pt-2">
                 <el-button class="second-buton me-2" @click.prevent="close()"
                     >Cerrar</el-button
                 >
@@ -947,6 +933,7 @@
         <item-form
             :external="true"
             :showDialog.sync="showDialogNewItem"
+            :input_item="itemSearchTerm"
         ></item-form>
         <warehouses-detail
             :isUpdateWarehouseId="isUpdateWarehouseId"
@@ -1113,21 +1100,33 @@ export default {
             //item_unit_type: {}
             input_search_by_serie: "",
             various_item: false,
-            various_item_barcode: "VARIOUS_ITEM"
+            various_item_barcode: "VARIOUS_ITEM",
+            itemSearchTerm: ''
         };
+    },
+    watch: {
+        showDialog(newVal) {
+            if (newVal) {
+                this.itemSearchTerm = ''
+            }
+        }
     },
     created() {
         this.loadConfiguration();
 
         this.$store.commit("setConfiguration", this.configuration);
         this.initForm();
+        this.$eventHub.$on("reloadDataItems", item_id => {
+            this.reloadDataItems(item_id);
+            this.itemSearchTerm = ''
+        });
         if (this.displayDiscount !== undefined) {
             if (this.displayDiscount == true) {
                 this.showDiscounts = true;
             } else {
                 this.showDiscounts = false;
             }
-        }
+        }        
     },
     mounted() {
         this.getTables();
@@ -1420,6 +1419,8 @@ export default {
             this.calculateTotal();
         },
         async searchRemoteItems(input) {
+            this.itemSearchTerm = input;
+
             if (input.length > 2) {
                 this.loading_search = true;
                 const params = {
@@ -2510,7 +2511,10 @@ export default {
 
             this.initForm();
             this.filterItems();
-        }
+        },
+        openNewItemDialog() {
+            this.showDialogNewItem = true;
+        },
     }
 };
 </script>

@@ -68,14 +68,34 @@
                         </div>
                         <div class="row">
                             <div class="col-lg-6">
-                                <div class="form-group" :class="{'has-danger': errors.supplier_id}">
+                                <div class="form-group position-relative" :class="{'has-danger': errors.supplier_id}">
                                     <label class="control-label">
                                         Proveedor
                                         <a href="#" @click.prevent="showDialogNewPerson = true">[+ Nuevo]</a>
                                     </label>
-                                    <el-select v-model="form.supplier_id" filterable>
+                                    <el-select v-model="form.supplier_id" filterable remote :remote-method="searchRemoteSuppliers" :loading="loading_search">
                                         <el-option v-for="option in suppliers" :key="option.id" :value="option.id" :label="option.description"></el-option>
+                                        <template slot="empty">
+                                            <p v-if="loading_search" class="el-select-dropdown__empty">
+                                                Cargando...
+                                            </p>
+                                        
+                                            <p v-else class="el-select-dropdown__empty">
+                                                No se encontraron resultados
+                                            </p>
+                                        
+                                            <div
+                                                v-if="!loading_search"
+                                                class="el-select-dropdown__item new-option"
+                                                @click.stop="openNewPersonDialog"
+                                            >
+                                                <span>{{ supplierSearchTerm ? `Crear proveedor "${supplierSearchTerm}"` : 'Crear proveedor' }}</span>
+                                            </div>
+                                        </template>
                                     </el-select>
+                                    <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo proveedor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                                    </span>
                                     <small class="form-control-feedback" v-if="errors.supplier_id" v-text="errors.supplier_id[0]"></small>
                                 </div>
                             </div>
@@ -192,7 +212,8 @@
     
             <person-form :showDialog.sync="showDialogNewPerson"
                            type="suppliers"
-                           :external="true"></person-form>
+                           :external="true"
+                           :input_person="personFormInput"></person-form>
     
             <expense-options :showDialog.sync="showDialogOptions"
                               :recordId="expenseNewId"
@@ -214,6 +235,26 @@
         props: ['id'],
         components: {ExpenseFormItem, PersonForm, ExpenseOptions},
         mixins: [functions, exchangeRate],
+        computed: {
+            personFormInput() {
+                const term = (this.supplierSearchTerm || '').trim()
+
+                if (!term) return ''
+
+                if (/^\d+$/.test(term)) {
+                    let identity_document_type_id = null
+                    if (term.length === 8) identity_document_type_id = '1'
+                    if (term.length === 11) identity_document_type_id = '6'
+
+                    return {
+                        number: term,
+                        ...(identity_document_type_id ? { identity_document_type_id } : {})
+                    }
+                }
+
+                return term
+            },
+        },
         data() {
             return {
                 resource: 'expenses',
@@ -232,7 +273,16 @@
                 expense_method_types: [],
                 payment_destinations:  [],
                 expense_reasons: [],
-                expenseNewId: null
+                expenseNewId: null,
+                loading_search: false,
+                supplierSearchTerm: '',
+            }
+        },
+        watch: {
+            showDialogNewPerson(newVal) {
+                if (!newVal) {
+                    this.supplierSearchTerm = ''
+                }
             }
         },
         async created() {
@@ -259,6 +309,7 @@
 
             await this.$eventHub.$on('reloadDataPersons', (supplier_id) => {
                 this.reloadDataSuppliers(supplier_id)
+                this.supplierSearchTerm = ''
             })
 
             await this.isUpdate()
@@ -308,6 +359,22 @@
 
                 this.clickAddPayment()
                 // this.changeExpenseMethodType()
+            },
+            searchRemoteSuppliers(input) {
+                this.supplierSearchTerm = input;
+                
+                if (input.length > 1) {
+                    this.loading_search = true
+                    let parameters = `input=${input}`
+
+                    this.$http.get(`/reports/data-table/persons/suppliers?${parameters}`)
+                        .then(response => {
+                            this.suppliers = response.data.persons
+                            this.loading_search = false
+                        })
+                } else {
+                    this.filterSuppliers()
+                }
             },
             resetForm() {
                 this.initForm()
@@ -458,6 +525,9 @@
                     this.suppliers = response.data
 
                 })
+            },            
+            openNewPersonDialog() {
+                this.showDialogNewPerson = true
             },
         }
     }

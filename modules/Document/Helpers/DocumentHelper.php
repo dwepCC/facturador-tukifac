@@ -141,7 +141,7 @@ class DocumentHelper
                 }
             
                 // Verificación del límite de documentos
-                if($quantity_documents >= $limit_documents)
+                if($quantity_documents > $limit_documents)
                 {
                     return [
                         'success' => true,

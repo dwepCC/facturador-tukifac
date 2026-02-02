@@ -21,8 +21,8 @@
                                 :path_logo="getCurrentLogo"
                             ></logo>
                         </div>
-                        <div class="col-sm-5 text-left mt-3 mb-0">
-                            <address class="ib mr-2">
+                        <div class="col-sm-5 text-start mt-3 mb-0">
+                            <address class="ib me-2">
                                 <span class="font-weight-bold d-block"
                                     >COTIZACIÓN</span
                                 >
@@ -46,7 +46,7 @@
                             </address>
                         </div>
 
-                        <div class="row pr-2 mt-3 col-sm-5">
+                        <div class="row pe-2 mt-3 col-sm-5">
                             <div class="col-lg-6">
                                 <div
                                     class="form-group"
@@ -100,7 +100,7 @@
                         <div class="row mt-1">
                             <div class="col-lg-6 pb-2">
                                 <div
-                                    class="form-group"
+                                    class="form-group position-relative"
                                     :class="{
                                         'has-danger': errors.customer_id
                                     }"
@@ -109,13 +109,7 @@
                                         class="control-label font-weight-bold"
                                     >
                                         Cliente
-                                        <a
-                                            href="#"
-                                            @click.prevent="
-                                                showDialogNewPerson = true
-                                            "
-                                            >[+ Nuevo]</a
-                                        >
+                                        <!-- <a href="#" @click.prevent="showDialogNewPerson = true">[+ Nuevo]</a> -->
                                     </label>
                                     <el-select
                                         v-model="form.customer_id"
@@ -136,7 +130,27 @@
                                             :value="option.id"
                                             :label="option.description"
                                         ></el-option>
+                                        <template slot="empty">
+                                            <p v-if="loading_search" class="el-select-dropdown__empty">
+                                                Cargando...
+                                            </p>
+                                        
+                                            <p v-else class="el-select-dropdown__empty">
+                                                No se encontraron resultados
+                                            </p>
+                                        
+                                            <div
+                                                v-if="!loading_search"
+                                                class="el-select-dropdown__item new-option"
+                                                @click.stop="openNewPersonDialog"
+                                            >
+                                                <span>{{ customerSearchTerm ? `Crear cliente "${customerSearchTerm}"` : 'Crear cliente' }}</span>
+                                            </div>
+                                        </template>
                                     </el-select>
+                                    <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo cliente">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                                    </span>
                                     <small
                                         class="form-control-feedback"
                                         v-if="errors.customer_id"
@@ -501,35 +515,35 @@
                                                     </th>
                                                     <th
                                                         width="8%"
-                                                        class="text-right font-weight-bold"
+                                                        class="text-end font-weight-bold"
                                                         style="min-width: 70px !important"
                                                     >
                                                         Cantidad
                                                     </th>
                                                     <th
                                                         width="14%"
-                                                        class="text-right font-weight-bold"
+                                                        class="text-end font-weight-bold"
                                                         style="min-width: 115px !important"
                                                     >
                                                         Valor Unitario
                                                     </th>
                                                     <th
                                                         width="14%"
-                                                        class="text-right font-weight-bold"
+                                                        class="text-end font-weight-bold"
                                                         style="min-width: 115px !important"
                                                     >
                                                         Precio Unitario
                                                     </th>
                                                     <th
                                                         width="14%"
-                                                        class="text-right font-weight-bold"
+                                                        class="text-end font-weight-bold"
                                                         style="min-width: 115px !important"
                                                     >
                                                         Subtotal
                                                     </th>
                                                     <th
                                                         width="14%"
-                                                        class="text-right font-weight-bold"
+                                                        class="text-end font-weight-bold"
                                                         style="min-width: 115px !important"
                                                     >
                                                         Total
@@ -645,7 +659,7 @@
                                                         }}
                                                     </td>
 
-                                                    <td class="text-right">
+                                                    <td class="text-end">
                                                         <div
                                                             @keydown.enter="
                                                                 handleEnterKey(
@@ -681,7 +695,7 @@
                                                         </div>
                                                     </td>
 
-                                                    <td class="text-right">
+                                                    <td class="text-end">
                                                         <div
                                                             @keydown.enter="
                                                                 handleEnterKey(
@@ -728,7 +742,7 @@
                                                         </div>
                                                     </td>
 
-                                                    <td class="text-right">
+                                                    <td class="text-end">
                                                         <div
                                                             @keydown.enter="
                                                                 handleEnterKey(
@@ -775,7 +789,7 @@
                                                         </div>
                                                     </td>
 
-                                                    <td class="text-right">
+                                                    <td class="text-end">
                                                         <div
                                                             @keydown.enter="
                                                                 handleEnterKey(
@@ -821,7 +835,7 @@
                                                         </div>
                                                     </td>
 
-                                                    <td class="text-right">
+                                                    <td class="text-end">
                                                         <div
                                                             @keydown.enter="
                                                                 handleEnterKey(
@@ -1186,7 +1200,7 @@
                                             >
                                             <el-checkbox
                                                 v-model="is_amount"
-                                                class="ml-1 mr-1"
+                                                class="ms-1 me-1"
                                                 @change="changeTypeDiscount"
                                             ></el-checkbox>
                                             :
@@ -1205,53 +1219,53 @@
                                     </div>
                                 </span>
                                 <p
-                                    class="text-right"
+                                    class="text-end"
                                     v-if="form.total_exportation > 0"
                                 >
                                     OP.EXPORTACIÓN: {{ currency_type.symbol }}
                                     {{ form.total_exportation }}
                                 </p>
                                 <p
-                                    class="text-right"
+                                    class="text-end"
                                     v-if="form.total_free > 0"
                                 >
                                     OP.GRATUITAS: {{ currency_type.symbol }}
                                     {{ form.total_free }}
                                 </p>
                                 <p
-                                    class="text-right"
+                                    class="text-end"
                                     v-if="form.total_unaffected > 0"
                                 >
                                     OP.INAFECTAS: {{ currency_type.symbol }}
                                     {{ form.total_unaffected }}
                                 </p>
                                 <p
-                                    class="text-right"
+                                    class="text-end"
                                     v-if="form.total_exonerated > 0"
                                 >
                                     OP.EXONERADAS: {{ currency_type.symbol }}
                                     {{ form.total_exonerated }}
                                 </p>
                                 <p
-                                    class="text-right"
+                                    class="text-end"
                                     v-if="form.total_taxed > 0"
                                 >
                                     OP.GRAVADA: {{ currency_type.symbol }}
                                     {{ form.total_taxed }}
                                 </p>
-                                <p class="text-right" v-if="form.total_igv > 0">
+                                <p class="text-end" v-if="form.total_igv > 0">
                                     IGV: {{ currency_type.symbol }}
                                     {{ form.total_igv }}
                                 </p>
                                 <p
-                                    class="text-right"
+                                    class="text-end"
                                     v-if="form.total_discount > 0"
                                 >
                                     DESCUENTOS TOTALES:
                                     {{ currency_type.symbol }}
                                     {{ form.total_discount }}
                                 </p>
-                                <h3 class="text-right" v-if="form.total > 0">
+                                <h3 class="text-end" v-if="form.total > 0">
                                     <b>TOTAL A PAGAR: </b
                                     >{{ currency_type.symbol }} {{ form.total }}
                                 </h3>
@@ -1324,7 +1338,7 @@
                                         >
                                             <td>
                                                 <div
-                                                    class="form-group mb-2 mr-2"
+                                                    class="form-group mb-2 me-2"
                                                 >
                                                     <el-select
                                                         v-model="
@@ -1345,7 +1359,7 @@
                                             </td>
                                             <td>
                                                 <div
-                                                    class="form-group mb-2 mr-2"
+                                                    class="form-group mb-2 me-2"
                                                 >
                                                     <el-select
                                                         v-model="
@@ -1366,7 +1380,7 @@
                                             </td>
                                             <td>
                                                 <div
-                                                    class="form-group mb-2 mr-2"
+                                                    class="form-group mb-2 me-2"
                                                 >
                                                     <el-input
                                                         v-model="row.reference"
@@ -1375,7 +1389,7 @@
                                             </td>
                                             <td>
                                                 <div
-                                                    class="form-group mb-2 mr-2"
+                                                    class="form-group mb-2 me-2"
                                                 >
                                                     <el-input
                                                         v-model="row.payment"
@@ -1409,7 +1423,7 @@
                                     class="col-md-6 payments-div"
                                                             >
                                                                 <table
-                                                                    class="text-left table"
+                                                                    class="text-start table"
                                                                     width="100%"
                                                                 >
                                                                     <thead>
@@ -1422,13 +1436,13 @@
                                                                                 pago
                                                                             </th>
                                                                             <th
-                                                                                class="text-left"
+                                                                                class="text-start"
                                                                                 style="width: 100px"
                                                                             >
                                                                                 Fecha
                                                                             </th>
                                                                             <th
-                                                                                class="text-left"
+                                                                                class="text-start"
                                                                                 style="width: 100px"
                                                                             >
                                                                                 Monto
@@ -1566,7 +1580,7 @@
             :showDialog.sync="showDialogNewPerson"
             type="customers"
             :external="true"
-            :input_person="input_person"
+            :input_person="personFormInput"
             :document_type_id="form.document_type_id"
         ></person-form>
 
@@ -1576,6 +1590,7 @@
             :typeUser="typeUser"
             :showGenerate="false"
             :showClose="false"
+            :input_person="customerSearchTerm"
         ></quotation-options>
 
         <terms-condition
@@ -1753,12 +1768,28 @@ export default {
             global_discount_types: [],
             global_discount_type: {},
             payment_condition: '01',
+            customerSearchTerm: ''
         };
+    },
+    watch: {
+        showDialogNewPerson(newVal) {
+            if (!newVal) {
+                this.customerSearchTerm = ''
+            }
+        }
     },
     async created() {
         this.selected_option_price = this.price_options[0].id;
         this.loadConfiguration();
         this.$store.commit("setConfiguration", this.configuration);
+        
+        // Actualizar price_options con los labels personalizados
+        if (this.config) {
+            this.price_options[1].description = this.config.price1_label || 'Precio 1';
+            this.price_options[2].description = this.config.price2_label || 'Precio 2';
+            this.price_options[3].description = this.config.price3_label || 'Precio 3';
+        }
+        
         await this.initForm();
         await this.$http.get(`/${this.resource}/tables`).then(response => {
             const data = response.data;
@@ -1796,6 +1827,7 @@ export default {
         this.loading_form = true;
         this.$eventHub.$on("reloadDataPersons", customer_id => {
             this.reloadDataCustomers(customer_id);
+            this.customerSearchTerm = ''
         });
         this.$eventHub.$on("initInputPerson", () => {
             this.initInputPerson();
@@ -1814,6 +1846,24 @@ export default {
                 return `/storage/uploads/logos/${this.company.logo}`;
             }
             return '';
+        },
+        personFormInput() {
+            const term = (this.customerSearchTerm || '').trim()
+
+            if (!term) return ''
+
+            if (/^\d+$/.test(term)) {
+                let identity_document_type_id = null
+                if (term.length === 8) identity_document_type_id = '1'
+                if (term.length === 11) identity_document_type_id = '6'
+
+                return {
+                    number: term,
+                    ...(identity_document_type_id ? { identity_document_type_id } : {})
+                }
+            }
+
+            return term
         },
         ...mapState(["config"]),
         canAddDescriptionToDocumentItem() {
@@ -2125,6 +2175,8 @@ export default {
         //     this.form.label = this.form.seller_name;
         // },
         searchRemoteCustomers(input) {
+            this.customerSearchTerm = input;
+
             if (input.length > 0) {
                 this.loading_search = true;
                 let parameters = `input=${input}`;
@@ -2542,6 +2594,9 @@ export default {
                 .then(() => {
 
                 });
+        },
+        openNewPersonDialog() {
+            this.showDialogNewPerson = true
         },
     }
 };

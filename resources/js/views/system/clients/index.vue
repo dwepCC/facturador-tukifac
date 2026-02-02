@@ -395,9 +395,9 @@
                         <div class="text-end mt-2 me-2 data-table-visible-columns">
                             <el-dropdown :hide-on-click="false">
                                 <el-button type="secondary">
-                                    Mostrar/Ocultar columnas<i class="el-icon-arrow-down el-icon--right"></i>
+                                    Mostrar columnas<i class="el-icon-arrow-down el-icon--right"></i>
                                 </el-button>
-                                <el-dropdown-menu slot="dropdown">
+                                <el-dropdown-menu slot="dropdown" class="clients-columns-dropdown-menu">
                                     <el-dropdown-item v-for="(column, index) in columnsComputed" :key="index">
                                         <el-checkbox
                                             v-if="column.title !== undefined && column.visible !== undefined"
@@ -613,7 +613,8 @@
                                     </span>
                                 </template>
                             </td>
-                            <td v-if="columns.inicio_ciclo.visible">
+
+                            <td v-if="columns.inicio_ciclo.visible" class="text-center">
                                 <template v-if="row.start_billing_cycle">
                                     <span></span>
                                     <span>{{ row.start_billing_cycle }}</span>
@@ -700,7 +701,6 @@
 
                             </td>
 
-
                             <td v-if="columns.fecha_creacion.visible" class="text-center">{{ row.created_at }}</td>
                             <td v-if="columns.consultas_api.visible">{{ row.queries_to_apiperu }}</td>
 
@@ -765,24 +765,46 @@
                                             <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-edit me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" /><path d="M16 5l3 3" /></svg>
                                             Editar
                                         </el-dropdown-item>
+
+                                        <el-dropdown-item divided></el-dropdown-item>
+
+                                        <el-dropdown-item :command="{action: 'secretLogin', id: row.id}">
+                                            <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-dual-screen me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4l8 3v15l-8 -3z" /><path d="M13 19h6v-15h-14" /></svg>
+                                            Acceso Maestro
+                                        </el-dropdown-item>
+
                                         <el-dropdown-item 
                                             v-if="row.soap_type=='01'" 
                                             :command="{action: 'demoConfig', id: row.id}">
                                             <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-settings me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>
                                             Configurar Demo
                                         </el-dropdown-item>
-                                        <el-dropdown-item :command="{action: 'secretLogin', id: row.id}">
-                                            <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-dual-screen me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4l8 3v15l-8 -3z" /><path d="M13 19h6v-15h-14" /></svg>
-                                            Acceso Maestro
-                                        </el-dropdown-item>
-                                        <el-dropdown-item :command="{action: 'payments', id: row.id}" divided>
+
+                                        <el-dropdown-item :command="{action: 'payments', id: row.id}">
                                             <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-cash-banknote me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /><path d="M3 8a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M18 12h.01" /><path d="M6 12h.01" /></svg>
                                             Pagos
                                         </el-dropdown-item>
+
                                         <el-dropdown-item :command="{action: 'accountStatus', id: row.id}">
                                             <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-chart-line me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 19l16 0" /><path d="M4 15l4 -6l4 2l4 -5l4 4" /></svg>
                                             Estado de cuenta
                                         </el-dropdown-item>
+                                        
+                                        <template v-if="!row.locked">
+                                            <el-dropdown-item :command="{action: 'password', id: row.id}">
+                                                <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-key me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0z" /><path d="M15 9h.01" /></svg>
+                                                Restablecer contraseña
+                                            </el-dropdown-item>
+                                            <el-dropdown-item v-if="deletePermission == true" divided></el-dropdown-item>
+                                            <el-dropdown-item 
+                                                class="text-danger option-delete"
+                                                v-if="deletePermission == true"
+                                                :command="{action: 'delete', row: row}">
+                                                <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-trash me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                                Eliminar Cliente
+                                            </el-dropdown-item>
+                                        </template>                                       
+                                    
                                     </el-dropdown-menu>
                                 </el-dropdown>
                             </td>
@@ -810,8 +832,6 @@
                                 >Editar
                                 </button>
                             </td> -->
-
-
 
                         </tr>
                         
@@ -961,6 +981,16 @@ th.sticky-column {
 }
 .page-header {
     position: relative;
+}
+.clients-columns-dropdown-menu {
+    max-height: 80vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+}
+
+.clients-columns-dropdown-menu::-webkit-scrollbar {
+    width: 6px;
 }
 .page-header-actions {
     position: absolute;
@@ -1243,6 +1273,7 @@ export default {
             this.getData();
         });
         this.getData();
+        this.checkLimit();
 
         this.text_limit_doc = "El límite de comprobantes fue superado";
         this.text_limit_users = "El límite de usuarios fue superado";
@@ -1343,6 +1374,24 @@ export default {
         }
     },
     methods: {
+        checkLimit() {
+            this.isLoading = true;
+            this.$http.get('clients/confirm-limit-reseller')
+            .then(response => {
+                if (response.data.success) {
+                    this.checkLimitUsers = true;
+                } else {
+                    this.checkLimitUsers = false;
+                }
+            })
+            .finally(() => {
+                this.isLoading = false;
+            })
+            .catch(error => {
+                console.error('Error al verificar el límite:', error);
+                this.checkLimitUsers = false;
+            });
+        },
         saveColumnVisibility() {
             localStorage.setItem('columnVisibilityClients', JSON.stringify(this.columns));
         },
@@ -1748,6 +1797,7 @@ export default {
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = `/secret-login`;
+            form.target = '_blank';
             form.style.display = 'none';
 
             // Agregar el token CSRF

@@ -1711,7 +1711,6 @@ export default {
         },
     },
     async created() {
-        // OPTIMIZACIÓN: Inicializar formulario básico primero para mostrar UI inmediatamente
         this.loadConfiguration()
         this.$store.commit('setConfiguration', this.configuration)
         await this.initForm()

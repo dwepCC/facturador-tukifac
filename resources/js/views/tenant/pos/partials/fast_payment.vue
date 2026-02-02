@@ -252,7 +252,7 @@ import MultiplePaymentForm from './multiple_payment.vue'
 export default {
     components: {OptionsForm, CardBrandsForm, SaleNotesOptions, MultiplePaymentForm, Keypress},
 
-    props: ['form', 'customer', 'currencyTypeActive', 'exchangeRateSale', 'is_payment', 'soapCompany', 'businessTurns', 'isPrint', 'rowsItems'],
+    props: ['form', 'customer', 'configuration','currencyTypeActive', 'exchangeRateSale', 'is_payment', 'soapCompany', 'businessTurns', 'isPrint', 'rowsItems'],
     data() {
         return {
             enabled_discount: false,
@@ -567,7 +567,7 @@ export default {
         },
         setAmountCash(amount) {
             let row = _.last(this.payments, {'payment_method_type_id': '01'})
-            row.payment = parseFloat(row.payment) + parseFloat(amount)
+            row.payment = parseFloat(amount)
             // console.log(row.payment)
 
             this.form.payments = this.payments
@@ -791,6 +791,7 @@ export default {
 
             await this.$http.post(`/${this.resource_documents}`, this.form).then(async (response) => {
                 if (response.data.success) {
+                    let response_sent = response
 
                     if (this.form.document_type_id === "80") {
 
@@ -799,8 +800,12 @@ export default {
 
                     } else {
 
-                        if(response.data.data.response.sent) {
+                        if (this.configuration.send_auto && this.form.document_type_id === '01') {
                             response_sent = await this.sendDocument(response.data.data.id); 
+                            this.statusDocument = response_sent.data.response
+                        } else if (this.configuration.ticket_single_shipment && this.form.document_type_id === '03') {
+                            response_sent = await this.sendDocument(response.data.data.id); 
+                            this.statusDocument = response_sent.data.response
                         }
 
                         // this.form_payment.document_id = response.data.data.id;

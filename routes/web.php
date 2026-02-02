@@ -52,6 +52,7 @@ if ($hostname) {
             Route::get('list-payments', 'Tenant\SettingController@listPayments');
             Route::get('list-vouchers-type', 'Tenant\SettingController@listVouchersType');
             Route::get('list-transfer-reason-types', 'Tenant\SettingController@listTransferReasonTypes');
+            Route::get('list-item-affectations', 'Tenant\SettingController@listItemAffectations');
 
             Route::get('advanced', 'Tenant\AdvancedController@index')->name('tenant.advanced.index')->middleware('redirect.level');
 
@@ -117,6 +118,8 @@ if ($hostname) {
             Route::post('configurations/apiruc', 'Tenant\ConfigurationController@storeApiRuc');
             Route::post('configurations/icbper', 'Tenant\ConfigurationController@icbper');
             Route::post('configurations/changeFormat', 'Tenant\ConfigurationController@changeFormat');
+            Route::post('configurations/saveColumnsConfig', 'Tenant\ConfigurationController@saveColumnsConfig');
+            Route::get('configurations/getColumnsConfig', 'Tenant\ConfigurationController@getColumnsConfig');
             Route::get('configurations/tables', 'Tenant\ConfigurationController@tables');
             Route::get('configurations/visual_defaults', 'Tenant\ConfigurationController@visualDefaults')->name('visual_defaults');
             Route::get('configurations/visual/get_menu', 'Tenant\ConfigurationController@visualGetMenu')->name('visual_get_menu');
@@ -505,6 +508,11 @@ if ($hostname) {
             Route::post('transfer-reason-types', 'Tenant\TransferReasonTypeController@store');
             Route::delete('transfer-reason-types/{code}', 'Tenant\TransferReasonTypeController@destroy');
 
+            // Affectation IGV types 
+            Route::get('item-affectations-igv/records', 'Tenant\ItemAffectationsIgvController@records');
+            Route::get('item-affectations-igv/active/{id}/{active}', 'Tenant\ItemAffectationsIgvController@changeActive');
+
+
             //Detractions
             Route::get('detraction_types/records', 'Tenant\DetractionTypeController@records');
             Route::get('detraction_types/tables', 'Tenant\DetractionTypeController@tables');
@@ -733,6 +741,12 @@ if ($hostname) {
             //Promotions-list
             Route::post('promotions-list', 'Tenant\PromotionController@storePromotionList');
             Route::get('promotions-list/records', 'Tenant\PromotionController@recordsPromotionList');
+
+            //Spot-list
+            Route::post('spot-list', 'Tenant\PromotionController@storeSpotList');
+            Route::put('spot-list/{id}', 'Tenant\PromotionController@storeSpotList');
+            Route::get('spot-list/records', 'Tenant\PromotionController@recordsSpotList');
+            Route::get('spot-list/record/{id}', 'Tenant\PromotionController@record');
 
             Route::get('item-sets', 'Tenant\ItemSetController@index')->name('tenant.item_sets.index')->middleware('redirect.level');
             Route::get('item-sets/columns', 'Tenant\ItemSetController@columns');

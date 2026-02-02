@@ -74,7 +74,8 @@ class WeightedAverageCost extends ModelTenant
      */
     public function scopeOrderForLastRow($query)
     {
-        return $query->orderBy('id', 'desc');
+        return $query->orderBy('id', 'desc')
+        ->where('stock', '>', 0);
     }
 
 }

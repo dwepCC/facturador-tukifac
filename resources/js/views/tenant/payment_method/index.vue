@@ -9,6 +9,15 @@
             </el-tooltip>
           </span></li>
       </ol>
+      <div class="right-wrapper pull-right">
+        <button
+          type="button"
+          class="btn btn-custom btn-sm mt-2 me-2"
+          @click.prevent="clickCreate()"
+        >
+          <i class="fa fa-plus-circle"></i> Nuevo
+        </button>
+      </div>
   </div>
     <div class="card tab-content-default row-new">
       <!-- <div class="card-header bg-info">
@@ -18,18 +27,7 @@
           </el-tooltip>
         </h3>
       </div> -->
-      <div class="card-body">
-        <div class="row">
-          <div class="col">
-            <button
-              type="button"
-              class="btn btn-custom btn-sm mt-2 me-2"
-              @click.prevent="clickCreate()"
-            >
-              <i class="fa fa-plus-circle"></i> Nuevo
-            </button>
-          </div>
-        </div>
+      <div class="card-body">        
         <div class="col-md-12">
         <div class="scroll-shadow shadow-left" v-show="showLeftShadow"></div>
         <div class="scroll-shadow shadow-right" v-show="showRightShadow"></div>

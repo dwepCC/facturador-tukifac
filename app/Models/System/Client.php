@@ -104,6 +104,7 @@ class Client extends Model
 
     protected $casts = [
         'start_billing_cycle' => 'date',
+        'ending_billing_cycle' => 'date',
         'smtp_port' => 'int',
         'locked_create_establishments' => 'boolean',
         'restrict_sales_limit' => 'boolean',

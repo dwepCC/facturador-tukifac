@@ -104,7 +104,36 @@
                     </div>
                 </div>
 
-                <div class="pt-3">
+                <div
+                    v-if="isBlackSkinSelected"
+                    class="mt-3 theme-color-selector-black"
+                >
+                    <h5>Selecciona un color de tema:</h5>
+                    <div class="color-selector">
+                        <button
+                            type="button"
+                            class="btn-theme-white"
+                            :class="{ 'black-theme-selected': visuals.black_theme === 'default' }"
+                            @click="onChangeBlackTheme('default')"
+                            style="background-color: oklch(0.34 0.08 259.24);"
+                        ></button>
+                        <button
+                            type="button"
+                            class="btn-theme-white"
+                            :class="{ 'black-theme-selected': visuals.black_theme === 'greenvoid' }"
+                            @click="onChangeBlackTheme('greenvoid')"
+                            style="background-color: oklch(0.4 0.08 148.33);"
+                        ></button>
+                        <button
+                            type="button"
+                            :class="{ 'black-theme-selected': visuals.black_theme === 'purplevoid' }"
+                            @click="onChangeBlackTheme('purplevoid')"
+                            style="background-color: oklch(0.34 0.09 319.44);"
+                        ></button>
+                    </div>
+                </div>
+
+                <div v-if="!isBlackSkinSelected" class="pt-3 sidebar-compact-selector-container d-none d-md-block">
                     <h5>Menú lateral contraído</h5>
                     <div :class="{ 'has-danger': errors.compact_sidebar }">
                         <el-switch
@@ -121,6 +150,97 @@
                             v-text="errors.compact_sidebar[0]"
                         ></small>
                     </div>
+                </div>
+
+                <div v-if="isBlackSkinSelected" class="pt-3 sidebar-margin-selector-container d-none d-md-block">
+                    <h5>Estilo de Sidebar</h5>
+                    <div class="d-flex justify-content-between gap-3 sidebar-margin-selector">
+                        <div
+                            class="sidebar-example"
+                            :class="{ 'sidebar-example-selected': form.compact_sidebar === false }"
+                            role="button"
+                            tabindex="0"
+                            @click="form.compact_sidebar = false; submitForm()"
+                        >
+                            <div>
+                                <svg data-name="con-layout-default" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 79.86 51.14" class="fill-primary stroke-primary group-data-[state=unchecked]:fill-muted-foreground group-data-[state=unchecked]:stroke-muted-foreground w-100" aria-hidden="true"><path d="M39.22 15.99h-8.16c-.79 0-1.43-.67-1.43-1.5s.64-1.5 1.43-1.5h8.16c.79 0 1.43.67 1.43 1.5s-.64 1.5-1.43 1.5z" opacity="0.75"></path><rect x="29.63" y="18.39" width="16.72" height="2.73" rx="1.36" ry="1.36" opacity="0.5"></rect><path d="M75.1 6.68v1.45c0 .63-.49 1.14-1.09 1.14H30.72c-.6 0-1.09-.51-1.09-1.14V6.68c0-.62.49-1.14 1.09-1.14h43.29c.6 0 1.09.52 1.09 1.14z" opacity="0.9"></path><rect x="29.63" y="24.22" width="21.8" height="19.95" rx="2.11" ry="2.11" opacity="0.4"></rect><g stroke-linecap="round" stroke-miterlimit="10"><rect x="61.06" y="38.15" width="2.01" height="3.42" rx="0.33" ry="0.33" opacity="0.32"></rect><rect x="56.78" y="34.99" width="2.01" height="6.58" rx="0.33" ry="0.33" opacity="0.44"></rect><rect x="65.17" y="32.86" width="2.01" height="8.7" rx="0.33" ry="0.33" opacity="0.53"></rect><rect x="69.55" y="29.17" width="2.01" height="12.4" rx="0.33" ry="0.33" opacity="0.66"></rect></g><g opacity="0.5"><circle cx="63.17" cy="18.63" r="7.5"></circle><path d="M63.17 11.63c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7m0-1c-4.42 0-8 3.58-8 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8z"></path></g><g opacity="0.74"><path d="M64.05 18.13l3.38-5.67c.93.64 1.7 1.48 2.26 2.47.56.98.89 2.08.96 3.21h-6.6z"></path><path d="M67.57 13.19a6.977 6.977 0 012.52 4.44h-5.17l2.65-4.44m-.31-1.43l-4.1 6.87h8c0-1.39-.36-2.75-1.04-3.95a8.007 8.007 0 00-2.86-2.92z"></path></g><g stroke-linecap="round" stroke-miterlimit="10"><rect x="5.84" y="5.02" width="19.14" height="40" rx="2" ry="2" opacity="0.8"></rect><g stroke="#fff"><path fill="none" opacity="0.72" stroke-width="2px" d="M9.02 17.39L21.25 17.39"></path><path fill="none" opacity="0.48" stroke-width="2px" d="M9.02 24.6L19.54 24.6"></path><path fill="none" opacity="0.55" stroke-width="2px" d="M9.02 20.88L18.4 20.88"></path><circle cx="10.98" cy="9.91" r="2.54" fill="#fff" opacity="0.8"></circle><path fill="none" opacity="0.8" stroke-width="2px" d="M15.53 8.65L21.25 8.65"></path><path fill="none" opacity="0.6" d="M15.32 11.3L20.38 11.3"></path></g></g></svg>
+                            </div>
+                            <span class="text-center">Defecto</span>
+                        </div>
+                        <div
+                            class="sidebar-example"
+                            :class="{ 'sidebar-example-selected': form.compact_sidebar === true }"
+                            role="button"
+                            tabindex="0"
+                            @click="form.compact_sidebar = true; submitForm()"
+                        >
+                            <div>
+                                <svg data-name="icon-layout-compact" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 79.86 51.14" class="fill-primary stroke-primary group-data-[state=unchecked]:fill-muted-foreground group-data-[state=unchecked]:stroke-muted-foreground w-100" aria-hidden="true"><rect x="5.84" y="5.2" width="4" height="40" rx="2" ry="2" stroke-linecap="round" stroke-miterlimit="10"></rect><g stroke="#fff" stroke-linecap="round" stroke-miterlimit="10"><path fill="none" opacity="0.66" stroke-width="2px" d="M7.26 11.56L8.37 11.56"></path><path fill="none" opacity="0.51" stroke-width="2px" d="M7.26 14.49L8.37 14.49"></path><path fill="none" opacity="0.52" stroke-width="2px" d="M7.26 17.39L8.37 17.39"></path><circle cx="7.81" cy="7.25" r="1.16" fill="#fff" opacity="0.8"></circle></g><path fill="none" opacity="0.75" stroke-linecap="round" stroke-miterlimit="10" stroke-width="3px" d="M15.81 14.49L22.89 14.49"></path><rect x="14.93" y="18.39" width="22.19" height="2.73" rx="0.64" ry="0.64" opacity="0.5" stroke-linecap="round" stroke-miterlimit="10"></rect><rect x="14.93" y="5.89" width="59.16" height="2.73" rx="0.64" ry="0.64" opacity="0.9" stroke-linecap="round" stroke-miterlimit="10"></rect><rect x="14.93" y="24.22" width="32.68" height="19.95" rx="2.11" ry="2.11" opacity="0.4" stroke-linecap="round" stroke-miterlimit="10"></rect><g stroke-linecap="round" stroke-miterlimit="10"><rect x="59.05" y="38.15" width="2.01" height="3.42" rx="0.33" ry="0.33" opacity="0.32"></rect><rect x="54.78" y="34.99" width="2.01" height="6.58" rx="0.33" ry="0.33" opacity="0.44"></rect><rect x="63.17" y="32.86" width="2.01" height="8.7" rx="0.33" ry="0.33" opacity="0.53"></rect><rect x="67.54" y="29.17" width="2.01" height="12.4" rx="0.33" ry="0.33" opacity="0.66"></rect></g><g opacity="0.5"><circle cx="62.16" cy="18.63" r="7.5"></circle><path d="M62.16 11.63c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7m0-1c-4.42 0-8 3.58-8 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8z"></path></g><g opacity="0.74"><path d="M63.04 18.13l3.38-5.67c.93.64 1.7 1.48 2.26 2.47.56.98.89 2.08.96 3.21h-6.6z"></path><path d="M66.57 13.19a6.977 6.977 0 012.52 4.44h-5.17l2.65-4.44m-.31-1.43l-4.1 6.87h8c0-1.39-.36-2.75-1.04-3.95a8.007 8.007 0 00-2.86-2.92z"></path></g></svg>
+                            </div>
+                            <span class="text-center">Contraido</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="isBlackSkinSelected" class="pt-3 sidebar-margin-selector-container sidebar-theme-selector-container d-none d-md-block">
+                    <h5>Tema del Sidebar</h5>
+                    <div class="d-flex justify-content-between gap-3 sidebar-margin-selector">
+                        <div
+                            class="sidebar-example"
+                            :class="{ 'sidebar-example-selected': form.sidebar_mode === 'light' }"
+                            role="button"
+                            tabindex="0"
+                            @click="submitSidebarMode('light')"
+                        >
+                            <div>
+                                <svg data-name="icon-sidebar-sidebar" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 79.86 51.14" class="fill-primary stroke-primary group-data-[state=unchecked]:fill-muted-foreground group-data-[state=unchecked]:stroke-muted-foreground w-100" aria-hidden="true"><path d="M23.42.51h51.99c2.21 0 4 1.79 4 4v42.18c0 2.21-1.79 4-4 4H23.42s-.04-.02-.04-.04V.55s.02-.04.04-.04z" opacity="0.2" stroke-linecap="round" stroke-miterlimit="10"></path><path fill="none" opacity="0.72" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2px" d="M5.56 14.88L17.78 14.88"></path><path fill="none" opacity="0.48" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2px" d="M5.56 22.09L16.08 22.09"></path><path fill="none" opacity="0.55" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2px" d="M5.56 18.38L14.93 18.38"></path><g stroke-linecap="round" stroke-miterlimit="10"><circle cx="7.51" cy="7.4" r="2.54" opacity="0.8"></circle><path fill="none" opacity="0.8" stroke-width="2px" d="M12.06 6.14L17.78 6.14"></path><path fill="none" opacity="0.6" d="M11.85 8.79L16.91 8.79"></path></g></svg>
+                            </div>
+                            <span class="text-center">Claro</span>
+                        </div>
+                        <div
+                            class="sidebar-example"
+                            :class="{ 'sidebar-example-selected': form.sidebar_mode === 'dark' }"
+                            role="button"
+                            tabindex="0"
+                            @click="submitSidebarMode('dark')"
+                        >
+                            <div class="svg-dark">
+                                <svg data-name="icon-sidebar-sidebar" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 79.86 51.14" class="fill-primary stroke-primary group-data-[state=unchecked]:fill-muted-foreground group-data-[state=unchecked]:stroke-muted-foreground w-100" aria-hidden="true"><path d="M23.42.51h51.99c2.21 0 4 1.79 4 4v42.18c0 2.21-1.79 4-4 4H23.42s-.04-.02-.04-.04V.55s.02-.04.04-.04z" opacity="0.2" stroke-linecap="round" stroke-miterlimit="10"></path><path fill="none" opacity="0.72" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2px" d="M5.56 14.88L17.78 14.88"></path><path fill="none" opacity="0.48" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2px" d="M5.56 22.09L16.08 22.09"></path><path fill="none" opacity="0.55" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2px" d="M5.56 18.38L14.93 18.38"></path><g stroke-linecap="round" stroke-miterlimit="10"><circle cx="7.51" cy="7.4" r="2.54" opacity="0.8"></circle><path fill="none" opacity="0.8" stroke-width="2px" d="M12.06 6.14L17.78 6.14"></path><path fill="none" opacity="0.6" d="M11.85 8.79L16.91 8.79"></path></g></svg>
+                            </div>
+                            <span class="text-center">Oscuro</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="isBlackSkinSelected" class="pt-3 sidebar-margin-selector-container d-none d-md-block">
+                    <h5>Sidebar</h5>
+                    <div class="d-flex justify-content-between gap-3 sidebar-margin-selector">
+                        <div
+                            class="sidebar-example"
+                            :class="{ 'sidebar-example-selected': visuals.sidebar_margin === true }"
+                            role="button"
+                            tabindex="0"
+                            @click="onChangeSidebarMargin(true)"
+                        >
+                            <div>
+                                <svg data-name="icon-sidebar-floating" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 79.86 51.14" class="fill-primary stroke-primary group-data-[state=unchecked]:fill-muted-foreground group-data-[state=unchecked]:stroke-muted-foreground w-100" aria-hidden="true"><rect x="5.89" y="5.15" width="19.74" height="40" rx="2" ry="2" opacity="0.8" stroke-linecap="round" stroke-miterlimit="10"></rect><g stroke="#fff" stroke-linecap="round" stroke-miterlimit="10"><path fill="none" opacity="0.72" stroke-width="2px" d="M9.81 18.36L22.04 18.36"></path><path fill="none" opacity="0.48" stroke-width="2px" d="M9.81 25.57L20.33 25.57"></path><path fill="none" opacity="0.55" stroke-width="2px" d="M9.81 21.85L19.18 21.85"></path><circle cx="11.76" cy="10.88" r="2.54" fill="#fff" opacity="0.8"></circle><path fill="none" opacity="0.8" stroke-width="2px" d="M16.31 9.62L22.04 9.62"></path><path fill="none" opacity="0.6" d="M16.1 12.27L21.16 12.27"></path></g><path fill="none" opacity="0.62" stroke-linecap="round" stroke-miterlimit="10" stroke-width="3px" d="M30.59 9.62L35.85 9.62"></path><rect x="29.94" y="13.42" width="26.03" height="2.73" rx="0.64" ry="0.64" opacity="0.44" stroke-linecap="round" stroke-miterlimit="10"></rect><rect x="29.94" y="19.28" width="43.11" height="25.87" rx="2" ry="2" opacity="0.3" stroke-linecap="round" stroke-miterlimit="10"></rect></svg>
+                            </div>
+                            <span class="text-center">Flotando</span>
+                        </div>
+                        <div
+                            class="sidebar-example"
+                            :class="{ 'sidebar-example-selected': visuals.sidebar_margin === false }"
+                            role="button"
+                            tabindex="0"
+                            @click="onChangeSidebarMargin(false)"
+                        >
+                            <div>
+                                <svg data-name="icon-sidebar-sidebar" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 79.86 51.14" class="fill-primary stroke-primary group-data-[state=unchecked]:fill-muted-foreground group-data-[state=unchecked]:stroke-muted-foreground w-100" aria-hidden="true"><path d="M23.42.51h51.99c2.21 0 4 1.79 4 4v42.18c0 2.21-1.79 4-4 4H23.42s-.04-.02-.04-.04V.55s.02-.04.04-.04z" opacity="0.2" stroke-linecap="round" stroke-miterlimit="10"></path><path fill="none" opacity="0.72" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2px" d="M5.56 14.88L17.78 14.88"></path><path fill="none" opacity="0.48" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2px" d="M5.56 22.09L16.08 22.09"></path><path fill="none" opacity="0.55" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2px" d="M5.56 18.38L14.93 18.38"></path><g stroke-linecap="round" stroke-miterlimit="10"><circle cx="7.51" cy="7.4" r="2.54" opacity="0.8"></circle><path fill="none" opacity="0.8" stroke-width="2px" d="M12.06 6.14L17.78 6.14"></path><path fill="none" opacity="0.6" d="M11.85 8.79L16.91 8.79"></path></g></svg>
+                            </div>
+                            <span class="text-center">Fijo</span>
+                        </div>
+                    </div>
+
                 </div>
 
                 <div class="mt-3">
@@ -246,7 +366,8 @@ export default {
     data() {
         return {
             themes: {},
-            showWelcome: localStorage.getItem("show_welcome_panel") === "true",
+            blackThemes: {},
+            showWelcome: false,
             loading_submit: false,
             resource: "configurations",
             errors: {},
@@ -255,12 +376,31 @@ export default {
             skins: {},
             dialogSkinsVisible: false,
             fileName: '',
+            headers:{},
         };
     },
     async created() {
         await this.loadThemes();
+        await this.loadBlackThemes();
         await this.initForm();
         await this.getRecords();
+    },
+    computed: {
+        isBlackSkinSelected() {
+            const skinId = this.form && this.form.skin_id;
+            const skins = Array.isArray(this.skins) ? this.skins : [];
+            const selected = skins.find(skin => String(skin.id) === String(skinId));
+
+            if (!selected) {
+                return false;
+            }
+
+            const name = (selected.name || selected.slug || selected.code || "")
+                .toString()
+                .toLowerCase();
+
+            return name.includes("black");
+        }
     },
     methods: {
         successUploadDefaultImage(response, file) {
@@ -283,25 +423,41 @@ export default {
                 console.error("Error loading themes:", error);
             }
         },
+        async loadBlackThemes() {
+            try {
+                const response = await fetch("/json/themes/black-themes.json");
+                this.blackThemes = await response.json();
+            } catch (error) {
+                console.error("Error loading black themes:", error);
+            }
+        },
         updateConfig() {
-            localStorage.setItem("show_welcome_panel", this.showWelcome);
+            this.$set(this.visuals, 'show_welcome_panel', this.showWelcome);
+            this.submit();
             this.toggleWelcomeComponent();
         },
         toggleWelcomeComponent() {
-          const selector = '.welcome-component';
-          const welcomeComponent = document.querySelector(selector);
+            try {
+                // log para debug
+                // console.log('[visual] toggleWelcomeComponent: showWelcome=', this.showWelcome);
 
-          if (!welcomeComponent) {
-            // Reintenta unas veces por si el componente aún no existe en el DOM
-            this._welcomeRetryCount = (this._welcomeRetryCount || 0) + 1;
-            if (this._welcomeRetryCount <= 5) {
-              setTimeout(() => this.toggleWelcomeComponent(), 200);
+                // buscar por clase (según tu plantilla)
+                const el = document.querySelector('.welcome-component');
+
+                if (!el) {
+                    // console.log('[visual] toggleWelcomeComponent: .welcome-component NO encontrada');
+                    return;
+                }
+
+                // cambiar visibilidad de forma segura
+                el.style.display = this.showWelcome ? 'block' : 'none';
+                console.log('[visual] toggleWelcomeComponent: aplicada visibilidad', el.style.display);
+            } catch (e) {
+                
+                console.warn('[visual] toggleWelcomeComponent error:', e);
             }
-            return;
-          }
-
-          welcomeComponent.style.display = this.showWelcome ? 'block' : 'none';
         },
+
         applyTheme(theme) {
             const colors = this.themes[theme];
             if (!colors) {
@@ -324,15 +480,96 @@ export default {
             cssString += "}";
 
             styleTag.innerHTML = cssString;
+            localStorage.setItem('current_theme', theme);
+            localStorage.setItem(`theme_colors_${theme}`, JSON.stringify(colors));
+        },
+        applyBlackTheme(theme) {
+            const colors = this.blackThemes[theme];
+            if (!colors) {
+                console.error(`Black theme "${theme}" not found.`);
+                return;
+            }
+
+            let styleTag = document.getElementById("black-theme-styles");
+            if (!styleTag) {
+                styleTag = document.createElement("style");
+                styleTag.id = "black-theme-styles";
+                document.head.appendChild(styleTag);
+            }
+
+            let cssString = ":root {";
+            Object.keys(colors).forEach(variable => {
+                cssString += `${variable}: ${colors[variable]}; `;
+            });
+
+            cssString += "}";
+
+            styleTag.innerHTML = cssString;
+            localStorage.setItem('black_theme', theme);
+            localStorage.setItem(`black_theme_colors_${theme}`, JSON.stringify(colors));
         },
         onChangeTheme(theme) {
             this.visuals.sidebar_theme = theme;
             this.submit();
             this.applyTheme(theme);
         },
+        onChangeBlackTheme(theme) {
+            this.$set(this.visuals, 'black_theme', theme);
+            this.submit();
+            this.applyBlackTheme(theme);
+        },
         onChangeBgSidebar(theme) {
             this.visuals.sidebar_theme = theme;
             this.submit();
+        },
+        onChangeSidebarMargin(value) {
+            this.$set(this.visuals, 'sidebar_margin', value);
+            this.applySidebarMargin(value);
+            this.submit();
+        },
+        applySidebarMargin(value) {
+            const htmlElement = document.documentElement;
+            if (!htmlElement) return;
+
+            if (value === true) {
+                htmlElement.classList.add('sidebar-left-floating');
+                htmlElement.classList.remove('sidebar-left-fixed');
+            } else {
+                htmlElement.classList.add('sidebar-left-fixed');
+                htmlElement.classList.remove('sidebar-left-floating');
+            }
+        },
+        submitSidebarMode(mode) {
+            if (mode) {
+                this.form.sidebar_mode = mode;
+            }
+            this.$http
+                .post(`/${this.resource}/visual_settings`, {
+                    bg: this.visuals.bg,
+                    header: this.visuals.header,
+                    sidebars: this.visuals.sidebars,
+                    navbar: this.visuals.navbar,
+                    sidebar_theme: this.visuals.sidebar_theme,
+                    sidebar_mode: this.form.sidebar_mode,
+                    black_theme: this.visuals.black_theme
+                })
+                .then(response => {
+                    if (response.data.success) {
+                        this.$message.success(response.data.message);
+                        // Aplicar la clase inmediatamente
+                        const htmlElement = document.documentElement;
+                        if (this.form.sidebar_mode === 'dark') {
+                            htmlElement.classList.remove('sidebarMode-light');
+                            htmlElement.classList.add('sidebarMode-dark');
+                        } else {
+                            htmlElement.classList.remove('sidebarMode-dark');
+                            htmlElement.classList.add('sidebarMode-light');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.log(error);
+                });
         },
         initForm() {
             this.errors = {};
@@ -342,7 +579,8 @@ export default {
                 colums_grid_item: 4,
                 enable_whatsapp: true,
                 phone_whatsapp: "",
-                skins: 1
+                skins: 1,
+                sidebar_mode: "light"
             };
         },
         async getRecords() {
@@ -352,12 +590,33 @@ export default {
                     this.form = response.data.data;
                     this.skins = response.data.data.skins;
 
+                    if (typeof this.visuals.sidebar_margin === 'undefined') {
+                        this.$set(this.visuals, 'sidebar_margin', true);
+                    }
+
+                    this.applySidebarMargin(this.visuals.sidebar_margin);
+
                     if (this.form.default_image) {
                         this.fileName = this.form.default_image;
                     }
 
+                    if (!this.visuals.black_theme) {
+                        this.$set(this.visuals, 'black_theme', 'default');
+                    }
+
+                    if (typeof this.visuals.show_welcome_panel === 'undefined') {
+                        this.$set(this.visuals, 'show_welcome_panel', true);
+                    }
+
+                    this.showWelcome = !!this.visuals.show_welcome_panel;
+                    this.toggleWelcomeComponent();
+
                     if (this.visual.sidebar_theme) {
                         this.applyTheme(this.visual.sidebar_theme);
+                    }
+
+                    if (this.visuals.black_theme) {
+                        this.applyBlackTheme(this.visuals.black_theme);
                     }
 
                     const storedLayoutMode = localStorage.getItem(
@@ -528,5 +787,23 @@ export default {
 
 .color-selector button.theme-selected {
    box-shadow: 0 0 0 4px var(--highlight-color);
+}
+.sidebar-example.sidebar-example-selected > div::after,
+.black-theme-selected::after {
+    background-image: url("data:image/svg+xml;utf8,\
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'>\
+        <polyline points='20 6 9 17 4 12' />\
+        </svg>");
+
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 12px;
+}
+html.dark .sidebar-example.sidebar-example-selected > div::after,
+html.dark .black-theme-selected::after {
+    background-image: url("data:image/svg+xml;utf8,\
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'>\
+        <polyline points='20 6 9 17 4 12' />\
+        </svg>");
 }
 </style>

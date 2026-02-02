@@ -226,6 +226,16 @@
 
                             </div>
                         </div>
+                        <div class="col-md-6 center-el-checkbox">
+                            <div :class="{'has-danger': errors.is_agent_retention}"
+                                 class="form-group">
+                                <el-checkbox v-model="form.is_agent_retention">¿Es agente de retención?</el-checkbox>
+                                <br>
+                                <small v-if="errors.is_agent_retention"
+                                       class="invalid-feedback"
+                                       v-text="errors.is_agent_retention[0]"></small>
+                            </div>
+                        </div>
                         <div v-if="type === 'suppliers'"
                              class="row mt-2">
                             <div class="col-md-6 center-el-checkbox">
@@ -952,6 +962,7 @@ export default {
                 optional_email: [],
                 has_discount: false,
                 discount_type: '01',
+                is_agent_retention: false,
                 discount_amount: 0,
                 establishment_code:'0000',
 
@@ -993,8 +1004,14 @@ export default {
                 }
 
                 if (this.input_person) {
-                    this.form.identity_document_type_id = (this.input_person.identity_document_type_id) ? this.input_person.identity_document_type_id : this.form.identity_document_type_id
-                    this.form.number = (this.input_person.number) ? this.input_person.number : ''
+                    // Si input_person es un string, asignarlo al nombre
+                    if (typeof this.input_person === 'string') {
+                        this.form.name = this.input_person
+                    } else {
+                        // Si es un objeto, mantener la lógica existente
+                        this.form.identity_document_type_id = (this.input_person.identity_document_type_id) ? this.input_person.identity_document_type_id : this.form.identity_document_type_id
+                        this.form.number = (this.input_person.number) ? this.input_person.number : ''
+                    }
                 }
             }
             if (this.type === 'customers') {
@@ -1283,6 +1300,7 @@ export default {
             // this.form.district_id = data.district_id;
             this.form.condition = data.condition;
             this.form.state = data.state;
+            this.form.is_agent_retention = data.is_agent_retention
             // this.filterProvinces()
             // this.filterDistricts()
 //                this.form.addresses[0].telephone = data.telefono;

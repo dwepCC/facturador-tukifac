@@ -8,8 +8,8 @@
                             <logo url="/"
                                   :path_logo="(company.logo != null) ? `/storage/uploads/logos/${company.logo}` : ''"></logo>
                         </div>
-                        <div class="col-sm-6 text-left mt-3 mb-0">
-                            <address class="ib mr-2">
+                        <div class="col-sm-6 text-start mt-3 mb-0">
+                            <address class="ib me-2">
                                 <span class="font-weight-bold d-block">COTIZACIÓN</span>
                                 <span class="font-weight-bold d-block">COT-XXX</span>
                                 <span class="font-weight-bold">{{ company.name }}</span>
@@ -178,7 +178,7 @@
                                     <tbody>
                                     <tr v-for="(row, index) in form.payments" :key="index">
                                         <td>
-                                            <div class="form-group mb-2 mr-2">
+                                            <div class="form-group mb-2 me-2">
                                                 <el-select v-model="row.payment_method_type_id">
                                                     <el-option v-for="option in payment_method_types" :key="option.id"
                                                                :value="option.id"
@@ -187,7 +187,7 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="form-group mb-2 mr-2">
+                                            <div class="form-group mb-2 me-2">
                                                 <el-select v-model="row.payment_destination_id" filterable>
                                                     <el-option v-for="option in payment_destinations" :key="option.id"
                                                                :value="option.id"
@@ -196,12 +196,12 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="form-group mb-2 mr-2">
+                                            <div class="form-group mb-2 me-2">
                                                 <el-input v-model="row.reference"></el-input>
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="form-group mb-2 mr-2">
+                                            <div class="form-group mb-2 me-2">
                                                 <el-input v-model="row.payment"></el-input>
                                             </div>
                                         </td>
@@ -302,11 +302,11 @@
                                                     <th width="3%">#</th>
                                                     <th class="font-weight-bold" width="16%">Descripción</th>
                                                     <th width="8%" class="text-center font-weight-bold">Unidad</th>
-                                                    <th width="12%" class="text-right font-weight-bold">Cantidad</th>
-                                                    <th width="14%" class="text-right font-weight-bold">Valor Unitario</th>
-                                                    <th width="14%" class="text-right font-weight-bold">Precio Unitario</th>
-                                                    <th width="14%" class="text-right font-weight-bold">Subtotal</th>
-                                                    <th width="14%" class="text-right font-weight-bold">Total</th>
+                                                    <th width="12%" class="text-end font-weight-bold">Cantidad</th>
+                                                    <th width="14%" class="text-end font-weight-bold">Valor Unitario</th>
+                                                    <th width="14%" class="text-end font-weight-bold">Precio Unitario</th>
+                                                    <th width="14%" class="text-end font-weight-bold">Subtotal</th>
+                                                    <th width="14%" class="text-end font-weight-bold">Total</th>
                                                     <th width="5%"></th>
                                                 </tr>
                                             </thead>
@@ -344,7 +344,7 @@
                                                     </td>
                                                     <td class="text-center">{{ row.item.unit_type_id }}</td>
 
-                                                    <td class="text-right">
+                                                    <td class="text-end">
                                                         <el-input-number 
                                                             v-model="row.quantity"
                                                             :min="0.01"
@@ -356,7 +356,7 @@
                                                         </el-input-number>
                                                     </td>
 
-                                                    <td class="text-right">
+                                                    <td class="text-end">
                                                         {{ currency_type.symbol }}
                                                         
                                                         <el-input-number 
@@ -370,7 +370,7 @@
                                                         </el-input-number>
                                                     </td>
 
-                                                    <td class="text-right">
+                                                    <td class="text-end">
                                                         {{ currency_type.symbol }}
                                                         
                                                         <el-input-number 
@@ -384,7 +384,7 @@
                                                         </el-input-number>
                                                     </td>
 
-                                                    <td class="text-right">
+                                                    <td class="text-end">
                                                         {{ currency_type.symbol }} 
 
                                                         <el-input-number 
@@ -398,7 +398,7 @@
                                                         </el-input-number>
                                                     </td>
                                                     
-                                                    <td class="text-right">
+                                                    <td class="text-end">
                                                         {{ currency_type.symbol }}
                                                     
                                                         <el-input-number 
@@ -479,7 +479,7 @@
                                             <td class="text-center">{{ currency_type.symbol }}
                                                 {{ getFormatUnitPriceRow(row.unit_value) }}
                                             </td>
-                                            <td class="text-right">{{ currency_type.symbol }}
+                                            <td class="text-end">{{ currency_type.symbol }}
                                                 {{ getFormatUnitPriceRow(row.unit_price) }}
                                             </td>
 
@@ -553,7 +553,7 @@
                                             >
                                             <el-checkbox
                                                 v-model="is_amount"
-                                                class="ml-1 mr-1"
+                                                class="ms-1 me-1"
                                                 @change="changeTypeDiscount"
                                             ></el-checkbox>
                                             :
@@ -571,20 +571,20 @@
                                         </td>
                                     </div>
                                 </span>
-                                <p class="text-right" v-if="form.total_exportation > 0">OP.EXPORTACIÓN:
+                                <p class="text-end" v-if="form.total_exportation > 0">OP.EXPORTACIÓN:
                                     {{ currency_type.symbol }} {{ form.total_exportation }}</p>
-                                <p class="text-right" v-if="form.total_free > 0">OP.GRATUITAS: {{
+                                <p class="text-end" v-if="form.total_free > 0">OP.GRATUITAS: {{
                                         currency_type.symbol
                                     }} {{ form.total_free }}</p>
-                                <p class="text-right" v-if="form.total_unaffected > 0">OP.INAFECTAS:
+                                <p class="text-end" v-if="form.total_unaffected > 0">OP.INAFECTAS:
                                     {{ currency_type.symbol }} {{ form.total_unaffected }}</p>
-                                <p class="text-right" v-if="form.total_exonerated > 0">OP.EXONERADAS:
+                                <p class="text-end" v-if="form.total_exonerated > 0">OP.EXONERADAS:
                                     {{ currency_type.symbol }} {{ form.total_exonerated }}</p>
-                                <p class="text-right" v-if="form.total_taxed > 0">OP.GRAVADA: {{ currency_type.symbol }}
+                                <p class="text-end" v-if="form.total_taxed > 0">OP.GRAVADA: {{ currency_type.symbol }}
                                     {{ form.total_taxed }}</p>
-                                <p class="text-right" v-if="form.total_igv > 0">IGV: {{ currency_type.symbol }}
+                                <p class="text-end" v-if="form.total_igv > 0">IGV: {{ currency_type.symbol }}
                                     {{ form.total_igv }}</p>
-                                <h3 class="text-right" v-if="form.total > 0"><b>TOTAL A
+                                <h3 class="text-end" v-if="form.total > 0"><b>TOTAL A
                                     PAGAR: </b>{{ currency_type.symbol }} {{ form.total }}</h3>
                             </div>
 
@@ -593,7 +593,7 @@
                     </div>
 
 
-                    <div class="form-actions text-right mt-4">
+                    <div class="form-actions text-end mt-4">
                         <el-button @click.prevent="close()">Cancelar</el-button>
                         <el-button class="submit" type="primary" native-type="submit" :loading="loading_submit"
                                    v-if="form.items.length > 0">Guardar cambios

@@ -1,6 +1,6 @@
 @php
     use Modules\Template\Helpers\TemplatePdf;
-
+    //dd($document->customer);
     $establishment = $document->establishment;
     $customer = $document->customer;
     //$path_style = app_path('CoreFacturalo'.DIRECTORY_SEPARATOR.'Templates'.DIRECTORY_SEPARATOR.'pdf'.DIRECTORY_SEPARATOR.'style.css');
@@ -367,6 +367,10 @@
                     @foreach ($itemSet->getItemsSet($row->item_id) as $item)
                         {{$item}}<br>
                     @endforeach
+                @endif
+
+                @if($row->item !== null && property_exists($row->item,'extra_attr_value') && $row->item->extra_attr_value != '')
+                    <br/><span style="font-size: 9px">{{$row->item->extra_attr_name}}: {{ $row->item->extra_attr_value }}</span>
                 @endif
 
                 @if($row->item->used_points_for_exchange ?? false)

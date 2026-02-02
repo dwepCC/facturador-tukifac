@@ -37,7 +37,7 @@
                                     <thead>
                                         <tr width="100%">
                                             <th width="55%" v-if="form.suppliers.length>0" class="pb-2">Proveedor
-                                                <a href="#" class="text-center font-weight-bold" @click.prevent="showDialogNewPerson = true">[+ Nuevo]</a>
+                                                <!-- <a href="#" class="text-center font-weight-bold" @click.prevent="showDialogNewPerson = true">[+ Nuevo]</a> -->
                                             </th>
                                             <th width="30%" v-if="form.suppliers.length>0" class="pb-2">Correo electrónico</th>
                                             <th width="15%"><a href="#" @click.prevent="clickAddSupplier" class="text-center font-weight-bold">[+ Agregar]</a></th>
@@ -46,10 +46,30 @@
                                     <tbody>
                                         <tr v-for="(row, index) in form.suppliers" :key="index" width="100%"> 
                                             <td width="55%" >
-                                                <div class="form-group mb-1 me-2">
-                                                    <el-select v-model="row.supplier_id" filterable @change="changeSupplier(index)">
+                                                <div class="form-group mb-1 me-2 position-relative">
+                                                    <el-select v-model="row.supplier_id" filterable @change="changeSupplier(index)" remote :remote-method="searchRemoteSuppliers" :loading="loading_search">
                                                         <el-option v-for="option in suppliers" :key="option.id" :value="option.id" :label="option.description"></el-option>
+                                                        <template slot="empty">
+                                                            <p v-if="loading_search" class="el-select-dropdown__empty">
+                                                                Cargando...
+                                                            </p>
+                                                        
+                                                            <p v-else class="el-select-dropdown__empty">
+                                                                No se encontraron resultados
+                                                            </p>
+                                                        
+                                                            <div
+                                                                v-if="!loading_search"
+                                                                class="el-select-dropdown__item new-option"
+                                                                @click.stop="openNewPersonDialog"
+                                                            >
+                                                                <span>{{ supplierSearchTerm ? `Crear proveedor "${supplierSearchTerm}"` : 'Crear proveedor' }}</span>
+                                                            </div>
+                                                        </template>
                                                     </el-select>
+                                                    <span class="btn-add-new btn-add-new-p-quotation" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo proveedor">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td width="30%" >
@@ -139,7 +159,8 @@
         <person-form :showDialog.sync="showDialogNewPerson"
                        type="suppliers"
                        :external="true"
-                       :document_type_id = form.document_type_id></person-form>
+                       :document_type_id = form.document_type_id
+                       :input_person="personFormInput"></person-form>
 
         <purchase-quotation-options :showDialog.sync="showDialogOptions"
                           :recordId="purchaseQuotationNewId"
@@ -169,7 +190,25 @@
                     return `/storage/uploads/logos/${this.company.logo}`;
                 }
                 return '';
-            }
+            },
+            personFormInput() {
+                const term = (this.supplierSearchTerm || '').trim()
+
+                if (!term) return ''
+
+                if (/^\d+$/.test(term)) {
+                    let identity_document_type_id = null
+                    if (term.length === 8) identity_document_type_id = '1'
+                    if (term.length === 11) identity_document_type_id = '6'
+
+                    return {
+                        number: term,
+                        ...(identity_document_type_id ? { identity_document_type_id } : {})
+                    }
+                }
+
+                return term
+            },
         },
         data() {
             return {
@@ -190,7 +229,15 @@
                 activePanel: 0,
                 loading_search:false,
                 propIsUpdate:false,
-                button_text:'Generar'
+                button_text:'Generar',
+                supplierSearchTerm: '',
+            }
+        },
+        watch: {
+            showDialogNewPerson(newVal) {
+                if (!newVal) {
+                    this.supplierSearchTerm = ''
+                }
             }
         },
         async created() {
@@ -209,6 +256,7 @@
             this.loading_form = true
             this.$eventHub.$on('reloadDataPersons', () => {
                 this.reloadDataSuppliers()
+                this.supplierSearchTerm = ''
             })
 
             await this.isUpdate()
@@ -250,6 +298,22 @@
                 
                 this.clickAddSupplier()
 
+            },
+            searchRemoteSuppliers(input) {
+                this.supplierSearchTerm = input;
+                
+                if (input.length > 1) {
+                    this.loading_search = true
+                    let parameters = `input=${input}`
+
+                    this.$http.get(`/reports/data-table/persons/suppliers?${parameters}`)
+                        .then(response => {
+                            this.suppliers = response.data.persons
+                            this.loading_search = false
+                        })
+                } else {
+                    this.filterSuppliers()
+                }
             },
             async changeSupplier(index){  
                 let supplier = await _.find(this.suppliers,{'id':this.form.suppliers[index].supplier_id})
@@ -343,6 +407,9 @@
                 this.$http.get(`/${this.resource}/table/suppliers`).then((response) => {
                     this.suppliers = response.data
                 })             
+            },
+            openNewPersonDialog() {
+                this.showDialogNewPerson = true
             },
         }
     }

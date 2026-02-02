@@ -1,4 +1,5 @@
 <?php
+
 namespace Modules\Account\Http\Controllers;
 
 use Carbon\Carbon;
@@ -14,6 +15,10 @@ use Modules\Account\Exports\ReportAccountingFoxcontExport;
 use Modules\Account\Exports\ReportAccountingContasisExport;
 use Modules\Account\Exports\ReportAccountingSumeriusExport;
 use App\Exports\GeneralFormatExport;
+use Modules\Company\Models\Company;
+use App\Http\Controllers\System\ClientController;
+use App\Models\Tenant\Establishment;
+use Modules\Account\Exports\ReportAccountingConcarSimpleExport;
 
 
 class AccountController extends Controller
@@ -41,8 +46,19 @@ class AccountController extends Controller
                 ];
 
                 $report = (new ReportAccountingConcarExport)
-                            ->data($data)
-                            ->download($filename.'.xlsx');
+                    ->data($data)
+                    ->download($filename . '.xlsx');
+
+                return $report;
+
+            case 'concar_simple':
+                $data = [
+                    'records' => $this->getStructureConcarSimple($this->getAllDocuments($d_start, $d_end)),
+                ];
+
+                $report = (new ReportAccountingConcarSimpleExport)
+                    ->data($data)
+                    ->download($filename . '.xlsx');
 
                 return $report;
 
@@ -52,14 +68,13 @@ class AccountController extends Controller
 
                 $temp = tempnam(sys_get_temp_dir(), 'txt');
                 $file = fopen($temp, 'w+');
-                foreach ($records as $record)
-                {
+                foreach ($records as $record) {
                     $line = implode('', $record);
-                    fwrite($file, $line."\r\n");
+                    fwrite($file, $line . "\r\n");
                 }
                 fclose($file);
 
-                return response()->download($temp, $filename.'.txt');
+                return response()->download($temp, $filename . '.txt');
 
             case 'foxcont':
 
@@ -69,7 +84,7 @@ class AccountController extends Controller
 
                 return (new ReportAccountingFoxcontExport)
                     ->data($data)
-                    ->download($filename.'.xlsx');
+                    ->download($filename . '.xlsx');
 
             case 'contasis':
 
@@ -79,7 +94,7 @@ class AccountController extends Controller
 
                 return (new ReportAccountingContasisExport)
                     ->data($data)
-                    ->download($filename.'.xlsx');
+                    ->download($filename . '.xlsx');
 
             case 'adsoft':
 
@@ -89,7 +104,7 @@ class AccountController extends Controller
 
                 return (new ReportAccountingAdsoftExport)
                     ->data($data)
-                    ->download($filename.'.xlsx');
+                    ->download($filename . '.xlsx');
             case 'sumerius':
 
                 $data = [
@@ -98,8 +113,8 @@ class AccountController extends Controller
 
                 return (new ReportAccountingSumeriusExport)
                     ->data($data)
-                    ->download($filename.'.xlsx');
-        
+                    ->download($filename . '.xlsx');
+
             case 'siscont_excel':
 
                 $data = [
@@ -110,10 +125,11 @@ class AccountController extends Controller
                         ->data($data)
                         ->view_name('account::accounting.templates.excel_siscont') 
                         ->download($filename.'.xlsx');
+        
         }
     }
-    
 
+    
     /**
      *
      * @param  Collection $documents
@@ -192,13 +208,13 @@ class AccountController extends Controller
 
     private function getStructureSumerius($documents)
     {
-        return $documents->transform(function($row) {
+        return $documents->transform(function ($row) {
             return [
                 'col_A' => number_format($row->id, 2, ".", ""),
                 'date_of_issue' => $row->date_of_issue->format('d/m/Y'),
                 'date_of_due' => $row->invoice->date_of_due->format('d/m/Y'),
                 'document_type_id' => $row->document_type_id,
-		        'state_type_id' => $row->state_type_id,
+                'state_type_id' => $row->state_type_id,
                 'series' => $row->series,
                 'number' => str_pad($row->number, 7, '0', STR_PAD_LEFT),
                 'col_G' => '',
@@ -230,8 +246,7 @@ class AccountController extends Controller
     private function getStructureAdsoft($documents)
     {
         $rows = [];
-        foreach ($documents as $row)
-        {
+        foreach ($documents as $row) {
             $document = [
                 'serie' => $row->series,
                 'numero' => $row->number,
@@ -259,7 +274,7 @@ class AccountController extends Controller
                 'cta_vta' => '',
                 'tip_cam' => '',
             ];
-			if ($row->state_type_id === '11') {
+            if ($row->state_type_id === '11') {
                 $document['imp_exo'] = 0;
                 $document['imp_vta'] = 0;
                 $document['imp_tot'] = 0;
@@ -285,30 +300,30 @@ class AccountController extends Controller
     private function getDocuments($d_start, $d_end)
     {
         return Document::query()
-                                ->whereBetween('date_of_issue', [$d_start, $d_end])
-                                ->whereIn('document_type_id', ['01', '03'])
-                                ->whereIn('currency_type_id', ['PEN','USD'])
-                                ->orderBy('series')
-                                ->orderBy('number')
-                                ->get();
+            ->whereBetween('date_of_issue', [$d_start, $d_end])
+            ->whereIn('document_type_id', ['01', '03'])
+            ->whereIn('currency_type_id', ['PEN', 'USD'])
+            ->orderBy('series')
+            ->orderBy('number')
+            ->get();
 
     }
 
     private function getAllDocuments($d_start, $d_end)
     {
         return Document::query()
-                                ->whereBetween('date_of_issue', [$d_start, $d_end])
-                                ->whereIn('currency_type_id', ['PEN','USD'])
-                                ->orderBy('series')
-                                ->orderBy('number')
-                                ->get();
+            ->whereBetween('date_of_issue', [$d_start, $d_end])
+            ->whereIn('currency_type_id', ['PEN', 'USD'])
+            ->orderBy('series')
+            ->orderBy('number')
+            ->get();
 
     }
 
     private function getStructureFoxcont($documents)
     {
 
-        return $documents->transform(function($row) {
+        return $documents->transform(function ($row) {
             return [
                 'date_of_issue' => $row->date_of_issue->format('d/m/Y'),
                 'date_of_due' => $row->invoice->date_of_due->format('d/m/Y'),
@@ -362,15 +377,14 @@ class AccountController extends Controller
     {
         $company_account = CompanyAccount::first();
         $rows = [];
-        foreach ($documents as $index => $row)
-        {
+        foreach ($documents as $index => $row) {
             $date_of_issue = Carbon::parse($row->date_of_issue);
-            $currency_type_id = ($row->currency_type_id === 'PEN')?'MN':'US';
+            $currency_type_id = ($row->currency_type_id === 'PEN') ? 'MN' : 'US';
             $document_type_id = $this->getShortDocumentType($row->document_type_id);
-            $detail = $row->customer->name.', '.$document_type_id.' '.$row->number_full;
-            $number_index = $date_of_issue->format('m').str_pad($index + 1, 4, "0", STR_PAD_LEFT);
+            $detail = $row->customer->name . ', ' . $document_type_id . ' ' . $row->number_full;
+            $number_index = $date_of_issue->format('m') . str_pad($index + 1, 4, "0", STR_PAD_LEFT);
 
-            $main_gloss = 'VENTAS DEL DIA '.$date_of_issue->format('dmY');
+            $main_gloss = 'VENTAS DEL DIA ' . $date_of_issue->format('dmY');
             $date_of_due = ($row->invoice) ? $row->invoice->date_of_due->format('d/m/Y') : '';
 
             $reference_document_type_id = '';
@@ -379,8 +393,7 @@ class AccountController extends Controller
             $reference_total_value = '';
             $reference_total_igv = '';
 
-            if(in_array($row->document_type_id, ['07', '08']))
-            {
+            if (in_array($row->document_type_id, ['07', '08'])) {
                 $reference_document_type_id = $this->getShortDocumentType($row->note->affected_document->document_type_id);
                 $reference_number_full = $row->note->affected_document->number_full;
                 $reference_date_of_issue = $row->note->affected_document->date_of_issue->format('d/m/Y');
@@ -391,8 +404,7 @@ class AccountController extends Controller
 
             foreach ($row->items as $item) {
 
-                if(in_array($row->document_type_id, ['07']))
-                {
+                if (in_array($row->document_type_id, ['07'])) {
 
                     $rows[] = [
                         // 'col_A' => '',
@@ -411,15 +423,15 @@ class AccountController extends Controller
                         'col_L' => $row->customer->number,
                         'col_M' => '',
                         'col_N' => 'H',
-                        'col_O' => ($row->state_type_id == 11) ? 0 : $item->total,
-                        'col_P' => ($row->state_type_id == 11) ? 0 : ( ($row->currency_type_id === 'PEN') ? number_format($item->total / $row->exchange_rate_sale, 2, ".", "") : $item->total),
-                        'col_Q' => ($row->state_type_id == 11) ? 0 : ( ($row->currency_type_id === 'PEN') ? $item->total : number_format($item->total * $row->exchange_rate_sale, 2, ".", "")),
+                        'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $item->total,
+                        'col_P' => ($row->state_type_id == 11||  $row->state_type_id == 9) ? 0 : (($row->currency_type_id === 'PEN') ? number_format($item->total / $row->exchange_rate_sale, 2, ".", "") : $item->total),
+                        'col_Q' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : (($row->currency_type_id === 'PEN') ? $item->total : number_format($item->total * $row->exchange_rate_sale, 2, ".", "")),
                         'col_R' => $document_type_id,
                         'col_S' => $row->number_full,
                         'col_T' => $row->date_of_issue->format('d/m/Y'),
                         'col_U' => $date_of_due,
                         'col_V' => '',
-                        'col_W' => $document_type_id.'-'.$row->number_full,
+                        'col_W' => $document_type_id . '-' . $row->number_full,
                         // 'col_W' => $detail,
                         'col_X' => '',
                         'col_Y' => '',
@@ -457,15 +469,15 @@ class AccountController extends Controller
                         'col_L' => $row->customer->number,
                         'col_M' => '',
                         'col_N' => 'D',
-                        'col_O' => ($row->state_type_id == 11) ? 0 : $item->total_igv,
-                        'col_P' => ($row->state_type_id == 11) ? 0 : ( ($row->currency_type_id === 'PEN') ? number_format($item->total_igv / $row->exchange_rate_sale, 2, ".", "") : $item->total_igv),
-                        'col_Q' => ($row->state_type_id == 11) ? 0 : ( ($row->currency_type_id === 'PEN') ? $item->total_igv : number_format($item->total_igv * $row->exchange_rate_sale, 2, ".", "")),
+                        'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $item->total_igv,
+                        'col_P' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : (($row->currency_type_id === 'PEN') ? number_format($item->total_igv / $row->exchange_rate_sale, 2, ".", "") : $item->total_igv),
+                        'col_Q' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : (($row->currency_type_id === 'PEN') ? $item->total_igv : number_format($item->total_igv * $row->exchange_rate_sale, 2, ".", "")),
                         'col_R' => $document_type_id,
                         'col_S' => $row->number_full,
                         'col_T' => $row->date_of_issue->format('d/m/Y'),
                         'col_U' => $date_of_due,
                         'col_V' => '',
-                        'col_W' => $document_type_id.'-'.$row->number_full,
+                        'col_W' => $document_type_id . '-' . $row->number_full,
                         'col_X' => '',
                         'col_Y' => '',
                         'col_Z' => $reference_document_type_id,
@@ -502,15 +514,15 @@ class AccountController extends Controller
                         'col_L' => $row->customer->number,
                         'col_M' => '',
                         'col_N' => 'D',
-                        'col_O' => ($row->state_type_id == 11) ? 0 : $item->total_value,
-                        'col_P' => ($row->state_type_id == 11) ? 0 : ( ($row->currency_type_id === 'PEN') ? number_format($item->total_value / $row->exchange_rate_sale, 2, ".", "") : $item->total_value),
-                        'col_Q' => ($row->state_type_id == 11) ? 0 : ( ($row->currency_type_id === 'PEN') ? $item->total_value : number_format($item->total_value * $row->exchange_rate_sale, 2, ".", "")),
+                        'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $item->total_value,
+                        'col_P' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : (($row->currency_type_id === 'PEN') ? number_format($item->total_value / $row->exchange_rate_sale, 2, ".", "") : $item->total_value),
+                        'col_Q' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : (($row->currency_type_id === 'PEN') ? $item->total_value : number_format($item->total_value * $row->exchange_rate_sale, 2, ".", "")),
                         'col_R' => $document_type_id,
                         'col_S' => $row->number_full,
                         'col_T' => $row->date_of_issue->format('d/m/Y'),
                         'col_U' => $date_of_due,
                         'col_V' => '',
-                        'col_W' => $document_type_id.'-'.$row->number_full,
+                        'col_W' => $document_type_id . '-' . $row->number_full,
                         'col_X' => '',
                         'col_Y' => '',
                         'col_Z' => $reference_document_type_id,
@@ -530,9 +542,7 @@ class AccountController extends Controller
                         'col_AN' => '',
                     ];
 
-                }
-                else
-                {
+                } else {
 
                     $rows[] = [
                         // 'col_A' => '',
@@ -551,15 +561,15 @@ class AccountController extends Controller
                         'col_L' => $row->customer->number,
                         'col_M' => '',
                         'col_N' => 'D',
-                        'col_O' => ($row->state_type_id == 11) ? 0 : $item->total,
-                        'col_P' => ($row->state_type_id == 11) ? 0 : ( ($row->currency_type_id === 'PEN') ? number_format($item->total / $row->exchange_rate_sale, 2, ".", "") : $item->total),
-                        'col_Q' => ($row->state_type_id == 11) ? 0 : ( ($row->currency_type_id === 'PEN') ? $item->total : number_format($item->total * $row->exchange_rate_sale, 2, ".", "")),
+                        'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $item->total,
+                        'col_P' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : (($row->currency_type_id === 'PEN') ? number_format($item->total / $row->exchange_rate_sale, 2, ".", "") : $item->total),
+                        'col_Q' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : (($row->currency_type_id === 'PEN') ? $item->total : number_format($item->total * $row->exchange_rate_sale, 2, ".", "")),
                         'col_R' => $document_type_id,
                         'col_S' => $row->number_full,
                         'col_T' => $row->date_of_issue->format('d/m/Y'),
                         'col_U' => $date_of_due,
                         'col_V' => '',
-                        'col_W' => $document_type_id.'-'.$row->number_full,
+                        'col_W' => $document_type_id . '-' . $row->number_full,
                         // 'col_W' => $detail,
                         'col_X' => '',
                         'col_Y' => '',
@@ -597,15 +607,15 @@ class AccountController extends Controller
                         'col_L' => $row->customer->number,
                         'col_M' => '',
                         'col_N' => 'H',
-                        'col_O' => ($row->state_type_id == 11) ? 0 : $item->total_igv,
-                        'col_P' => ($row->state_type_id == 11) ? 0 : ( ($row->currency_type_id === 'PEN') ? number_format($item->total_igv / $row->exchange_rate_sale, 2, ".", "") : $item->total_igv),
-                        'col_Q' => ($row->state_type_id == 11) ? 0 : ( ($row->currency_type_id === 'PEN') ? $item->total_igv : number_format($item->total_igv * $row->exchange_rate_sale, 2, ".", "")),
+                        'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $item->total_igv,
+                        'col_P' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : (($row->currency_type_id === 'PEN') ? number_format($item->total_igv / $row->exchange_rate_sale, 2, ".", "") : $item->total_igv),
+                        'col_Q' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : (($row->currency_type_id === 'PEN') ? $item->total_igv : number_format($item->total_igv * $row->exchange_rate_sale, 2, ".", "")),
                         'col_R' => $document_type_id,
                         'col_S' => $row->number_full,
                         'col_T' => $row->date_of_issue->format('d/m/Y'),
                         'col_U' => $date_of_due,
                         'col_V' => '',
-                        'col_W' => $document_type_id.'-'.$row->number_full,
+                        'col_W' => $document_type_id . '-' . $row->number_full,
                         'col_X' => '',
                         'col_Y' => '',
                         'col_Z' => $reference_document_type_id,
@@ -642,15 +652,15 @@ class AccountController extends Controller
                         'col_L' => $row->customer->number,
                         'col_M' => '',
                         'col_N' => 'H',
-                        'col_O' => ($row->state_type_id == 11) ? 0 : $item->total_value,
-                        'col_P' => ($row->state_type_id == 11) ? 0 : ( ($row->currency_type_id === 'PEN') ? number_format($item->total_value / $row->exchange_rate_sale, 2, ".", "") : $item->total_value),
-                        'col_Q' => ($row->state_type_id == 11) ? 0 : ( ($row->currency_type_id === 'PEN') ? $item->total_value : number_format($item->total_value * $row->exchange_rate_sale, 2, ".", "")),
+                        'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $item->total_value,
+                        'col_P' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : (($row->currency_type_id === 'PEN') ? number_format($item->total_value / $row->exchange_rate_sale, 2, ".", "") : $item->total_value),
+                        'col_Q' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : (($row->currency_type_id === 'PEN') ? $item->total_value : number_format($item->total_value * $row->exchange_rate_sale, 2, ".", "")),
                         'col_R' => $document_type_id,
                         'col_S' => $row->number_full,
                         'col_T' => $row->date_of_issue->format('d/m/Y'),
                         'col_U' => $date_of_due,
                         'col_V' => '',
-                        'col_W' => $document_type_id.'-'.$row->number_full,
+                        'col_W' => $document_type_id . '-' . $row->number_full,
                         'col_X' => '',
                         'col_Y' => '',
                         'col_Z' => $reference_document_type_id,
@@ -677,19 +687,574 @@ class AccountController extends Controller
         return $rows;
     }
 
+    private function getStructureConcarSimple($documents)
+    {
+        $company_account = CompanyAccount::first();
+        $rows = [];
+        foreach ($documents as $index => $row) {
+            $date_of_issue = Carbon::parse($row->date_of_issue);
+            $percentage_igv = $this->getIgv($row->date_of_issue,$row->establishment_id);
+            $currency_type_id = ($row->currency_type_id === 'PEN') ? 'MN' : 'US';
+            $document_type_id = $this->getShortDocumentTypeConcarSimple($row->document_type_id);
+            $detail = $row->customer->name;
+            $number_index = $date_of_issue->format('m') . str_pad($index + 1, 4, "0", STR_PAD_LEFT);
+
+            $main_gloss = 'VENTAS DEL DIA ' . $date_of_issue->format('dmY');
+            $date_of_due = ($row->invoice) ? $row->invoice->date_of_due->format('d/m/Y') : '';
+
+            $reference_document_type_id = '';
+            $reference_number_full = '';
+            $reference_date_of_issue = '';
+            $reference_total_value = '';
+            $reference_total_igv = '';
+
+            if (in_array($row->document_type_id, ['07', '08'])) {
+                $reference_document_type_id = $this->getShortDocumentTypeConcarSimple($row->note->affected_document->document_type_id);
+                $reference_number_full = $row->note->affected_document->number_full;
+                $reference_date_of_issue = $row->note->affected_document->date_of_issue->format('d/m/Y');
+                $reference_total_value = $row->note->affected_document->total_value;
+                $reference_total_igv = $row->note->affected_document->total_igv;
+                $date_of_due = ($date_of_due!='') ? $date_of_due : $date_of_issue->format('d/m/Y');
+
+            }
+
+            if (in_array($row->document_type_id, ['07'])) {
+
+                $rows[] = [
+                    // 'col_A' => '',
+                    'col_B' => ($percentage_igv==10)?'08':'05',
+                    'col_C' => $number_index,
+                    'col_D' => $date_of_issue->format('d/m/Y'),
+                    'col_E' => $currency_type_id,
+                    'col_F' => substr($detail, 0, 40),
+                    // 'col_F' => 'POR VENTA',
+                    'col_G' => 0,
+                    'col_H' => 'V',
+                    'col_I' => 'S',
+                    'col_J' => '',
+                    // 'col_K' => '121201',
+                    'col_K' => ($row->currency_type_id === 'PEN') ? $company_account->total_pen : $company_account->total_usd,
+                    'col_L' => $row->customer->number,
+                    'col_M' => '',
+                    'col_N' => 'H',
+                    'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $row->total,
+                    'col_P' => '',
+                    'col_Q' => '',
+                    'col_R' => $document_type_id,
+                    'col_S' => $row->number_full,
+                    'col_T' => $row->date_of_issue->format('d/m/Y'),
+                    'col_U' => $date_of_due,
+                    'col_V' => '',
+                    'col_W' => substr($detail, 0, 30),
+                    // 'col_W' => $detail,
+                    'col_X' => '',
+                    'col_Y' => '',
+                    'col_Z' => $reference_document_type_id,
+                    'col_AA' => $reference_number_full,
+                    'col_AB' => $reference_date_of_issue,
+                    'col_AC' => '',
+                    'col_AD' => $reference_total_value,
+                    'col_AE' => $reference_total_igv,
+                    'col_AF' => '',
+                    'col_AG' => '',
+                    'col_AH' => '',
+                    'col_AI' => '',
+                    'col_AJ' => '',
+                    'col_AK' => '',
+                    'col_AL' => '',
+                    'col_AM' => '',
+                    'col_AN' => '',
+                    'col_AO' => $percentage_igv,
+                ];
+
+                $rows[] = [
+                    // 'col_A' => '',
+                    'col_B' => ($percentage_igv==10)?'08':'05',
+                    'col_C' => $number_index,
+                    'col_D' => $date_of_issue->format('d/m/Y'),
+                    'col_E' => $currency_type_id,
+                    'col_F' => substr($detail, 0, 40),
+                    // 'col_F' => 'POR VENTA',
+                    'col_G' => 0,
+                    'col_H' => 'V',
+                    'col_I' => 'S',
+                    'col_J' => '',
+                    // 'col_K' => '401111',
+                    'col_K' => ($row->currency_type_id === 'PEN') ? $company_account->igv_pen : $company_account->igv_usd,
+                    'col_L' => $row->customer->number,
+                    'col_M' => '',
+                    'col_N' => 'D',
+                    'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $row->total_igv,
+                    'col_P' => '',
+                    'col_Q' => '',
+                    'col_R' => $document_type_id,
+                    'col_S' => $row->number_full,
+                    'col_T' => $row->date_of_issue->format('d/m/Y'),
+                    'col_U' => $date_of_due,
+                    'col_V' => '',
+                    'col_W' => substr($detail, 0, 30),
+                    'col_X' => '',
+                    'col_Y' => '',
+                    'col_Z' => $reference_document_type_id,
+                    'col_AA' => $reference_number_full,
+                    'col_AB' => $reference_date_of_issue,
+                    'col_AC' => '',
+                    'col_AD' => $reference_total_value,
+                    'col_AE' => $reference_total_igv,
+                    'col_AF' => '',
+                    'col_AG' => '',
+                    'col_AH' => '',
+                    'col_AI' => '',
+                    'col_AJ' => '',
+                    'col_AK' => '',
+                    'col_AL' => '',
+                    'col_AM' => '',
+                    'col_AN' => '',
+                    'col_AO' =>  $percentage_igv,
+                ];
+
+                if($row->total_taxed > 0){
+                    $rows[] = [
+                        // 'col_A' => '',
+                        'col_B' => ($percentage_igv==10)?'08':'05',
+                        'col_C' => $number_index,
+                        'col_D' => $date_of_issue->format('d/m/Y'),
+                        'col_E' => $currency_type_id,
+                        'col_F' => substr($detail, 0, 40),
+                        // 'col_F' => 'POR VENTA',
+                        'col_G' => 0,
+                        'col_H' => 'V',
+                        'col_I' => 'S',
+                        'col_J' => '',
+                        // 'col_K' => '704101',
+                        'col_K' => ($row->currency_type_id === 'PEN') ? $company_account->subtotal_pen : $company_account->subtotal_usd,
+                        'col_L' => $row->customer->number,
+                        'col_M' => '',
+                        'col_N' => 'D',
+                        'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $row->total_taxed,
+                        'col_P' => '',
+                        'col_Q' => '',
+                        'col_R' => $document_type_id,
+                        'col_S' => $row->number_full,
+                        'col_T' => $row->date_of_issue->format('d/m/Y'),
+                        'col_U' => $date_of_due,
+                        'col_V' => '',
+                        'col_W' => substr($detail, 0, 30),
+                        'col_X' => '',
+                        'col_Y' => '',
+                        'col_Z' => $reference_document_type_id,
+                        'col_AA' => $reference_number_full,
+                        'col_AB' => $reference_date_of_issue,
+                        'col_AC' => '',
+                        'col_AD' => $reference_total_value,
+                        'col_AE' => $reference_total_igv,
+                        'col_AF' => '',
+                        'col_AG' => '',
+                        'col_AH' => '',
+                        'col_AI' => '',
+                        'col_AJ' => '',
+                        'col_AK' => '',
+                        'col_AL' => '',
+                        'col_AM' => '',
+                        'col_AN' => '',
+                        'col_AO' => $percentage_igv,
+                    ];
+                }
+                
+
+                if($row->total_unaffected > 0){
+                    $rows[] = [
+                        // 'col_A' => '',
+                        'col_B' => ($percentage_igv==10)?'08':'05',
+                        'col_C' => $number_index,
+                        'col_D' => $date_of_issue->format('d/m/Y'),
+                        'col_E' => $currency_type_id,
+                        'col_F' => substr($detail, 0, 40),
+                        // 'col_F' => 'POR VENTA',
+                        'col_G' => 0,
+                        'col_H' => 'V',
+                        'col_I' => 'S',
+                        'col_J' => '',
+                        // 'col_K' => '704101',
+                        'col_K' => $company_account->unaffected,
+                        'col_L' => $row->customer->number,
+                        'col_M' => '',
+                        'col_N' => 'D',
+                        'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $row->total_unaffected,
+                        'col_P' => '',
+                        'col_Q' => '',
+                        'col_R' => $document_type_id,
+                        'col_S' => $row->number_full,
+                        'col_T' => $row->date_of_issue->format('d/m/Y'),
+                        'col_U' => $date_of_due,
+                        'col_V' => '',
+                        'col_W' => substr($detail, 0, 30),
+                        'col_X' => '',
+                        'col_Y' => '',
+                        'col_Z' => $reference_document_type_id,
+                        'col_AA' => $reference_number_full,
+                        'col_AB' => $reference_date_of_issue,
+                        'col_AC' => '',
+                        'col_AD' => $reference_total_value,
+                        'col_AE' => $reference_total_igv,
+                        'col_AF' => '',
+                        'col_AG' => '',
+                        'col_AH' => '',
+                        'col_AI' => '',
+                        'col_AJ' => '',
+                        'col_AK' => '',
+                        'col_AL' => '',
+                        'col_AM' => '',
+                        'col_AN' => '',
+                        'col_AO' => $percentage_igv,
+                    ];
+                }
+
+                if($row->total_exonerated > 0){
+                    $rows[] = [
+                        // 'col_A' => '',
+                        'col_B' => ($percentage_igv==10)?'08':'05',
+                        'col_C' => $number_index,
+                        'col_D' => $date_of_issue->format('d/m/Y'),
+                        'col_E' => $currency_type_id,
+                        'col_F' => substr($detail, 0, 40),
+                        // 'col_F' => 'POR VENTA',
+                        'col_G' => 0,
+                        'col_H' => 'V',
+                        'col_I' => 'S',
+                        'col_J' => '',
+                        // 'col_K' => '704101',
+                        'col_K' => $company_account->exonerated,
+                        'col_L' => $row->customer->number,
+                        'col_M' => '',
+                        'col_N' => 'D',
+                        'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $row->total_exonerated,
+                        'col_P' => '',
+                        'col_Q' => '',
+                        'col_R' => $document_type_id,
+                        'col_S' => $row->number_full,
+                        'col_T' => $row->date_of_issue->format('d/m/Y'),
+                        'col_U' => $date_of_due,
+                        'col_V' => '',
+                        'col_W' => substr($detail, 0, 30),
+                        'col_X' => '',
+                        'col_Y' => '',
+                        'col_Z' => $reference_document_type_id,
+                        'col_AA' => $reference_number_full,
+                        'col_AB' => $reference_date_of_issue,
+                        'col_AC' => '',
+                        'col_AD' => $reference_total_value,
+                        'col_AE' => $reference_total_igv,
+                        'col_AF' => '',
+                        'col_AG' => '',
+                        'col_AH' => '',
+                        'col_AI' => '',
+                        'col_AJ' => '',
+                        'col_AK' => '',
+                        'col_AL' => '',
+                        'col_AM' => '',
+                        'col_AN' => '',
+                        'col_AO' => $percentage_igv,
+                    ];
+                }
+
+            } else {
+
+                $rows[] = [
+                    // 'col_A' => '',
+                    'col_B' => ($percentage_igv==10)?'08':'05',
+                    'col_C' => $number_index,
+                    'col_D' => $date_of_issue->format('d/m/Y'),
+                    'col_E' => $currency_type_id,
+                    'col_F' => substr($detail, 0, 40),
+                    // 'col_F' => 'POR VENTA',
+                    'col_G' => 0,
+                    'col_H' => 'V',
+                    'col_I' => 'S',
+                    'col_J' => '',
+                    // 'col_K' => '121201',
+                    'col_K' => ($row->currency_type_id === 'PEN') ? $company_account->total_pen : $company_account->total_usd,
+                    'col_L' => $row->customer->number,
+                    'col_M' => '',
+                    'col_N' => 'D',
+                    'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $row->total,
+                    'col_P' => '',
+                    'col_Q' => '',
+                    'col_R' => $document_type_id,
+                    'col_S' => $row->number_full,
+                    'col_T' => $row->date_of_issue->format('d/m/Y'),
+                    'col_U' => $date_of_due,
+                    'col_V' => '',
+                    'col_W' => substr($detail, 0, 30),
+                    // 'col_W' => $detail,
+                    'col_X' => '',
+                    'col_Y' => '',
+                    'col_Z' => $reference_document_type_id,
+                    'col_AA' => $reference_number_full,
+                    'col_AB' => $reference_date_of_issue,
+                    'col_AC' => '',
+                    'col_AD' => $reference_total_value,
+                    'col_AE' => $reference_total_igv,
+                    'col_AF' => '',
+                    'col_AG' => '',
+                    'col_AH' => '',
+                    'col_AI' => '',
+                    'col_AJ' => '',
+                    'col_AK' => '',
+                    'col_AL' => '',
+                    'col_AM' => '',
+                    'col_AN' => '',
+                    'col_AO' => $percentage_igv,
+                ];
+
+                $rows[] = [
+                    // 'col_A' => '',
+                    'col_B' => ($percentage_igv==10)?'08':'05',
+                    'col_C' => $number_index,
+                    'col_D' => $date_of_issue->format('d/m/Y'),
+                    'col_E' => $currency_type_id,
+                    'col_F' => substr($detail, 0, 40),
+                    // 'col_F' => 'POR VENTA',
+                    'col_G' => 0,
+                    'col_H' => 'V',
+                    'col_I' => 'S',
+                    'col_J' => '',
+                    // 'col_K' => '401111',
+                    'col_K' => ($row->currency_type_id === 'PEN') ? $company_account->igv_pen : $company_account->igv_usd,
+                    'col_L' => $row->customer->number,
+                    'col_M' => '',
+                    'col_N' => 'H',
+                    'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $row->total_igv,
+                    'col_P' => '',
+                    'col_Q' => '',
+                    'col_R' => $document_type_id,
+                    'col_S' => $row->number_full,
+                    'col_T' => $row->date_of_issue->format('d/m/Y'),
+                    'col_U' => $date_of_due,
+                    'col_V' => '',
+                    'col_W' => substr($detail, 0, 30),
+                    'col_X' => '',
+                    'col_Y' => '',
+                    'col_Z' => $reference_document_type_id,
+                    'col_AA' => $reference_number_full,
+                    'col_AB' => $reference_date_of_issue,
+                    'col_AC' => '',
+                    'col_AD' => $reference_total_value,
+                    'col_AE' => $reference_total_igv,
+                    'col_AF' => '',
+                    'col_AG' => '',
+                    'col_AH' => '',
+                    'col_AI' => '',
+                    'col_AJ' => '',
+                    'col_AK' => '',
+                    'col_AL' => '',
+                    'col_AM' => '',
+                    'col_AN' => '',
+                    'col_AO' => $percentage_igv,
+                ];
+
+                if($row->total_taxed > 0){
+                    $rows[] = [
+                        // 'col_A' => '',
+                        'col_B' => ($percentage_igv==10)?'08':'05',
+                        'col_C' => $number_index,
+                        'col_D' => $date_of_issue->format('d/m/Y'),
+                        'col_E' => $currency_type_id,
+                        'col_F' => substr($detail, 0, 40),
+                        // 'col_F' => 'POR VENTA',
+                        'col_G' => 0,
+                        'col_H' => 'V',
+                        'col_I' => 'S',
+                        'col_J' => '',
+                        // 'col_K' => '704101',
+                        'col_K' => ($row->currency_type_id === 'PEN') ? $company_account->subtotal_pen : $company_account->subtotal_usd,
+                        'col_L' => $row->customer->number,
+                        'col_M' => '',
+                        'col_N' => 'H',
+                        'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $row->total_taxed,
+                        'col_P' => '',
+                        'col_Q' => '',
+                        'col_R' => $document_type_id,
+                        'col_S' => $row->number_full,
+                        'col_T' => $row->date_of_issue->format('d/m/Y'),
+                        'col_U' => $date_of_due,
+                        'col_V' => '',
+                        'col_W' => substr($detail, 0, 30),
+                        'col_X' => '',
+                        'col_Y' => '',
+                        'col_Z' => $reference_document_type_id,
+                        'col_AA' => $reference_number_full,
+                        'col_AB' => $reference_date_of_issue,
+                        'col_AC' => '',
+                        'col_AD' => $reference_total_value,
+                        'col_AE' => $reference_total_igv,
+                        'col_AF' => '',
+                        'col_AG' => '',
+                        'col_AH' => '',
+                        'col_AI' => '',
+                        'col_AJ' => '',
+                        'col_AK' => '',
+                        'col_AL' => '',
+                        'col_AM' => '',
+                        'col_AN' => '',
+                        'col_AO' => $percentage_igv,
+                    ];    
+                }
+                
+                if($row->total_unaffected > 0){
+                    $rows[] = [
+                        // 'col_A' => '',
+                        'col_B' => ($percentage_igv==10)?'08':'05',
+                        'col_C' => $number_index,
+                        'col_D' => $date_of_issue->format('d/m/Y'),
+                        'col_E' => $currency_type_id,
+                        'col_F' => substr($detail, 0, 40),
+                        // 'col_F' => 'POR VENTA',
+                        'col_G' => 0,
+                        'col_H' => 'V',
+                        'col_I' => 'S',
+                        'col_J' => '',
+                        // 'col_K' => '704101',
+                        'col_K' => $company_account->unaffected,
+                        'col_L' => $row->customer->number,
+                        'col_M' => '',
+                        'col_N' => 'H',
+                        'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $row->total_unaffected,
+                        'col_P' => '',
+                        'col_Q' => '',
+                        'col_R' => $document_type_id,
+                        'col_S' => $row->number_full,
+                        'col_T' => $row->date_of_issue->format('d/m/Y'),
+                        'col_U' => $date_of_due,
+                        'col_V' => '',
+                        'col_W' => substr($detail, 0, 30),
+                        'col_X' => '',
+                        'col_Y' => '',
+                        'col_Z' => $reference_document_type_id,
+                        'col_AA' => $reference_number_full,
+                        'col_AB' => $reference_date_of_issue,
+                        'col_AC' => '',
+                        'col_AD' => $reference_total_value,
+                        'col_AE' => $reference_total_igv,
+                        'col_AF' => '',
+                        'col_AG' => '',
+                        'col_AH' => '',
+                        'col_AI' => '',
+                        'col_AJ' => '',
+                        'col_AK' => '',
+                        'col_AL' => '',
+                        'col_AM' => '',
+                        'col_AN' => '',
+                        'col_AO' => $percentage_igv,
+                    ];
+                }
+
+                if($row->total_exonerated > 0){
+                    $rows[] = [
+                        // 'col_A' => '',
+                        'col_B' => ($percentage_igv==10)?'08':'05',
+                        'col_C' => $number_index,
+                        'col_D' => $date_of_issue->format('d/m/Y'),
+                        'col_E' => $currency_type_id,
+                        'col_F' => substr($detail, 0, 40),
+                        // 'col_F' => 'POR VENTA',
+                        'col_G' => 0,
+                        'col_H' => 'V',
+                        'col_I' => 'S',
+                        'col_J' => '',
+                        // 'col_K' => '704101',
+                        'col_K' => $company_account->exonerated,
+                        'col_L' => $row->customer->number,
+                        'col_M' => '',
+                        'col_N' => 'H',
+                        'col_O' => ($row->state_type_id == 11 ||  $row->state_type_id == 9) ? 0 : $row->total_exonerated,
+                        'col_P' => '',
+                        'col_Q' => '',
+                        'col_R' => $document_type_id,
+                        'col_S' => $row->number_full,
+                        'col_T' => $row->date_of_issue->format('d/m/Y'),
+                        'col_U' => $date_of_due,
+                        'col_V' => '',
+                        'col_W' => substr($detail, 0, 30),
+                        'col_X' => '',
+                        'col_Y' => '',
+                        'col_Z' => $reference_document_type_id,
+                        'col_AA' => $reference_number_full,
+                        'col_AB' => $reference_date_of_issue,
+                        'col_AC' => '',
+                        'col_AD' => $reference_total_value,
+                        'col_AE' => $reference_total_igv,
+                        'col_AF' => '',
+                        'col_AG' => '',
+                        'col_AH' => '',
+                        'col_AI' => '',
+                        'col_AJ' => '',
+                        'col_AK' => '',
+                        'col_AL' => '',
+                        'col_AM' => '',
+                        'col_AN' => '',
+                        'col_AO' => $percentage_igv,
+                    ];
+                }
+                
+            }
+
+        }
+        return $rows;
+    }
+
+    private function getIgv($date,$establishment_id)
+    {
+        $date_start = config('tenant.igv_31556_start');
+        $date_end = config('tenant.igv_31556_end');
+        $date_percentage = config('tenant.igv_31556_percentage');
+        $establishment = Establishment::query()
+            ->select('id', 'has_igv_31556')
+            ->find($establishment_id);
+        if ($establishment->has_igv_31556) {
+            if ($date >= $date_start && $date <= $date_end) {
+                return $date_percentage*100;
+            }
+        }
+        return 0.18*100;
+    }
+
+    private function getShortDocumentTypeConcarSimple($document_type_id)
+    {
+
+        $document_type = "";
+
+        switch ($document_type_id) {
+            case '01':
+                $document_type = 'FT';
+                break;
+            case '03':
+                $document_type = 'BV';
+                break;
+            case '07':
+                $document_type = 'NC';
+                break;
+            case '08':
+                $document_type = 'ND';
+                break;
+        }
+
+        return $document_type;
+
+    }
+
     private function getStructureSiscont($documents)
     {
 
         $company_account = CompanyAccount::first();
         $rows = [];
-        foreach ($documents as $index => $row)
-        {
+        foreach ($documents as $index => $row) {
             $date_of_issue = Carbon::parse($row->date_of_issue);
-            $currency_type_id = ($row->currency_type_id === 'PEN')?'S':'D';
-            $document_type_id = ($row->document_type_id === '01')?'01':'03';
-            $detail = substr($row->customer->name.', '.$document_type_id.' '.$row->number_full, 0, 60);
+            $currency_type_id = ($row->currency_type_id === 'PEN') ? 'S' : 'D';
+            $document_type_id = ($row->document_type_id === '01') ? '01' : '03';
+            $detail = substr($row->customer->name . ', ' . $document_type_id . ' ' . $row->number_full, 0, 60);
 
-            $number_index = $date_of_issue->format('m').str_pad($index + 1, 4, "0", STR_PAD_LEFT);
+            $number_index = $date_of_issue->format('m') . str_pad($index + 1, 4, "0", STR_PAD_LEFT);
 
             foreach ($row->items as $item) {
 
@@ -705,8 +1270,8 @@ class AccountController extends Controller
                     'col_038_038' => $currency_type_id,
                     'col_039_048' => str_pad(number_format($row->exchange_rate_sale, 7), 10, '0', STR_PAD_LEFT),
                     'col_049_050' => $document_type_id,
-                    'col_051_070' => $row->series.'-'.str_pad($row->number, 15,'0', STR_PAD_LEFT),
-                    'col_071_078' => str_pad(($row->date_of_due)?$row->date_of_due->format('d/m/y'):$row->date_of_issue->format('d/m/y'), 8,' ', STR_PAD_LEFT),
+                    'col_051_070' => $row->series . '-' . str_pad($row->number, 15, '0', STR_PAD_LEFT),
+                    'col_071_078' => str_pad(($row->date_of_due) ? $row->date_of_due->format('d/m/y') : $row->date_of_issue->format('d/m/y'), 8, ' ', STR_PAD_LEFT),
                     'col_079_089' => str_pad($row->customer->number, 11, ' ', STR_PAD_LEFT),
                     'col_090_099' => str_pad('', 10, ' ', STR_PAD_LEFT),
                     'col_100_103' => str_pad('', 4, ' ', STR_PAD_LEFT),
@@ -737,15 +1302,15 @@ class AccountController extends Controller
                     'col_003_006' => $number_index,
                     'col_007_014' => $date_of_issue->format('d/m/y'),
                     // 'col_015_024' => '40111',
-                    'col_015_024' =>  ($row->currency_type_id === 'PEN') ? $company_account->igv_pen : $company_account->igv_usd,
+                    'col_015_024' => ($row->currency_type_id === 'PEN') ? $company_account->igv_pen : $company_account->igv_usd,
                     // 'col_025_036' => str_pad($row->total, 12, '0', STR_PAD_LEFT),
                     'col_025_036' => ($row->state_type_id == '11') ? str_pad(0, 12, '0', STR_PAD_LEFT) : str_pad($item->total_igv, 12, '0', STR_PAD_LEFT),
                     'col_037_037' => 'H',
                     'col_038_038' => $currency_type_id,
                     'col_039_048' => str_pad(number_format($row->exchange_rate_sale, 7), 10, '0', STR_PAD_LEFT),
                     'col_049_050' => $document_type_id,
-                    'col_051_070' => $row->series.'-'.str_pad($row->number, 15,'0', STR_PAD_LEFT),
-                    'col_071_078' => str_pad(($row->date_of_due)?$row->date_of_due->format('d/m/y'):$row->date_of_issue->format('d/m/y'), 8,' ', STR_PAD_LEFT),
+                    'col_051_070' => $row->series . '-' . str_pad($row->number, 15, '0', STR_PAD_LEFT),
+                    'col_071_078' => str_pad(($row->date_of_due) ? $row->date_of_due->format('d/m/y') : $row->date_of_issue->format('d/m/y'), 8, ' ', STR_PAD_LEFT),
                     'col_079_089' => str_pad($row->customer->number, 11, ' ', STR_PAD_LEFT),
                     'col_090_099' => str_pad('', 10, ' ', STR_PAD_LEFT),
                     'col_100_103' => str_pad('', 4, ' ', STR_PAD_LEFT),
@@ -772,7 +1337,7 @@ class AccountController extends Controller
                     'col_351_358' => str_pad('', 8, ' ', STR_PAD_LEFT),
                 ];
 
-                if($row->state_type_id != '11'){
+                if ($row->state_type_id != '11') {
 
                     $rows[] = [
                         'col_001_002' => '02',
@@ -785,8 +1350,8 @@ class AccountController extends Controller
                         'col_038_038' => $currency_type_id,
                         'col_039_048' => str_pad(number_format($row->exchange_rate_sale, 7), 10, '0', STR_PAD_LEFT),
                         'col_049_050' => $document_type_id,
-                        'col_051_070' => $row->series.'-'.str_pad($row->number, 15,'0', STR_PAD_LEFT),
-                        'col_071_078' => str_pad(($row->date_of_due)?$row->date_of_due->format('d/m/y'):$row->date_of_issue->format('d/m/y'), 8,' ', STR_PAD_LEFT),
+                        'col_051_070' => $row->series . '-' . str_pad($row->number, 15, '0', STR_PAD_LEFT),
+                        'col_071_078' => str_pad(($row->date_of_due) ? $row->date_of_due->format('d/m/y') : $row->date_of_issue->format('d/m/y'), 8, ' ', STR_PAD_LEFT),
                         'col_079_089' => str_pad($row->customer->number, 11, ' ', STR_PAD_LEFT),
                         'col_090_099' => str_pad('', 10, ' ', STR_PAD_LEFT),
                         'col_100_103' => str_pad('', 4, ' ', STR_PAD_LEFT),
@@ -824,21 +1389,21 @@ class AccountController extends Controller
     private function getStructureContasis($documents)
     {
 
-        return $documents->transform(function($row) {
+        return $documents->transform(function ($row) {
             $company_account = CompanyAccount::first();
             $document_base = ($row->note) ? $row->note : null;
             $payment_condition = '';
             $payment_method = '';
 
-            if($row->payments->count() > 0){
-                if($row->payments[0]->payment_method_type_id == '01') {
+            if ($row->payments->count() > 0) {
+                if ($row->payments[0]->payment_method_type_id == '01') {
                     $payment_condition = 'CON';
                     $payment_method = '008';
-                }elseif($row->payments[0]->payment_method_type_id == '09'){
+                } elseif ($row->payments[0]->payment_method_type_id == '09') {
                     $payment_condition = 'CRE';
                     $payment_method = '005';
                 }
-            }else{
+            } else {
                 $payment_condition = '';
                 $payment_method = '';
             }
@@ -847,7 +1412,7 @@ class AccountController extends Controller
                 'date_of_due' => $row->invoice->date_of_due->format('d/m/Y'),
                 'document_type_id' => $row->document_type_id,
                 'state_type_id' => $row->state_type_id,
-                'series' => '00'.$row->series,
+                'series' => '00' . $row->series,
                 'number' => str_pad($row->number, 13, '0', STR_PAD_LEFT),
                 'customer_identity_document_type_id' => $row->customer->identity_document_type_id,
                 'customer_number' => $row->customer->number,
@@ -866,7 +1431,7 @@ class AccountController extends Controller
                 'db_document_type_id' => ($document_base) ? $document_base->affected_document->document_type_id : '',
                 'db_series' => ($document_base) ? $document_base->affected_document->series : '',
                 'db_number' => ($document_base) ? str_pad($document_base->affected_document->number, 13, '0', STR_PAD_LEFT) : '',
-                'currency' => ($row->currency_type_id === 'PEN')?'S':'D',
+                'currency' => ($row->currency_type_id === 'PEN') ? 'S' : 'D',
                 'amount_usd' => null,
                 'date_of_due' => $row->invoice->date_of_due->format('d/m/Y'),
                 'payment_condition' => $payment_condition,
@@ -876,5 +1441,20 @@ class AccountController extends Controller
                 'payment_method' => $payment_method,
             ];
         });
+    }
+
+    public function contawebRedirect()
+    {
+        $company = Company::select('number')->first();
+        $request = new Request([
+            'number' => $company->number,
+        ]);
+        $clientController = new ClientController();
+        $response = $clientController->redirectToContaweb($request);
+
+        if($response["success"]){
+            return redirect()->away($response["data"]["url"]);
+        }
+        return redirect()->back();
     }
 }

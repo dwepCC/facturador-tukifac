@@ -42,14 +42,10 @@
             self::validateRequest($request);
             $notService = self::getNotServiceItem($request);
             $Service = self::getServiceItem($request);
-            $notService = $notService->merge($Service);
-
-            $item_ids = $notService->pluck('id')->toArray();
-            $stocks = \App\Models\Tenant\ItemMovement::getStocksByItems($item_ids, $establishment_id);
-
-            return $notService->transform(function ($row) use ($warehouse, $stocks) {
+            $notService->merge($Service);
+            return $notService->transform(function ($row) use ($warehouse) {
                 /** @var Item $row */
-                return $row->getDataToItemModal($warehouse, false, false, null, false, true, $stocks[$row->id] ?? null);
+                return $row->getDataToItemModal($warehouse);
             });
         }
 
@@ -162,8 +158,8 @@
                 // busqueda de insumos, no se lista por codigo de barra o por series
                 $search_item_by_series = false;
             } else {
-                $item->with(['warehousePrices', 'lots_group', 'warehouses.warehouse', 'brand', 'category', 'item_unit_types', 'tags', 'unit_type', 'currency_type', 'sale_affectation_igv_type', 'purchase_affectation_igv_type']);
-                $ItemToSearchBySeries->with(['warehousePrices', 'lots_group', 'warehouses.warehouse', 'brand', 'category', 'item_unit_types', 'tags', 'unit_type', 'currency_type', 'sale_affectation_igv_type', 'purchase_affectation_igv_type']);
+                $item->with('warehousePrices');
+                $ItemToSearchBySeries->with('warehousePrices');
             }
 
             $alt_item = $item;
@@ -328,15 +324,10 @@
             $establishment_id = auth()->user()->establishment_id;
             $warehouse = Warehouse::where('establishment_id', $establishment_id)->first();
             self::validateRequest($request);
-            $items = self::getNotServiceItem($request, $id);
-
-            $item_ids = $items->pluck('id')->toArray();
-            $stocks = \App\Models\Tenant\ItemMovement::getStocksByItems($item_ids, $establishment_id);
-
-            return $items->transform(function ($row) use ($warehouse, $stocks) {
+            return self::getNotServiceItem($request, $id)->transform(function ($row) use ($warehouse) {
                 /** @var Item $row */
 
-                return $row->getDataToItemModal($warehouse, false, false, null, false, true, $stocks[$row->id] ?? null);
+                return $row->getDataToItemModal($warehouse);
             });
         }
 
@@ -353,21 +344,14 @@
             $establishment_id = auth()->user()->establishment_id;
             $warehouse = Warehouse::where('establishment_id', $establishment_id)->first();
 
-            $items = self::searchById($id);
-
-            $item_ids = $items->pluck('id')->toArray();
-            $stocks = \App\Models\Tenant\ItemMovement::getStocksByItems($item_ids, $establishment_id);
-
-            $items = $items->transform(function ($row) use ($warehouse, $stocks) {
+            $items = self::searchById($id)->transform(function ($row) use ($warehouse) {
                 /** @var Item $row */
                 return $row->getDataToItemModal(
                     $warehouse,
                     true,
                     null,
                     false,
-                    true,
-                    true,
-                    $stocks[$row->id] ?? null
+                    true
                 );
 
             });
@@ -567,15 +551,10 @@
         public static function TransformToModal($items, Warehouse $warehouse = null)
         {
             /** @var Item[]|\Illuminate\Database\Eloquent\Builder[]|\Illuminate\Database\Eloquent\Collection|Builder[]|Collection|mixed $items */
-
-            $item_ids = $items->pluck('id')->toArray();
-            $establishment_id = auth()->user()->establishment_id;
-            $stocks = \App\Models\Tenant\ItemMovement::getStocksByItems($item_ids, $establishment_id);
-
             return $items
-                ->transform(function ($row) use ($warehouse, $stocks) {
+                ->transform(function ($row) use ($warehouse) {
                     /** @var Item $row */
-                    return $row->getDataToItemModal($warehouse, false, false, null, false, true, $stocks[$row->id] ?? null);
+                    return $row->getDataToItemModal($warehouse);
                 });
 
         }
@@ -588,14 +567,9 @@
         public static function TransformToModalAndSupply($items, Warehouse $warehouse = null)
         {
             /** @var Item[]|\Illuminate\Database\Eloquent\Builder[]|\Illuminate\Database\Eloquent\Collection|Builder[]|Collection|mixed $items */
-
-            $item_ids = $items->pluck('id')->toArray();
-            $establishment_id = auth()->user()->establishment_id;
-            $stocks = \App\Models\Tenant\ItemMovement::getStocksByItems($item_ids, $establishment_id);
-
             return $items
-                ->transform(function (Item $row) use ($warehouse, $stocks) {
-                    $data= $row->getDataToItemModal($warehouse, false, false, null, false, true, $stocks[$row->id] ?? null);
+                ->transform(function (Item $row) use ($warehouse) {
+                    $data= $row->getDataToItemModal($warehouse);
                     $suppl = $row->supplies;
 
 
@@ -645,11 +619,7 @@
                 $warehouse_id = ($warehouse) ? $warehouse->id : null;
             }
 
-            $item_ids = $items->pluck('id')->toArray();
-            $establishment_id = auth()->user()->establishment_id;
-            $stocks = \App\Models\Tenant\ItemMovement::getStocksByItems($item_ids, $establishment_id);
-
-            return $items->transform(function ($row) use ($warehouse_id, $warehouse, $stocks) {
+            return $items->transform(function ($row) use ($warehouse_id, $warehouse) {
                 /** @var Item $row */
 
                 $unit_price = $row->getSaleUnitPriceByWarehouse($row, $warehouse->id);
@@ -694,7 +664,7 @@
                     'date_of_due' => $row->date_of_due,
                 ];
 
-                return  array_merge($row->getCollectionData(null, $stocks[$row->id] ?? null), $row->getDataToItemModal($warehouse, false, false, null, false, true, $stocks[$row->id] ?? null),$temp);
+                return  array_merge($row->getCollectionData(), $row->getDataToItemModal(),$temp);
             });
 
         }
@@ -1041,14 +1011,9 @@
                 $warehouse = Warehouse::where('establishment_id', $establishment_id)->first();
                 $warehouse_id = ($warehouse) ? $warehouse->id : null;
             }
-
-            $item_ids = $items->pluck('id')->toArray();
-            $establishment_id = auth()->user()->establishment_id;
-            $stocks = \App\Models\Tenant\ItemMovement::getStocksByItems($item_ids, $establishment_id);
-
-            return $items->transform(function ($row) use ($warehouse_id, $warehouse, $stocks) {
+            return $items->transform(function ($row) use ($warehouse_id, $warehouse) {
                 /** @var Item $row */
-                $temp = array_merge($row->getCollectionData(null, $stocks[$row->id] ?? null), $row->getDataToItemModal($warehouse, false, false, null, false, true, $stocks[$row->id] ?? null));
+                $temp = array_merge($row->getCollectionData(), $row->getDataToItemModal());
 
                 if(isset($temp['name_product_pdf'])) $temp['name_product_pdf'] = null;
 

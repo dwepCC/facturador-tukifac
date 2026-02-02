@@ -178,8 +178,12 @@ class CashController extends Controller
         $data['nota_venta'] = 0;
 
         $data['total_tips'] = 0;
-        $data['total_payment_cash_01_document'] = 0;
-        $data['total_payment_cash_01_sale_note'] = 0;
+        $data['total_payment_cash_01_document'] = 0; // Total de efectivo CPE -> Pago con dinero fisico
+        $data['total_payment_cash_01_sale_note'] = 0; // Total de efectivo NV
+
+        $data['total_payment_cash_document'] = 0; // Total del pago CPE  -> Pago echo por otro medio distinto a efectivo
+        $data['total_payment_cash_sale_note'] = 0; // Total del pago al contado NV
+
         $data['total_cash_payment_method_type_01'] = 0;
         $data['separate_cash_transactions'] = Configuration::getSeparateCashTransactions();
 
@@ -250,7 +254,8 @@ class CashController extends Controller
                                 $data['total_payment_cash_01_document'] += $record_total;
                                 continue;
                             }
-                            if($record->is_cash) $data['total_payment_cash_01_sale_note'] += $record_total;
+                            if($record->id === '01') $data['total_payment_cash_01_sale_note'] += $record_total;
+                            if($record->is_cash &&  $record->id !== '01') $data['total_payment_cash_sale_note'] += $record_total;
                         }
 
                         $data['total_cash_income_pmt_01'] += $this->getIncomeEgressCashDocumentPayments($sale_note->payments,$cash_id);
@@ -335,7 +340,8 @@ class CashController extends Controller
                                 if (!empty($record_total)) {
                                     $usado .= self::getStringPaymentMethod($record->id).'<br>Se usan los pagos Tipo '.$record->id.'<br>';
                                 }
-                                if($record->is_cash) $data['total_payment_cash_01_document'] += $record_total;
+                                if($record->id === '01') $data['total_payment_cash_01_document'] += $record_total;
+                                if($record->is_cash &&  $record->id !== '01') $data['total_payment_cash_document'] += $record_total;
 
                             }
                         }
@@ -922,12 +928,7 @@ class CashController extends Controller
      */
     public function getPaymentsByCashFilter($payments)
     {
-
-        return $payments->filter( function ($pay) {
-            return $pay->whereHas('payment_method_type', function ($query) {
-                $query->where('is_cash', true);
-            });
-        });
+        return $payments->where('payment_method_type_id', self::PAYMENT_METHOD_TYPE_CASH);
     }
 
 

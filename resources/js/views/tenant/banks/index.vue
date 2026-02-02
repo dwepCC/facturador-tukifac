@@ -5,6 +5,9 @@
             <ol class="breadcrumbs">
                 <li class="active"><span> Listado de bancos </span></li>
             </ol>
+            <div class="right-wrapper pull-right">
+                <button type="button" class="btn btn-custom btn-sm  mt-2 me-2" @click.prevent="clickCreate()"><i class="fa fa-plus-circle"></i> Nuevo</button>
+            </div>
         </div>
         <div class="card tab-content-default row-new">
             <!-- <div class="card-header bg-info">
@@ -34,11 +37,6 @@
                         </tr>
                         </tbody>
                     </table>
-                </div>
-                <div class="row">
-                    <div class="col">
-                        <button type="button" class="btn btn-custom btn-sm  mt-2 me-2" @click.prevent="clickCreate()"><i class="fa fa-plus-circle"></i> Nuevo</button>
-                    </div>
                 </div>
             </div>
             <banks-form :showDialog.sync="showDialog"

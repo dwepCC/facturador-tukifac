@@ -281,6 +281,24 @@
                 </p>
             </td>
         </tr>
+        <tr>
+            <td class="td-custom">
+                <p>
+                    <strong>
+                        Total de otros medios de pago CPE:
+                    </strong>
+                    S/ {{$data['total_payment_cash_document'] ?? 0}}
+                </p>
+            </td>
+            <td class="td-custom">
+                <p>
+                    <strong>
+                        Total de otos medios de pago NOTA DE VENTA:
+                    </strong>
+                    S/ {{$data['total_payment_cash_sale_note'] ?? 0}}
+                </p>
+            </td>
+        </tr>
 
     </table>
 </div>

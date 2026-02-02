@@ -95,7 +95,7 @@
 <div class="container container-footer">
     <div class="footer-bottom" style="padding-bottom: 2rem;">
         <!-- <p class="footer-copyright">Facturador Pro 4. &copy; {{ now()->year }}. Todos los Derechos Reservados</p> -->
-        <img src="{{ asset('porto-ecommerce/assets/images/payments.png') }}" alt="payment methods"
+        <img src="{{ asset('porto-ecommerce/assets/images/payments.svg') }}" alt="payment methods"
             class="footer-payments">
     </div>
 </div>
@@ -153,9 +153,9 @@
                         <!-- contenedor de login -->
                          <!-- <div class="contenedor-column-form"> -->
                         <div id="first-column" class="first-column">
-                        <form action="#" id="form_login" class="iniciar-sesion">
+                        <form action="#" id="form_login" class="iniciar-sesion" data-login-url="{{ route('tenant_ecommerce_login') }}">
                                 <h4 class="title mb-2">Iniciar sesión</h4>
-                                <div id="msg_login" class="alert alert-danger" role="alert">
+                                <div id="msg_login" class="alert alert-danger" role="alert" style="display:none;" aria-live="polite">
                                     Usuario o Contraseña Incorrectos.
                                 </div>
                                 <div class="form-group">
@@ -173,10 +173,10 @@
                         </div>
                         <!-- contenedor de registro -->
                         <div id="second-column" class="second-column">
-                        <form autocomplete="off" action="#" id="form_register" class="registrarse">
+                        <form autocomplete="off" action="#" id="form_register" class="registrarse" data-register-url="{{ route('tenant_ecommerce_store_user') }}">
                                 <h4 class="title mb-2">Nuevo Registro</h4>
-                                <div id="msg_register" class="alert alert-danger" role="alert">
-                                    <p id="msg_register_p"></p>
+                                <div id="msg_register" class="alert alert-danger" role="alert" style="display:none;" aria-live="polite">
+                                    <p id="msg_register_p" style="margin:0;"></p>
                                 </div>
                                 <div class="form-group">
                                     <label for="email">Nombres:</label>
@@ -227,24 +227,20 @@
 
 </div>
 <script>
-// error upgrade | [Vue warn]: Error compiling template
-// document.addEventListener("DOMContentLoaded", () => {
-//     const firstColumn = document.getElementById("contenedor-form");
-//     // console.log(firstColumn);
-//     const btnIniciarSesion = document.getElementById("iniciar-sesion");
-//     // console.log(btnIniciarSesion);
-//     const btnRegistrarse = document.getElementById("registrarse");
-//     // console.log(btnRegistrarse);
-
-//     btnIniciarSesion.addEventListener("click", () => {
-//         firstColumn.classList.remove("active");
-
-//     });
-//     btnRegistrarse.addEventListener("click", () => {
-//         firstColumn.classList.add("active");
-
-//     });
-// });
+// Animación y lógica de login/registro + set de color dinámico
+document.addEventListener("DOMContentLoaded", () => {
+    const formContainer = document.getElementById("contenedor-form");
+    const btnLoginView = document.getElementById("iniciar-sesion");
+    const btnRegisterView = document.getElementById("registrarse");
+    if (formContainer && btnLoginView && btnRegisterView) {
+        btnLoginView.addEventListener("click", () => {
+            formContainer.classList.remove("active");
+        });
+        btnRegisterView.addEventListener("click", () => {
+            formContainer.classList.add("active");
+        });
+    }
+});
 
 function hexToHSL(hex) {
   let r = 0, g = 0, b = 0;
@@ -307,87 +303,111 @@ fetch('/ecommerce/color-ecommerce')
 
 </script>
 @push('scripts')
-<!-- <script type="text/javascript" src="{{ asset('porto-ecommerce/assets/js/cart.js') }}"></script> -->
 <script type="text/javascript">
-
-
-
+    // Inicialización
     matchPassword();
-    submitLogin();
-    submitRegister();
-
+    initAuthForms();
 
     function matchPassword() {
-        var password = document.getElementById("pwd_reg"),
-            confirm_password = document.getElementById("pwd_repeat_reg");
-
+        const password = document.getElementById("pwd_reg");
+        const confirmPassword = document.getElementById("pwd_repeat_reg");
+        if (!password || !confirmPassword) return;
         function validatePassword() {
-            if (password.value != confirm_password.value) {
-                confirm_password.setCustomValidity("El Password no coincide.");
+            if (password.value !== confirmPassword.value) {
+                confirmPassword.setCustomValidity("El Password no coincide.");
             } else {
-                confirm_password.setCustomValidity('');
+                confirmPassword.setCustomValidity('');
             }
         }
-
-        password.onchange = validatePassword;
-        confirm_password.onkeyup = validatePassword;
+        password.addEventListener('change', validatePassword);
+        confirmPassword.addEventListener('keyup', validatePassword);
     }
 
-    function submitLogin() {
-        $('#msg_login').hide();
+    function setLoading(btn, isLoading, textOriginal) {
+        if (!btn) return;
+        if (isLoading) {
+            btn.dataset.originalText = textOriginal || btn.textContent;
+            btn.textContent = 'Procesando...';
+            btn.classList.add('is-loading');
+            btn.setAttribute('disabled','disabled');
+        } else {
+            btn.textContent = btn.dataset.originalText || textOriginal || 'Enviar';
+            btn.classList.remove('is-loading');
+            btn.removeAttribute('disabled');
+        }
+    }
 
-        $('#form_login').submit(function (e) {
-            e.preventDefault()
-            $.ajax({
-                type: "POST",
-                dataType: 'JSON',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                url: "{{route('tenant_ecommerce_login')}}",
-                data: $(this).serialize(),
-                success: function (data) {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        $('#msg_login').show();
+    function initAuthForms() {
+        const loginForm = $('#form_login');
+        const registerForm = $('#form_register');
+        const msgLogin = $('#msg_login');
+        const msgRegister = $('#msg_register');
+        if (msgLogin.length) msgLogin.hide();
+        if (msgRegister.length) msgRegister.hide();
+
+        if (loginForm.length) {
+            loginForm.on('submit', function(e){
+                e.preventDefault();
+                const btn = this.querySelector('button[type="submit"]');
+                setLoading(btn, true, 'Ingresar');
+                $.ajax({
+                    type:'POST',
+                    dataType:'JSON',
+                    headers:{'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
+                    url: $(this).data('login-url') || "{{route('tenant_ecommerce_login')}}",
+                    data: $(this).serialize(),
+                    success:function(data){
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            if (msgLogin.length) msgLogin.show();
+                        }
+                    },
+                    error:function(err){
+                        console.log(err);
+                        if (msgLogin.length) msgLogin.show();
+                    },
+                    complete:function(){
+                        setLoading(btn, false, 'Ingresar');
                     }
-                },
-                error: function (error_data) {
-                    console.log(error_data)
-                }
+                });
             });
-        })
+        }
 
-    }
-
-    function submitRegister() {
-        $('#msg_register').hide();
-
-        $('#form_register').submit(function (e) {
-            e.preventDefault()
-            $.ajax({
-                type: "POST",
-                dataType: 'JSON',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                url: "{{route('tenant_ecommerce_store_user')}}",
-                data: $(this).serialize(),
-                success: function (data) {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        $('#msg_register').show();
-                        $('#msg_register_p').text(data.message)
+        if (registerForm.length) {
+            registerForm.on('submit', function(e){
+                e.preventDefault();
+                const btn = this.querySelector('button[type="submit"]');
+                setLoading(btn, true, 'Registrarse');
+                $.ajax({
+                    type:'POST',
+                    dataType:'JSON',
+                    headers:{'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
+                    url: $(this).data('register-url') || "{{route('tenant_ecommerce_store_user')}}",
+                    data: $(this).serialize(),
+                    success:function(data){
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            if (msgRegister.length) {
+                                msgRegister.show();
+                                $('#msg_register_p').text(data.message || 'Error en el registro');
+                            }
+                        }
+                    },
+                    error:function(err){
+                        console.log(err);
+                        if (msgRegister.length) {
+                            msgRegister.show();
+                            $('#msg_register_p').text('Ocurrió un error inesperado');
+                        }
+                    },
+                    complete:function(){
+                        setLoading(btn, false, 'Registrarse');
                     }
-                },
-                error: function (error_data) {
-                    console.log(error_data)
-                }
+                });
             });
-        })
+        }
     }
-
 </script>
 @endpush

@@ -77,7 +77,7 @@
                         <td class="text-center">
                             <button
                                 type="button"
-                                class="btn waves-effect waves-light btn-xs btn-info"
+                                class="btn waves-effect waves-light btn-xs btn-info me-1"
                                 @click.prevent="clickDownload(row.download_xml)"
                                 v-if="row.has_xml"
                             >

@@ -2,46 +2,139 @@
 // Archivo: resources/js/tenant/dom-fixes.js
 
 // 1. Script de tema visual (de app.blade.php)
-export function applyThemeAndShowContent(savedTheme) {
+export function applyThemeAndShowContent(savedTheme, savedBlackTheme) {
     const timeoutDuration = 3000;
     const showContent = () => {
         document.body.classList.add('visible');
     };
+
     const timeout = setTimeout(() => {
         console.warn('Timeout: Mostrando contenido sin aplicar el tema.');
         showContent();
     }, timeoutDuration);
-    if (savedTheme) {
-        fetch('/json/themes/themes.json')
-            .then(response => response.json())
-            .then(themes => {
-                if (themes[savedTheme]) {
-                    const styleElement = document.createElement('style');
-                    let cssVariables = '';
-                    Object.keys(themes[savedTheme]).forEach(variable => {
-                        cssVariables += `${variable}: ${themes[savedTheme][variable]};\n`;
-                    });
-                    styleElement.innerHTML = `:root { ${cssVariables} }`;
-                    document.head.appendChild(styleElement);
-                }
-            })
-            .catch(error => {
-                console.error('Error loading themes:', error);
-            })
-            .finally(() => {
-                clearTimeout(timeout);
-                showContent();
+
+    const applyCachedTheme = (themeName, cachePrefix, styleId) => {
+        if (!themeName) {
+            return false;
+        }
+        const cached = localStorage.getItem(`${cachePrefix}${themeName}`);
+        if (!cached) {
+            return false;
+        }
+        try {
+            const colors = JSON.parse(cached);
+            if (!colors || typeof colors !== 'object') {
+                return false;
+            }
+            let styleElement = document.getElementById(styleId);
+            if (!styleElement) {
+                styleElement = document.createElement('style');
+                styleElement.id = styleId;
+                document.head.appendChild(styleElement);
+            }
+            let cssVariables = '';
+            Object.keys(colors).forEach(variable => {
+                cssVariables += `${variable}: ${colors[variable]};\n`;
             });
-    } else {
+            styleElement.innerHTML = `:root { ${cssVariables} }`;
+            return true;
+        } catch (error) {
+            console.error('Error applying cached theme:', error);
+            return false;
+        }
+    };
+
+    const themeToApply = savedTheme || localStorage.getItem('current_theme');
+    const blackThemeToApply = savedBlackTheme || localStorage.getItem('black_theme');
+
+    const cachedApplied =
+        applyCachedTheme(themeToApply, 'theme_colors_', 'theme-styles') ||
+        applyCachedTheme(blackThemeToApply, 'black_theme_colors_', 'black-theme-styles');
+
+    if (cachedApplied) {
         clearTimeout(timeout);
         showContent();
     }
+
+    const pendingRequests = [];
+
+    if (themeToApply) {
+        pendingRequests.push(
+            fetch('/json/themes/themes.json')
+                .then(response => response.json())
+                .then(themes => {
+                    if (themes[themeToApply]) {
+                        const colors = themes[themeToApply];
+                        let styleElement = document.getElementById('theme-styles');
+                        if (!styleElement) {
+                            styleElement = document.createElement('style');
+                            styleElement.id = 'theme-styles';
+                            document.head.appendChild(styleElement);
+                        }
+                        let cssVariables = '';
+                        Object.keys(colors).forEach(variable => {
+                            cssVariables += `${variable}: ${colors[variable]};\n`;
+                        });
+                        styleElement.innerHTML = `:root { ${cssVariables} }`;
+                        localStorage.setItem('current_theme', themeToApply);
+                        localStorage.setItem(
+                            `theme_colors_${themeToApply}`,
+                            JSON.stringify(colors)
+                        );
+                    }
+                })
+        );
+    }
+
+    if (blackThemeToApply) {
+        pendingRequests.push(
+            fetch('/json/themes/black-themes.json')
+                .then(response => response.json())
+                .then(themes => {
+                    if (themes[blackThemeToApply]) {
+                        const colors = themes[blackThemeToApply];
+                        let styleElement = document.getElementById('black-theme-styles');
+                        if (!styleElement) {
+                            styleElement = document.createElement('style');
+                            styleElement.id = 'black-theme-styles';
+                            document.head.appendChild(styleElement);
+                        }
+                        let cssVariables = '';
+                        Object.keys(colors).forEach(variable => {
+                            cssVariables += `${variable}: ${colors[variable]};\n`;
+                        });
+                        styleElement.innerHTML = `:root { ${cssVariables} }`;
+                        localStorage.setItem('black_theme', blackThemeToApply);
+                        localStorage.setItem(
+                            `black_theme_colors_${blackThemeToApply}`,
+                            JSON.stringify(colors)
+                        );
+                    }
+                })
+        );
+    }
+
+    if (pendingRequests.length === 0) {
+        clearTimeout(timeout);
+        showContent();
+        return;
+    }
+
+    Promise.all(pendingRequests)
+        .catch(error => {
+            console.error('Error loading themes:', error);
+        })
+        .finally(() => {
+            if (!cachedApplied) {
+                clearTimeout(timeout);
+                showContent();
+            }
+        });
 }
 
 // 2. Scripts de header (de header.blade.php)
 export function setupHeaderDomEvents() {
-    // Función para inicializar eventos del header
-    const initHeaderEvents = () => {
+    document.addEventListener('DOMContentLoaded', function () {
         const optionsUserMobile = document.querySelector('.options-user-mobile');
         const headerRight = document.querySelector('.header-right');
         const closeContainerUser = document.querySelector('.close-container-user');
@@ -66,80 +159,22 @@ export function setupHeaderDomEvents() {
                 }
             });
         }
-        
         // script para manejo de dropdown-menu-desktop
-        // OPTIMIZACIÓN: Usar múltiples selectores y reintentar si no se encuentra
-        const setupUserDropdown = () => {
-            const userProfile = document.querySelector('.check-double') || 
-                               document.querySelector('#userbox .user-profile-content') ||
-                               document.querySelector('#userbox > a');
-            const userbox = document.querySelector('#userbox');
-            const dropdownMenu = document.querySelector('.dropdown-menu-desktop');
-            
-            if (userProfile && dropdownMenu) {
-                // Verificar si ya tiene un listener (evitar duplicados)
-                if (userProfile.dataset.dropdownBound === 'true') {
-                    return true; // Ya está configurado
+        const userProfile = document.querySelector('.check-double');
+        const dropdownMenu = document.querySelector('.dropdown-menu-desktop');
+        if (userProfile && dropdownMenu) {
+            userProfile.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                dropdownMenu.classList.toggle('active');
+            });
+            document.addEventListener('click', function (event) {
+                if (!userProfile.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                    dropdownMenu.classList.remove('active');
                 }
-                
-                // Marcar como configurado
-                userProfile.dataset.dropdownBound = 'true';
-                
-                // Agregar evento al elemento del usuario
-                userProfile.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    dropdownMenu.classList.toggle('active');
-                    // También agregar clase show al userbox si existe (para compatibilidad)
-                    if (userbox) {
-                        userbox.classList.toggle('show');
-                    }
-                });
-                
-                // Cerrar dropdown al hacer click fuera (solo una vez)
-                if (!document.dropdownCloseHandler) {
-                    document.dropdownCloseHandler = (event) => {
-                        const isClickInside = (userProfile && userProfile.contains(event.target)) || 
-                                             (dropdownMenu && dropdownMenu.contains(event.target)) ||
-                                             (userbox && userbox.contains(event.target));
-                        if (!isClickInside && dropdownMenu && dropdownMenu.classList.contains('active')) {
-                            dropdownMenu.classList.remove('active');
-                            if (userbox) {
-                                userbox.classList.remove('show');
-                            }
-                        }
-                    };
-                    // Usar capture para asegurar que se ejecute antes que otros handlers
-                    document.addEventListener('click', document.dropdownCloseHandler, true);
-                }
-                
-                return true; // Éxito
-            } else {
-                return false; // No se encontraron elementos
-            }
-        };
-        
-        // Intentar configurar el dropdown, reintentar si falla
-        if (!setupUserDropdown()) {
-            // Reintentar después de un breve delay (por si Vue aún está montando)
-            setTimeout(() => {
-                if (!setupUserDropdown()) {
-                    // Último intento después de más tiempo
-                    setTimeout(() => {
-                        setupUserDropdown();
-                    }, 1000);
-                }
-            }, 500);
+            });
         }
-    };
-    
-    // Ejecutar cuando el DOM esté listo
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initHeaderEvents);
-    } else {
-        // DOM ya está listo, pero esperar un poco para que Vue monte los componentes
-        setTimeout(initHeaderEvents, 100);
-    }
+    });
 }
 
 // 3. Scripts de autenticación del eCommerce (desde footer.blade.php)

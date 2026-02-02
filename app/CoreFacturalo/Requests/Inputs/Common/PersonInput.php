@@ -8,6 +8,8 @@ use App\Models\Tenant\Catalogs\Country;
 use App\Models\Tenant\Catalogs\Department;
 use App\Models\Tenant\Catalogs\District;
 
+//dd($customer_address, $person->telephone, $customer_address->telephone ?? null);
+
 class PersonInput
 {
     public static function set($person_id, $address_id = null, $itinerant = false)
@@ -58,7 +60,7 @@ class PersonInput
             ],
             'address' =>  ($customer_address) ? $customer_address->address : $person->address,//$person->address,
             'email' => isset($itinerant) ? null :  (($customer_address) ? $customer_address->email : $person->email),  //$person->email,
-            'telephone' => isset($itinerant) ? null : (($customer_address) ? $customer_address->telephone : $person->telephone), //$person->telephone,
+            'telephone' => ($customer_address && $customer_address->telephone)? $customer_address->telephone : $person->telephone, //$person->telephone,
             'perception_agent' => $person->perception_agent,
             'address_id' => $address_id,
             'internal_code' => $person->internal_code,

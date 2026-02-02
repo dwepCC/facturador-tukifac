@@ -95,15 +95,18 @@
                         <div class="row">
                             <div class="col-lg-6">
                                 <div :class="{'has-danger': errors.supplier_id}"
-                                     class="form-group">
+                                     class="form-group position-relative">
                                     <label class="control-label">
                                         Proveedor
-                                        <a href="#"
-                                           @click.prevent="showDialogNewPerson = true">[+ Nuevo]</a>
+                                        <!-- <a href="#"
+                                           @click.prevent="showDialogNewPerson = true">[+ Nuevo]</a> -->
                                     </label>
                                     <el-select ref="select_person"
                                                v-model="form.supplier_id"
                                                filterable
+                                               remote
+                                               :remote-method="searchRemoteSuppliers"
+                                               :loading="loading_search"
                                                @change="changeSupplier"
                                                @keyup.native="keyupSupplier"
                                                @keyup.enter.native="keyupEnterSupplier">
@@ -111,7 +114,28 @@
                                                    :key="option.id"
                                                    :label="option.description"
                                                    :value="option.id"></el-option>
+
+                                        <template slot="empty">
+                                            <p v-if="loading_search" class="el-select-dropdown__empty">
+                                                Cargando...
+                                            </p>
+                                        
+                                            <p v-else class="el-select-dropdown__empty">
+                                                No se encontraron resultados
+                                            </p>
+                                        
+                                            <div
+                                                v-if="!loading_search"
+                                                class="el-select-dropdown__item new-option"
+                                                @click.stop="openNewPersonDialog"
+                                            >
+                                                <span>{{ supplierSearchTerm ? `Crear proveedor "${supplierSearchTerm}"` : 'Crear proveedor' }}</span>
+                                            </div>
+                                        </template>
                                     </el-select>
+                                    <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo proveedor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                                    </span>
                                     <small v-if="errors.supplier_id"
                                            class="form-control-feedback"
                                            v-text="errors.supplier_id[0]"></small>
@@ -458,11 +482,17 @@
                                             type="button"
                                             @click.prevent="showDialogAddItem = true">+ Agregar Producto
                                     </button>
+                                    <button
+                                        class="btn waves-effect waves-light btn-primary mx-2"
+                                        type="button"
+                                        @click.prevent="showDialogAddSupply = true">+
+                                        Agregar Insumo
+                                    </button>
                                 </div>
                             </div>
                         </div>
                         <div v-if="form.items !== undefined && form.items.length > 0"
-                             class="row">
+                             class="row mt-3">
                             <div class="col-md-12">
                                 <div class="table-responsive">
                                     <table class="table">
@@ -487,10 +517,18 @@
                                             :key="index">
                                             <!-- <td>{{ index + 1 }}</td> -->
                                             <td>
-                                                {{
-                                                    setDescriptionOfItem(row.item)
-                                                }}
-                                                <br/><small>{{ row.affectation_igv_type.description }}</small></td>
+                                                <span v-if="row.is_supply" class="badge badge-info me-2">Insumo</span>
+                                                <template v-if="row.is_supply">
+                                                    {{ row.supply.name }}
+                                                    <br/><small>{{ row.supply.unit_type.description }} - Merma: {{ row.supply.waste_percentage }}% (Efectivo: {{ row.effective_quantity }})</small>
+                                                </template>
+                                                <template v-else>
+                                                    {{
+                                                        setDescriptionOfItem(row.item)
+                                                    }}
+                                                </template>
+                                                <br/><small>{{ row.affectation_igv_type.description }}</small>
+                                            </td>
                                             <td class="text-start">{{ row.warehouse_description }}</td>
                                             <td class="text-start">{{ row.lot_code }}</td>
                                             <td class="text-center">{{ row.item.unit_type_id }}</td>
@@ -539,8 +577,8 @@
 
                                 <div class="row mt-1 mb-2"  v-if="form.total > 0">
 
-                                    <div class="col-lg-10 float-right">
-                                        <label class="float-right control-label">
+                                    <div class="col-lg-10 float-end">
+                                        <label class="float-end control-label">
 
                                             <el-tooltip class="item"
                                                 :content="global_discount_type.description"
@@ -555,7 +593,7 @@
                                         </label>
                                     </div>
 
-                                    <div class="col-lg-2 float-right">
+                                    <div class="col-lg-2 float-end">
                                         <el-input-number v-model="total_global_discount"
                                                             :min="0"
                                                             class="input-custom"
@@ -599,10 +637,10 @@
                                 <template v-if="is_perception_agent">
                                     <hr>
                                     <div class="row mt-1">
-                                        <div class="col-lg-10 float-right">
-                                            <label class="float-right control-label">NÚMERO PERCEPCIÓN: </label>
+                                        <div class="col-lg-10 float-end">
+                                            <label class="float-end control-label">NÚMERO PERCEPCIÓN: </label>
                                         </div>
-                                        <div class="col-lg-2 float-right">
+                                        <div class="col-lg-2 float-end">
                                             <div :class="{'has-danger': errors.perception_number}"
                                                  class="form-group">
                                                 <el-input v-model="form.perception_number"></el-input>
@@ -615,10 +653,10 @@
                                     </div>
 
                                     <div class="row mt-1">
-                                        <div class="col-lg-10 float-right">
-                                            <label class="float-right control-label">FEC EMISIÓN PERCEPCIÓN: </label>
+                                        <div class="col-lg-10 float-end">
+                                            <label class="float-end control-label">FEC EMISIÓN PERCEPCIÓN: </label>
                                         </div>
-                                        <div class="col-lg-2 float-right">
+                                        <div class="col-lg-2 float-end">
                                             <div :class="{'has-danger': errors.perception_date}"
                                                  class="form-group">
                                                 <el-date-picker v-model="form.perception_date"
@@ -634,10 +672,10 @@
                                     </div>
 
                                     <div class="row mt-1">
-                                        <div class="col-lg-10 float-right">
-                                            <label class="float-right control-label">IMPORTE PERCEPCIÓN: </label>
+                                        <div class="col-lg-10 float-end">
+                                            <label class="float-end control-label">IMPORTE PERCEPCIÓN: </label>
                                         </div>
-                                        <div class="col-lg-2 float-right">
+                                        <div class="col-lg-2 float-end">
                                             <div :class="{'has-danger': errors.total_perception}"
                                                  class="form-group">
                                                 <el-input v-model="form.total_perception"
@@ -661,13 +699,27 @@
                             </div>
                         </div>
                     </div>
-                    <div class="form-actions text-end mt-4 footer-card-default">
-                        <el-button class="second-buton btn btn-default second-buton-default" @click.prevent="close()">Cancelar</el-button>
-                        <el-button v-if="form.items !== undefined && form.items.length > 0 && !hide_button"
-                                   :loading="loading_submit"
-                                   native-type="submit"
-                                   class="btn btn-primary btn-submit-default"
-                                   type="primary">Generar
+                    <div
+                        class="form-actions mt-4 footer-card-default gap-2
+                               d-flex flex-column flex-md-row
+                               justify-content-center justify-content-md-between
+                               align-items-stretch align-items-md-center"
+                    >
+                        <el-button
+                            class="btn btn-default second-buton-default"
+                            @click.prevent="close()"
+                        >
+                            Cancelar
+                        </el-button>
+                    
+                        <el-button
+                            v-if="form.items && form.items.length > 0 && !hide_button"
+                            :loading="loading_submit"
+                            native-type="submit"
+                            class="btn btn-primary btn-submit-default"
+                            type="primary"
+                        >
+                            Generar
                         </el-button>
                     </div>
                 </form>
@@ -681,8 +733,15 @@
                                 :percentage-igv="percentage_igv"
                                 @add="addRow"></purchase-form-item>
 
+            <add-supply-modal
+                :showDialog.sync="showDialogAddSupply"
+                :affectation_igv_types="affectation_igv_types"
+                :percentage_igv="percentage_igv"
+                @supply-added="handleSupplyAdded"
+            />
+
             <person-form :external="true"
-                         :input_person="input_person"
+                         :input_person="personFormInput"
                          :showDialog.sync="showDialogNewPerson"
                          type="suppliers"></person-form>
 
@@ -711,6 +770,7 @@
 import PurchaseFormItem from './partials/item.vue'
 import PersonForm from '../persons/form.vue'
 import PurchaseOptions from './partials/options.vue'
+import AddSupplyModal from './partials/AddSupplyModal.vue'
 import {exchangeRate, functions, fnPaymentsFee, operationsForDiscounts} from '../../../mixins/functions'
 import {calculateRowItem, showNamePdfOfDescription} from '../../../helpers/functions'
 import SeriesForm from './partials/series.vue'
@@ -719,7 +779,7 @@ import InputLotGroup from '@components/secondary/InputLotGroup.vue'
 
 export default {
     props: ['purchase_order_id'],
-    components: {PurchaseFormItem, PersonForm, PurchaseOptions, SeriesForm, InputLotGroup},
+    components: {PurchaseFormItem, PersonForm, PurchaseOptions, SeriesForm, InputLotGroup, AddSupplyModal},
     mixins: [functions, exchangeRate, fnPaymentsFee, operationsForDiscounts],
     computed: {
         ...mapState([
@@ -727,6 +787,24 @@ export default {
             'establishment',
             'hasGlobalIgv',
         ]),
+        personFormInput() {
+            const term = (this.supplierSearchTerm || '').trim()
+
+            if (!term) return ''
+
+            if (/^\d+$/.test(term)) {
+                let identity_document_type_id = null
+                if (term.length === 8) identity_document_type_id = '1'
+                if (term.length === 11) identity_document_type_id = '6'
+
+                return {
+                    number: term,
+                    ...(identity_document_type_id ? { identity_document_type_id } : {})
+                }
+            }
+
+            return term
+        },
         creditPaymentMethod: function () {
             return _.filter(this.payment_method_types, {'is_credit': true})
         },
@@ -742,13 +820,15 @@ export default {
         isFromPurchaseOrder()
         {
             return this.purchase_order_id != undefined && this.purchase_order_id != null
-        }
+        },
+
     },
     data() {
         return {
             input_person: {},
             resource: 'purchases',
             showDialogAddItem: false,
+            showDialogAddSupply: false,
             readonly_date_of_due: false,
             localHasGlobalIgv: false,
             showDialogNewPerson: false,
@@ -758,7 +838,8 @@ export default {
             is_perception_agent: false,
             errors: {},
             form: {
-                items:[]
+                items:[],
+                supplies: []
             },
             aux_supplier_id: null,
             total_amount: 0,
@@ -767,6 +848,7 @@ export default {
             currency_types: [],
             discount_types: [],
             charges_types: [],
+            affectation_igv_types: [],
             payment_method_types: [],
             all_suppliers: [],
             suppliers: [],
@@ -785,6 +867,14 @@ export default {
             showDialogInputLotGroup: false,
             rowItem: null,
             rowIndex: -1,
+            supplierSearchTerm: ''
+        }
+    },
+    watch: {
+        showDialogNewPerson(newVal) {
+            if (!newVal) {
+                this.supplierSearchTerm = ''
+            }
         }
     },
     async mounted() {
@@ -800,6 +890,7 @@ export default {
 
                 this.all_suppliers = data.suppliers
                 this.discount_types = data.discount_types
+                this.affectation_igv_types = data.affectation_igv_types || []
                 this.payment_method_types = data.payment_method_types
                 this.payment_destinations = data.payment_destinations
                 this.all_customers = data.customers
@@ -841,6 +932,10 @@ export default {
         this.searchPurchaseOrder();
         // this.localHasGlobalIgv = this.hasGlobalIgv;
         this.initGlobalIgv()
+        this.$eventHub.$on("reloadDataPersons", customer_id => {
+            this.reloadDataCustomers(customer_id);
+            this.supplierSearchTerm = ''
+        });
     },
     methods: {
         saveInputLotGroup(params)
@@ -898,8 +993,23 @@ export default {
                 this.form.customer_id = null
             }
         },
-        searchRemotePersons(input) {
+        searchRemoteSuppliers(input) {
+            this.supplierSearchTerm = input;
+            
+            if (input.length > 1) {
+                this.loading_search = true
+                let parameters = `input=${input}`
 
+                this.$http.get(`/reports/data-table/persons/suppliers?${parameters}`)
+                    .then(response => {
+                        this.suppliers = response.data.persons
+                        this.loading_search = false
+                    })
+            } else {
+                this.filterSuppliers()
+            }
+        },
+        searchRemotePersons(input) {        
             if (input.length > 1) {
 
                 this.loading_search = true
@@ -909,10 +1019,6 @@ export default {
                     .then(response => {
                         this.customers = response.data.persons
                         this.loading_search = false
-
-                        if (this.customers.length == 0) {
-                            this.filterCustomers()
-                        }
                     })
             } else {
                 this.filterCustomers()
@@ -1304,8 +1410,17 @@ export default {
             this.calculateTotal()
         },
         clickRemoveItem(index) {
-            this.form.items.splice(index, 1)
-            this.calculateTotal()
+            const item = this.form.items[index];
+            const itemType = item.is_supply ? 'Insumo' : 'Producto';
+            this.form.items.splice(index, 1);
+            this.calculateTotal();
+            this.$message.info(`${itemType} eliminado`);
+        },
+        handleSupplyAdded(supplyData) {
+            // Añadir el insumo a la lista de items con el flag is_supply=true
+            this.form.items.push(supplyData);
+            this.calculateTotal();
+            this.$message.success('Insumo añadido correctamente');
         },
         changeCurrencyType() {
             this.currency_type = _.find(this.currency_types, {'id': this.form.currency_type_id})
@@ -1588,6 +1703,9 @@ export default {
                 })
 
 
+        },
+        openNewPersonDialog() {
+            this.showDialogNewPerson = true
         },
     }
 }

@@ -15,6 +15,14 @@ import 'bootstrap/dist/js/bootstrap.bundle.js'; // Incluye Popper
 import '../sass/element-ui.scss';
 import 'element-ui/lib/theme-chalk/index.css';
 
+// Personalizar textos del idioma español
+lang.el.select.noData = 'No se encontraron resultados'
+lang.el.cascader.noData = 'No se encontraron resultados'
+lang.el.transfer.noData = 'No se encontraron resultados'
+lang.el.table.emptyText = 'No se encontraron resultados'
+lang.el.tree.emptyText = 'No se encontraron resultados'
+lang.el.empty.description = 'No se encontraron resultados'
+
 locale.use(lang)
 
 ElementUI.Select.computed.readonly = function () {
@@ -28,34 +36,22 @@ Vue.use(ElementUI, { size: 'small' })
 Vue.prototype.$eventHub = new Vue()
 
 // Tenant app: only tenant components here
-// CRÍTICO: Importar componentes de forma síncrona
-// En producción, Vite puede hacer que este import sea asíncrono si hay code splitting
-// Por eso verificamos que se ejecute antes de inicializar Vue
 import './tenant-components'
 
-// OPTIMIZACIÓN: Eliminar logs en producción para mejorar rendimiento
-if (process.env.NODE_ENV !== 'production') {
-    console.log('📦 app.js: Después del import de tenant-components');
-    console.log('📦 Componentes disponibles:', Object.keys(Vue.options.components).length);
-}
-
 // Importar scripts migrados desde dom-fixes.js
-// OPTIMIZACIÓN: Diferir inicialización de scripts DOM para no bloquear renderizado
 import { applyThemeAndShowContent, setupHeaderDomEvents, setupEcommerceAuthHandlers, updateTenantPageTitle } from './tenant/dom-fixes';
 
-// Inicializar lógica DOM migrada después de que Vue se monte
-// Esto evita bloquear el renderizado inicial
-function initDomFixes() {
-    if (window && window.vc_visual && window.vc_visual.sidebar_theme) {
-        applyThemeAndShowContent(window.vc_visual.sidebar_theme);
-    }
-    setupHeaderDomEvents();
-    setupEcommerceAuthHandlers();
-    updateTenantPageTitle();
+// Inicializar lógica DOM migrada
+if (window && window.vc_visual) {
+    applyThemeAndShowContent(window.vc_visual.sidebar_theme, window.vc_visual.black_theme);
+} else {
+    applyThemeAndShowContent();
 }
+setupHeaderDomEvents();
+setupEcommerceAuthHandlers();
+updateTenantPageTitle();
 
 // System reports moved to system.js
-
 
 
 import VueClipboard from 'vue-clipboard2'

@@ -30,7 +30,7 @@
                         </el-input>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="form-group position-relative form-whatsapp">
                         <span class="number-code-country text-muted">+51</span>
                         <label class="control-label">
@@ -43,7 +43,7 @@
                         </el-input>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="form-group">
                         <label class="control-label">
                             Plan
@@ -56,6 +56,27 @@
                         :value="plan.id">
                         </el-option>
                     </el-select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="control-label">
+                            Fecha de activación
+                        </label>
+                            <el-date-picker
+                                clearable
+                                v-model="form.start_billing_cycle"
+                                value-format="yyyy-MM-dd"
+                                default-time="00:00:00"
+                                class="w-100">
+                            </el-date-picker>
+                        <small
+                        v-if="errors.start_billing_cycle"
+                        class="form-control-feedback"
+                        v-text="
+                            errors.start_billing_cycle[0]
+                        "
+                        ></small>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -118,6 +139,7 @@ export default {
             plans: [],
             periods: [],
             form: {},
+            errors: {},
             loading_submit: false
         }
     },
@@ -129,6 +151,7 @@ export default {
             this.getTables()
         },
         close(){
+            this.errors = {}
             this.loading_submit = false
             this.$emit('update:showDialogEditClient', false)
         },
@@ -141,6 +164,7 @@ export default {
                 contact_email: null,
                 plan_id: null,
                 plan_period_id: null,
+                start_billing_cycle: null,
             }
         },
         getTables(){
@@ -174,6 +198,19 @@ export default {
                             this.loading_submit = false
                         }
                 })
+                .catch(error => {
+                    
+                    this.loading_submit = false
+                    if (error.response && error.response.status === 422) {
+                        this.errors = error.response.data;
+                    } else {
+                        this.$notify({
+                            title: 'Error',
+                            message: 'Ocurrió un error al actualizar',
+                            type: 'error'
+                        });
+                    }
+                });
 
     }
 }

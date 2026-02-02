@@ -385,7 +385,7 @@ import {calculateRowItem} from '../../../helpers/functions'
 export default {
     components: {DocumentFormItem, DocumentOptions},
     mixins: [functions, exchangeRate],
-    props: ['document_affected', 'configuration'],
+    props: ['document_affected', 'configuration', 'authUser'],
     data() {
         return {
             recordItem: null,
@@ -429,7 +429,7 @@ export default {
                 this.note_credit_types = response.data.note_credit_types
                 this.note_debit_types = response.data.note_debit_types
                 this.operation_types = response.data.operation_types
-                this.user = response.data.user;
+                this.user = response.data.user
 
                 this.currency_type = _.find(this.currency_types, {'id': this.form.currency_type_id})
                 this.form.document_type_id = (this.document_types.length > 0) ? this.document_types[0].id : null
@@ -441,8 +441,7 @@ export default {
         await this.getPercentageIgv();
         this.getCustomer()
         this.getHasDocuments()
-
-
+        this.setDefaultSerieByDocument()
     },
     mounted() {
 
@@ -956,10 +955,17 @@ export default {
 
             this.loading_submit = true
             await this.$http.post(`/${this.resource}`, this.form)
-                .then(response => {
+                .then( async (response) => {
                     if (response.data.success) {
-                        this.resetForm()
                         this.documentNewId = response.data.data.id
+
+                        if(this.configuration.send_auto && this.document_affected.document_type_id === '01') {
+                             await this.sendDocument(this.documentNewId); 
+                        } else if (this.configuration.ticket_single_shipment && this.document_affected.document_type_id === '03') {
+                             await this.sendDocument(this.documentNewId); 
+                        }
+                        
+                        this.resetForm()
                         this.showDialogOptions = true
                     } else {
                         this.$message.error(response.data.message)
@@ -976,6 +982,12 @@ export default {
                     this.loading_submit = false
                 })
         },
+        async sendDocument(id)
+        {
+            return await this.$http
+                .get(`/${this.resource}/send/${id}`)
+            
+        },
         getCustomer() {
             this.$http.get(`/${this.resource}/search/customer/${this.document.customer_id}`).then((response) => {
                 this.customers = response.data.customers
@@ -984,7 +996,25 @@ export default {
         },
         close() {
             location.href = '/documents'
-        }
+        },
+        setDefaultSerieByDocument() {
+            if (this.authUser.multiple_default_document_types) {
+                const default_document_type_serie = _.find(
+                    this.authUser.default_document_types,
+                    { document_type_id: this.form.document_type_id }
+                );
+                
+                if (default_document_type_serie) {
+                    const exist_serie = _.find(this.series, {
+                        id: default_document_type_serie.series_id
+                    });
+                    
+                    if (exist_serie)
+                        this.form.series_id =
+                            default_document_type_serie.series_id;
+                }
+            }
+        },
     }
 }
 </script>

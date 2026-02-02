@@ -15,13 +15,13 @@ use App\Models\Tenant\Catalogs\UnitType;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Modules\Account\Models\Account;
 use Modules\Digemid\Models\CatDigemid;
 use Modules\Inventory\Helpers\InventoryValuedKardex;
@@ -114,6 +114,7 @@ use Modules\Purchase\Helpers\WeightedAverageCostHelper;
 class Item extends ModelTenant
 {
     protected $with = ['item_type', 'unit_type', 'currency_type', 'warehouses','item_unit_types', 'tags','item_lots'];
+    protected $appends = ['modifiers'];
 
     public const SERVICE_UNIT_TYPE = 'ZZ';
 
@@ -158,6 +159,7 @@ class Item extends ModelTenant
         'date_of_due',
         'is_set',
         'sale_unit_price_set',
+        'is_dish',
         'apply_store',
         'apply_restaurant',
         'brand_id',
@@ -181,11 +183,14 @@ class Item extends ModelTenant
 
         'subject_to_detraction',
         'favorite',
+        'restaurant_favorite',
 
         'exchange_points',
         'quantity_of_points',
         'factory_code',
         'restrict_sale_cpe',
+
+        'preparation_area_id',
 
         // 'warehouse_id'
     ];
@@ -267,6 +272,40 @@ class Item extends ModelTenant
     public function getAttributesAttribute($value)
     {
         return (is_null($value))?null:json_decode($value);
+    }
+
+    protected function description(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => self::clean($value),
+        );
+    }
+
+    protected function textFilter(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => self::clean($value),
+        );
+    }
+
+    protected function name() : Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => self::clean($value),
+        );
+    }
+
+    public static function clean($value)
+    {
+        if (!is_string($value)) {
+            return $value;
+        }
+
+        $value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value);
+
+        $value = preg_replace('/\s+/u', ' ', $value);
+
+        return trim($value);
     }
 
     public function setAttributesAttribute($value)
@@ -365,6 +404,34 @@ class Item extends ModelTenant
     public function dispatch_items()
     {
         return $this->hasMany(DispatchItem::class);
+    }
+
+    /**
+     * Many-to-many relationship with modifier groups.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function modifierGroups()
+    {
+        return $this->belongsToMany(\Modules\Restaurant\Models\ModifierGroup::class, 'item_modifier_group', 'item_id', 'modifier_group_id')->withTimestamps();
+    }
+
+    /**
+     * Accessor to return modifier groups with only specific fields.
+     * Items are automatically decoded from JSON by Laravel's cast.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getModifiersAttribute()
+    {
+        return $this->modifierGroups->map(function($group) {
+            return [
+                'name' => $group->name,
+                'active' => $group->active,
+                'items' => $group->items,
+                'selection_type' => $group->selection_type,
+            ];
+        });
     }
 
     /**
@@ -534,7 +601,7 @@ class Item extends ModelTenant
      */
     public function sets()
     {
-        return $this->hasMany(ItemSet::class)->with('individual_item');
+        return $this->hasMany(ItemSet::class);
     }
 
     /**
@@ -556,6 +623,18 @@ class Item extends ModelTenant
         return $this->belongsTo(Category::class)->withDefault([
             'id' => '',
             'name' => ''
+        ]);
+    }
+
+    /**
+     * @return BelongsTo
+     */
+    public function preparationArea()
+    {
+        return $this->belongsTo(\Modules\Restaurant\Models\RestaurantPreparationArea::class, 'preparation_area_id')->withDefault([
+            'id' => '',
+            'name' => '',
+            'printer' => ''
         ]);
     }
 
@@ -586,81 +665,116 @@ class Item extends ModelTenant
     /**
      * @return HasMany
      */
-    public function item_colors()
-    {
-        return $this->hasMany(ItemColor::class, 'item_id');
-    }
-
-    /**
-     * @return HasMany
-     */
-    public function item_units_per_package()
-    {
-        return $this->hasMany(ItemUnitsPerPackage::class, 'item_id');
-    }
-
-    /**
-     * @return HasMany
-     */
-    public function item_mold_properties()
-    {
-        return $this->hasMany(ItemMoldProperty::class, 'item_id');
-    }
-
-    /**
-     * @return HasMany
-     */
-    public function item_product_families()
-    {
-        return $this->hasMany(ItemProductFamily::class, 'item_id');
-    }
-
-    /**
-     * @return HasMany
-     */
-    public function item_mold_cavities()
-    {
-        return $this->hasMany(ItemMoldCavity::class, 'item_id');
-    }
-
-    /**
-     * @return HasMany
-     */
-    public function item_package_measurements()
-    {
-        return $this->hasMany(ItemPackageMeasurement::class, 'item_id');
-    }
-
-    /**
-     * @return HasMany
-     */
-    public function item_status()
-    {
-        return $this->hasMany(ItemStatus::class, 'item_id');
-    }
-
-    /**
-     * @return HasMany
-     */
-    public function item_unit_business()
-    {
-        return $this->hasMany(ItemUnitBusiness::class, 'item_id');
-    }
-
-    /**
-     * @return HasMany
-     */
-    public function item_sizes()
-    {
-        return $this->hasMany(ItemSize::class, 'item_id');
-    }
-
-    /**
-     * @return HasMany
-     */
     public function lots_group()
     {
         return $this->hasMany(ItemLotsGroup::class, 'item_id');
+    }
+
+    /**
+     * Relación con los insumos del restaurante asignados a este item
+     * @return HasMany
+     */
+    public function restaurantItemSupplies()
+    {
+        return $this->hasMany(\Modules\Restaurant\Models\RestaurantItemSupply::class, 'item_id');
+    }
+
+    /**
+     * Relación con los insumos a través de la tabla pivote
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function restaurantSupplies()
+    {
+        return $this->belongsToMany(
+            \Modules\Restaurant\Models\Supply::class,
+            'restaurant_item_supplies',
+            'item_id',
+            'supply_id'
+        )->withPivot('quantity')->withTimestamps();
+    }
+
+    /**
+     * Calcula el stock disponible del producto en base a los insumos
+     * Retorna la cantidad máxima de productos que se pueden preparar con el stock actual de insumos
+     *
+     * Ejemplo: Si un plato usa 0.2kg de arroz y hay 2kg en stock, retorna 10
+     * Si usa múltiples insumos, retorna el menor stock posible entre todos
+     *
+     * @return int
+     */
+    public function getRestaurantStock()
+    {
+        $itemSupplies = $this->restaurantItemSupplies()->with('supply')->get();
+
+        // Si no tiene insumos asignados, retorna 0
+        if ($itemSupplies->isEmpty()) {
+            return 0;
+        }
+
+        $possibleStock = [];
+
+        foreach ($itemSupplies as $itemSupply) {
+            $supply = $itemSupply->supply;
+
+            // Si algún insumo no existe o no tiene stock, no se puede preparar
+            if (!$supply || $supply->stock <= 0) {
+                return 0;
+            }
+
+            // Calcular cuántos productos se pueden hacer con este insumo
+            // stock_insumo / cantidad_requerida_por_producto
+            $possible = floor($supply->stock / $itemSupply->quantity);
+            $possibleStock[] = $possible;
+        }
+
+        // Retornar el menor stock posible (el insumo limitante)
+        return min($possibleStock);
+    }
+
+    /**
+     * Relación muchos a muchos con los items que componen el set
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function items_sets()
+    {
+        return $this->belongsToMany(
+            Item::class,           // Queremos objetos de la tabla Items
+            'item_sets',           // A través de esta tabla
+            'item_id',             // La llave del combo
+            'individual_item_id'   // La llave del producto individual
+        )->withPivot('quantity');  // También trae la cantidad
+    }
+        
+    /**
+     * Calcula el stock disponible del set en base a los items que lo componen
+     * Retorna la cantidad máxima de sets que se pueden preparar con el stock actual de items
+     *
+     * Ejemplo: Si un set usa 2 unidades de item A y hay 10 en stock, y usa 3 unidades de item B y hay 9 en stock,
+     * retorna 3 (porque el item B es el limitante)
+     *
+     * @return int
+     */
+
+    public function getRestaurantStockSet() {
+        $items = $this->items_sets;
+        $possibleStocks = [];
+
+        foreach ($items as $item) {
+            if ($item->restaurantSupplies()->exists()) {
+                // Si el item del set tiene insumos asignados, se calcula su stock en base a esos insumos
+                $itemStock = $item->getRestaurantStock();
+                $possibleStocks[] = floor($itemStock / $item->pivot->quantity);
+                continue;
+            } else {
+                // Si el item del set no tiene insumos asignados, se toma su stock normal
+                $itemStock = $item->stock;
+                $possibleStocks[] = floor($itemStock / $item->pivot->quantity);
+                continue;
+            }
+        }
+
+        return min($possibleStocks);
     }
 
     /**
@@ -884,18 +998,12 @@ class Item extends ModelTenant
 
 
         if($search_item_by_series){
-            if($this->relationLoaded('item_lots')){
-                $lots = $this->item_lots->where('has_sale', false)
-                    ->where('warehouse_id', $warehouse->id)
-                    ->where('series', $series)
-                    ->take(1);
-            }else{
-                $lots = $this->item_lots()->where('has_sale', false)
-                    ->where('warehouse_id', $warehouse->id)
-                    ->where('series', $series)
-                    ->take(1)
-                    ->get();
-            }
+
+            $lots = $this->item_lots()->where('has_sale', false)
+                                ->where('warehouse_id', $warehouse->id)
+                                ->where('series', $series)
+                                ->take(1)
+                                ->get();
 
         // dd($search_item_by_series, $lots, $this->item_lots);
         }
@@ -921,8 +1029,7 @@ class Item extends ModelTenant
         $extended_description = false,
         $series = null,
         $search_item_by_series = false,
-        $aditional_data = true,
-        $stockData = null
+        $aditional_data = true
     ) {
 
         if ($warehouse == null) {
@@ -1008,11 +1115,7 @@ class Item extends ModelTenant
             $stock = $stockItemWarehouse->stock;
         }
 
-        if ($stockData !== null) {
-            $stockPerCategory = $stockData;
-        } else {
-            $stockPerCategory = ItemMovement::getStockByCategory($this->id,auth()->user()->establishment_id);
-        }
+        $stockPerCategory = ItemMovement::getStockByCategory($this->id,auth()->user()->establishment_id);
         $currency = $this->currency_type;
         if(empty($currency )){
             $currency = new CurrencyType();
@@ -1109,7 +1212,7 @@ class Item extends ModelTenant
                     'date_of_due' => $lots_group->date_of_due,
                     'checked'     => false,
                     'compromise_quantity' => 0
-                ]; 
+                ];
             }),
             'lots'           => $lots,
             'lots_enabled'   => (bool)$this->lots_enabled,
@@ -1135,6 +1238,8 @@ class Item extends ModelTenant
             'restrict_sale_cpe' => $this->restrict_sale_cpe,
             'image_url' => $this->getImageUrl(),
             'name' => $this->name,
+            'preparation_area_id' => $this->preparation_area_id,
+            'preparation_area' => $this->preparationArea
         ];
 
         // El nombre de producto, por defecto, sera la misma descripcion.
@@ -1189,13 +1294,13 @@ class Item extends ModelTenant
      *
      * @return array
      */
-    public function getCollectionData(Configuration $configuration = null, $stockData = null, $warehouse = null){
+    public function getCollectionData(Configuration $configuration = null, $isRestaurant = false){
         if(empty($configuration)){
             $configuration =  Configuration::first();
         }
         $brand = null;
         if (!empty($this->brand_id)) {
-            $brand = $this->relationLoaded('brand') ? $this->brand->name : $this->brand()->first()->name;
+            $brand = $this->brand()->first()->name;
         }
         $has_igv_description = null;
         $purchase_has_igv_description = null;
@@ -1216,29 +1321,12 @@ class Item extends ModelTenant
         $digemid_exportable = false;
         $name_disa = '';
         $laboratory = '';
-        $currentColors = collect([]);
-        $stockPerCategory = [];
-
-        if($configuration->show_extra_info_to_item){
-             if($this->relationLoaded('item_colors')){
-                 $currentColors = $this->item_colors->transform(function ($row) {
-                    return $row->TransformDatatoEdit();
-                });
-             }else{
-                 $currentColors = ItemColor::where('item_id', $this->id)->get()->transform(function ($row) {
-                    return $row->TransformDatatoEdit();
-                });
-             }
-
-             if ($stockData !== null) {
-                 $stockPerCategory = $stockData;
-             } else {
-                 $stockPerCategory = ItemMovement::getStockByCategory($this->id,auth()->user()->establishment_id);
-             }
-        }
+        $currentColors = ItemColor::where('item_id', $this->id)->get()->transform(function ($row) {
+            return $row->TransformDatatoEdit();
+        });
 
         if($configuration->isPharmacy()) {
-            $digemid = $this->relationLoaded('cat_digemid') ? $this->cat_digemid : $this->getCatDigemid();
+            $digemid = $this->getCatDigemid();
             if (!empty($digemid)) {
                 $digemid_exportable = (bool)$digemid->active;
                 $name_disa = $digemid->getNomProd();
@@ -1247,7 +1335,7 @@ class Item extends ModelTenant
         }
 
         $decimal_units = (int)$configuration->decimal_quantity;
-        //$stockPerCategory = ItemMovement::getStockByCategory($this->id,auth()->user()->establishment_id);
+        $stockPerCategory = ItemMovement::getStockByCategory($this->id,auth()->user()->establishment_id);
         $has_igv = (bool)$this->has_igv;
         $igv = 1.18; // El igv es de 18%
         $affectation_igv_types_exonerated_unaffected = self::AffectationIgvTypesExoneratedUnaffected();
@@ -1273,7 +1361,21 @@ class Item extends ModelTenant
         $defaultImage = $configuration->product_default_image ?? 'imagen-no-disponible.jpg';
         $defaultImagePath = $defaultImage === 'imagen-no-disponible.jpg'
             ? asset('logo/imagen-no-disponible.jpg')
-            : asset('storage/defaults/' . $defaultImage); 
+            : asset('storage/defaults/' . $defaultImage);
+
+        // Calcular stock de restaurant basado en insumos
+        $restaurantStock = 0;
+        if ($isRestaurant) {
+            $has_supplies = $this->restaurantSupplies()->exists();
+            if ($has_supplies) {
+                $restaurantStock = $this->getRestaurantStock();
+            }
+            $has_sets = $this->items_sets()->exists();
+            if ($has_sets) {
+                $restaurantStock = $this->getRestaurantStockSet();
+            }
+        }
+
         return [
             'name_disa' => $name_disa,
             'laboratory' => $laboratory,
@@ -1296,7 +1398,7 @@ class Item extends ModelTenant
             'internal_id' => $this->internal_id,
             'item_code' => $this->item_code,
             'item_code_gs1' => $this->item_code_gs1,
-            'stock' => $this->getStockByWarehouse($warehouse),
+            'stock' => $this->getStockByWarehouse(),
             'stock_min' => $this->stock_min,
             'currency_type_id' => $this->currency_type_id,
             'currency_type_symbol' => $currency->symbol,
@@ -1321,15 +1423,19 @@ class Item extends ModelTenant
                 ];
             }),
             'apply_store' => (bool)$this->apply_store,
-            'apply_restaurant' => (bool)$this->apply_restaurant,        
+            'apply_restaurant' => (bool)$this->apply_restaurant,
+            'restaurant_stock' => $restaurantStock,
+            'has_supplies' => $isRestaurant ? $has_supplies : null,
+            'is_dish' => $isRestaurant ? $this->is_dish : null,
+            'has_sets' => $isRestaurant ? $has_sets : null,
             'image_url' => ($this->image !== 'imagen-no-disponible.jpg')
                 ? asset('storage/uploads/items/' . $this->image)
                 : $defaultImagePath,
-                    
+
             'image_url_medium' => ($this->image_medium !== 'imagen-no-disponible.jpg')
                 ? asset('storage/uploads/items/' . $this->image_medium)
                 : $defaultImagePath,
-                    
+
             'image_url_small' => ($this->image_small !== 'imagen-no-disponible.jpg')
                 ? asset('storage/uploads/items/' . $this->image_small)
                 : $defaultImagePath,
@@ -1576,9 +1682,6 @@ class Item extends ModelTenant
     }
 
     public function getItemUnitsPerPackage(){
-        if($this->relationLoaded('item_units_per_package')){
-            return $this->item_units_per_package->where('active',1);
-        }
         return ItemUnitsPerPackage::where('item_id', $this->id)->where('active',1)->get();
     }
     /**
@@ -1593,9 +1696,6 @@ class Item extends ModelTenant
     }
 
     public function getItemColor(){
-        if($this->relationLoaded('item_colors')){
-            return $this->item_colors->where('active',1);
-        }
         return ItemColor::where('item_id', $this->id)->where('active',1)->get();
     }
 
@@ -1603,9 +1703,6 @@ class Item extends ModelTenant
         return $this->setExtraData(ItemMoldProperty::class,'cat_item_mold_properties_id',$data);
     }
     public function getItemMoldProperty(){
-        if($this->relationLoaded('item_mold_properties')){
-            return $this->item_mold_properties->where('active',1);
-        }
         return ItemMoldProperty::where('item_id', $this->id)->where('active',1)->get();
     }
     public function setItemUnitBusiness($data = []) {
@@ -1613,9 +1710,6 @@ class Item extends ModelTenant
     }
 
     public function getItemUnitBusiness(){
-        if($this->relationLoaded('item_unit_business')){
-            return $this->item_unit_business->where('active',1);
-        }
         return ItemUnitBusiness::where('item_id', $this->id)->where('active',1)->get();
     }
     public function setItemStatus($data = []) {
@@ -1623,9 +1717,6 @@ class Item extends ModelTenant
     }
 
     public function getItemStatus(){
-        if($this->relationLoaded('item_status')){
-            return $this->item_status->where('active',1);
-        }
         return ItemStatus::where('item_id', $this->id)->where('active',1)->get();
     }
 
@@ -1634,9 +1725,6 @@ class Item extends ModelTenant
     }
 
     public function getItemPackageMeasurement(){
-        if($this->relationLoaded('item_package_measurements')){
-            return $this->item_package_measurements->where('active',1);
-        }
         return ItemPackageMeasurement::where('item_id', $this->id)->where('active',1)->get();
     }
     public function setItemMoldCavity($data = []) {
@@ -1644,9 +1732,6 @@ class Item extends ModelTenant
     }
 
     public function getItemMoldCavity(){
-        if($this->relationLoaded('item_mold_cavities')){
-            return $this->item_mold_cavities->where('active',1);
-        }
         return ItemMoldCavity::where('item_id', $this->id)->where('active',1)->get();
     }
     public function setItemProductFamily($data = []) {
@@ -1657,15 +1742,9 @@ class Item extends ModelTenant
     }
 
     public function getItemProductFamily(){
-        if($this->relationLoaded('item_product_families')){
-            return $this->item_product_families->where('active',1);
-        }
         return ItemProductFamily::where('item_id', $this->id)->where('active',1)->get();
     }
     public function getItemSize(){
-        if($this->relationLoaded('item_sizes')){
-            return $this->item_sizes->where('active',1);
-        }
         return ItemSize::where('item_id', $this->id)->where('active',1)->get();
     }
 
@@ -2205,7 +2284,7 @@ class Item extends ModelTenant
      */
     public function getNewStock($establisnment_id = 0)
     {
-        $query = DB::connection('tenant')
+        $query = \DB::connection('tenant')
             ->table('item_movement')
             ->where('countable', 1)
             ->where('item_id', $this->id);
@@ -2213,7 +2292,7 @@ class Item extends ModelTenant
             $query->where('establishment_id', $establisnment_id);
         }
         // Validacion para almacen?
-        $query = $query->select(DB::raw(' sum(quantity) as total'))->first();
+        $query = $query->select(\DB::raw(' sum(quantity) as total'))->first();
 
         return $query->total;
     }
@@ -2295,14 +2374,14 @@ class Item extends ModelTenant
      */
     public function supplies()
     {
-        return $this->hasMany(ItemSupply::class)->with(['item', 'individual_item']);
+        return $this->hasMany(ItemSupply::class);
     }
     /**
      * @return HasMany
      */
     public function supplies_items()
     {
-        return $this->hasMany(ItemSupply::class,'individual_item_id')->with('item');
+        return $this->hasMany(ItemSupply::class,'individual_item_id');
     }
 
     /**
@@ -2807,7 +2886,9 @@ class Item extends ModelTenant
      */
     public function getSaleApiRowResource($warehouse)
     {
+        $configuration =  Configuration::first();
         $currency = $this->currency_type;
+        $decimal_units = (int)$configuration->decimal_quantity;
 
         return [
             'id' => $this->id,
@@ -2824,7 +2905,12 @@ class Item extends ModelTenant
             'unit_type_id' => $this->unit_type_id,
             'sale_affectation_igv_type_id' => $this->sale_affectation_igv_type_id,
             'has_igv' => (bool) $this->has_igv,
+            'favorite' => $this->favorite,
             'quantity' => 0,
+            'item_unit_types' => $this->item_unit_types->transform(function ($row) use ($decimal_units) {
+                /** @var ItemUnitType $row */
+                return $row->getCollectionData($decimal_units);
+            }),
             'stock' => $this->getWarehouseCurrentStock($warehouse),
             'image_url' => $this->getImageUrl(),
             'brand_id' => $this->brand_id,
@@ -3011,6 +3097,19 @@ class Item extends ModelTenant
     public function hasServiceUnitType()
     {
         return $this->unit_type_id === self::SERVICE_UNIT_TYPE;
+    }
+
+    public static function getListPriceItems()
+    {
+        $prices = ['price1', 'price2', 'price3'];
+        $resource = [];
+
+        foreach ($prices as $price) {
+            $configuration = Configuration::first();
+            $resource[$price] = $configuration->{$price.'_label'};
+        }
+
+        return $resource;
     }
 
 

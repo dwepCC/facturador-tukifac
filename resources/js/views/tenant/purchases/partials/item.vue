@@ -49,10 +49,12 @@
                 <div class="col-md-12">
                     <div :class="{'has-danger': errors.item_id}"
                          class="form-group">
-                        <label class="control-label">
+                        <label class="control-label d-flex align-items-center">
                             Producto/Servicio
-                            <a href="#"
-                               @click.prevent="showDialogNewItem = true">[+ Nuevo]</a>
+                            <span class="btn-add-new-product"
+                               @click.prevent="showDialogNewItem = true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                            </span>
                         </label>
                         <el-select 
                                    v-model="form.item_id"
@@ -78,6 +80,23 @@
                                 ></el-option>
 
                             </el-tooltip>
+                            <template slot="empty">
+                                <p v-if="loading_search" class="el-select-dropdown__empty">
+                                    Cargando...
+                                </p>
+                            
+                                <p v-else class="el-select-dropdown__empty">
+                                    No se encontraron resultados
+                                </p>
+                            
+                                <div
+                                    v-if="!loading_search"
+                                    class="el-select-dropdown__item new-option"
+                                    @click.stop="openNewItemDialog"
+                                >
+                                    <span>{{ itemSearchTerm ? `Crear producto "${itemSearchTerm}"` : 'Crear producto' }}</span>
+                                </div>
+                            </template>
                         </el-select>
 
                         <!-- <el-input v-show="search_item_by_barcode"
@@ -327,9 +346,9 @@
                                         <th class="text-center">Unidad</th>
                                         <th class="text-center">Descripción</th>
                                         <th class="text-center">Factor</th>
-                                        <th class="text-center">Precio 1</th>
-                                        <th class="text-center">Precio 2</th>
-                                        <th class="text-center">Precio 3</th>
+                                        <th class="text-center">{{ config.price1_label }}</th>
+                                        <th class="text-center">{{ config.price2_label }}</th>
+                                        <th class="text-center">{{ config.price3_label }}</th>
                                         <th class="text-center">Precio Default</th>
                                         <th></th>
                                     </tr>
@@ -572,7 +591,9 @@
             </div>
         </form>
         <item-form :external="true"
-                   :showDialog.sync="showDialogNewItem"></item-form>
+                   :showDialog.sync="showDialogNewItem"
+                   :input_item="itemSearchTerm">
+        </item-form>
 
         <lots-form
             :lots="lots"
@@ -714,7 +735,15 @@ export default {
                 classic: ClassicEditor
             },
             input_search_barcode: null,
-            activeNameCollapse: []
+            activeNameCollapse: [],
+            itemSearchTerm: '',
+        }
+    },
+    watch: {
+        showDialog(newVal) {
+            if (newVal) {
+                this.itemSearchTerm = ''
+            }
         }
     },
     created() {
@@ -736,6 +765,7 @@ export default {
         this.getExtraInfoOfItems();
         this.$eventHub.$on('reloadDataItems', (item_id) => {
             this.reloadDataItems(item_id)
+            this.itemSearchTerm = ''
         })
     },
     methods: {
@@ -814,6 +844,7 @@ export default {
             this.$refs.input_search_barcode.$el.getElementsByTagName('input')[0].focus()
         },
         async searchRemoteItems(input) {
+            this.itemSearchTerm = input
 
             if (input.length > 2) {
 
@@ -1250,6 +1281,9 @@ export default {
                 }
             }
             return item
+        },
+        openNewItemDialog() {
+            this.showDialogNewItem = true;
         },
     }
 }

@@ -5,17 +5,20 @@
             <ol class="breadcrumbs">
                 <li class="active"><span> Listado de unidades </span></li>
             </ol>
+            <div class="right-wrapper pull-right">
+                <button type="button" class="btn btn-custom btn-sm  mt-2 me-2" @click.prevent="clickCreate()"><i class="fa fa-plus-circle"></i> Nuevo</button>
+            </div>
         </div>
         <div class="card tab-content-default row-new">
             <!-- <div class="card-header bg-info">
                 <h3 class="my-0">Listado de unidades</h3>
             </div> -->
             <div class="card-body">
-                <div class="row">
+                <!-- <div class="row">
                     <div class="col">
                         <button type="button" class="btn btn-custom btn-sm  mt-2 me-2" @click.prevent="clickCreate()"><i class="fa fa-plus-circle"></i> Nuevo</button>
                     </div>
-                </div>
+                </div> -->
                 <div class="col-lg-12">
                 <div class="scroll-shadow shadow-left" v-show="showLeftShadow"></div>
                 <div class="scroll-shadow shadow-right" v-show="showRightShadow"></div>
@@ -32,7 +35,7 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr v-for="(row, index) in records" :key="index">
+                        <tr v-for="(row, index) in records" :key="index" :class="{ disable_color: isUnitInactive(row) }">
                             <td>{{ index + 1 }}</td>
                             <td>{{ row.id }}</td>
                             <td>{{ row.description }}</td>
@@ -97,6 +100,13 @@
             });
         },
         methods: {
+            isUnitInactive(row) {
+                if (row && typeof row.active_value === 'boolean') return !row.active_value
+
+                const value = row?.active
+                if (typeof value === 'string') return value.trim().toLowerCase() === 'no'
+                return value === 0 || value === '0' || value === false
+            },
             checkScrollShadows() {
                 const el = this.$refs.scrollContainer;
                 if (!el) return;

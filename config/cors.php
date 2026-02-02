@@ -11,7 +11,7 @@ return [
     | to accept any value.
     |
     */
-    
+
     'paths' => ['api/*', 'sanctum/csrf-cookie', "**/print/*", ], // Se agrego print/ para mostrarse el format pdf en vendeya
 
     'allowed_methods' => ['*'],
@@ -27,5 +27,6 @@ return [
     'max_age' => 0,
 
     'supports_credentials' => false,
+
 
 ];

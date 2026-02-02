@@ -1153,7 +1153,7 @@ export default {
         },
         setAmountCash(amount) {
             let row = _.last(this.payments, {'payment_method_type_id': '01'})
-            row.payment = parseFloat(row.payment) + parseFloat(amount)
+            row.payment = parseFloat(amount)
             // console.log(row.payment)
 
             this.form.payments = this.payments
@@ -1432,28 +1432,30 @@ export default {
 
             await this.$http.post(`/${this.resource_documents}`, this.form).then(async (response) => {
                 if (response.data.success) {
-                    let response_sent = null
+                    let response_sent = response
 
                     if (this.form.document_type_id === "80") {
-
                         // this.form_payment.sale_note_id = response.data.data.id;
                         this.form_cash_document.sale_note_id = response.data.data.id;
 
                     } else {
-                        if (this.configuration.send_auto) {
+                        if (this.configuration.send_auto && this.form.document_type_id === '01') {
+                            response_sent = await this.sendDocument(response.data.data.id); 
+                            this.statusDocument = response_sent.data.response
+                        } else if (this.configuration.ticket_single_shipment && this.form.document_type_id === '03') {
                             response_sent = await this.sendDocument(response.data.data.id); 
                             this.statusDocument = response_sent.data.response
                         }
-
                         // this.form_payment.document_id = response.data.data.id;
                         this.form_cash_document.document_id = response.data.data.id;
 
                     }
 
-                    this.documentNewId = response.data.data.id;
 
+                    this.documentNewId = response.data.data.id;
                     // this.showDialogOptions = true;
-                    this.showOptionsDialog(response)
+                    
+                    this.showOptionsDialog(response_sent)
 
                     // this.savePaymentMethod();
                     this.saveCashDocument();
@@ -1485,7 +1487,7 @@ export default {
 
             if(this.hidePdfViewDocuments)
             {
-                const response_data = response.data.data
+                const response_data = response.data
 
                 if(this.form.document_type_id === '80')
                 {
@@ -1493,13 +1495,13 @@ export default {
                 }
                 else
                 {
-                    if(response_data.response.sent)
+                    if(this.configuration.send_auto)
                     {
-                        this.$message.success(response_data.response.description)
+                        this.$message.success(response_data.message)
                     }
                     else
                     {
-                        this.$message.success(`Comprobante registrado: ${response_data.number_full}`)
+                        this.$message.success(`Comprobante registrado: ${response_data.data.number_full}`)
                     }
                 }
 
@@ -1511,9 +1513,9 @@ export default {
             }
 
         },
-        async sendDocument(id)
+        sendDocument(id)
         {
-            return await this.$http
+            return this.$http
                 .get(`/documents/send/${id}`)
             
         },

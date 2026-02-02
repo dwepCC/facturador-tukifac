@@ -23,7 +23,7 @@
                     <path d="M19 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
                 </svg>
             </div>
-            <h2>Modulos</h2> 
+            <h2>Modulos</h2>
         </div>
         {{--<tenant-dialog-header-menu></tenant-dialog-header-menu>--}}
         {{--tukifac--}}

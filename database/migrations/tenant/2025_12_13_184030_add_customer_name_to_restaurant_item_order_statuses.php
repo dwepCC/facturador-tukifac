@@ -14,7 +14,10 @@ class AddCustomerNameToRestaurantItemOrderStatuses extends Migration
     public function up()
     {
         Schema::table('restaurant_item_order_statuses', function (Blueprint $table) {
-            $table->string('customer_name')->nullable()->after('status_description');
+            // Verificar si la columna ya existe antes de agregarla
+            if (!Schema::hasColumn('restaurant_item_order_statuses', 'customer_name')) {
+                $table->string('customer_name')->nullable()->after('status_description');
+            }
         });
     }
 
@@ -26,7 +29,10 @@ class AddCustomerNameToRestaurantItemOrderStatuses extends Migration
     public function down()
     {
         Schema::table('restaurant_item_order_statuses', function (Blueprint $table) {
-            $table->dropColumn('customer_name');
+            // Verificar si la columna existe antes de eliminarla
+            if (Schema::hasColumn('restaurant_item_order_statuses', 'customer_name')) {
+                $table->dropColumn('customer_name');
+            }
         });
     }
 }

@@ -135,34 +135,33 @@ class DocumentController extends Controller
      */
     public function recordsTotal(Request $request)
     {
-        // OPTIMIZACIÓN: Una sola consulta con GROUP BY en lugar de 4 consultas separadas
-        $records = $this->getRecords($request)
-            ->select('document_type_id', DB::raw('SUM(total) as total_sum'))
-            ->where('currency_type_id', 'PEN')
-            ->groupBy('document_type_id')
-            ->pluck('total_sum', 'document_type_id');
 
         $FT_t = DocumentType::find('01');
         $BV_t = DocumentType::find('03');
         $NC_t = DocumentType::find('07');
         $ND_t = DocumentType::find('08');
 
+        $BV = $this->getRecords($request)->where('document_type_id', $BV_t->id)->where('currency_type_id', 'PEN')->sum('total');
+        $FT = $this->getRecords($request)->where('document_type_id', $FT_t->id)->where('currency_type_id', 'PEN')->sum('total');
+        $NC = $this->getRecords($request)->where('document_type_id', $NC_t->id)->where('currency_type_id', 'PEN')->sum('total');
+        $ND = $this->getRecords($request)->where('document_type_id', $ND_t->id)->where('currency_type_id', 'PEN')->sum('total');
         return [
             [
                 'name' => $FT_t->description,
-                'total' => "S/ " . ReportHelper::setNumber($records->get('01', 0)),
+                'total' => "S/ " . ReportHelper::setNumber($FT),
             ],
             [
                 'name' => $BV_t->description,
-                'total' => "S/ " . ReportHelper::setNumber($records->get('03', 0)),
+                'total' => "S/ " . ReportHelper::setNumber($BV),
+
             ],
             [
                 'name' => $NC_t->description,
-                'total' => "S/ " . ReportHelper::setNumber($records->get('07', 0)),
+                'total' => "S/ " . ReportHelper::setNumber($NC),
             ],
             [
                 'name' => $ND_t->description,
-                'total' => "S/ " . ReportHelper::setNumber($records->get('08', 0)),
+                'total' => "S/ " . ReportHelper::setNumber($ND),
             ],
         ];
     }

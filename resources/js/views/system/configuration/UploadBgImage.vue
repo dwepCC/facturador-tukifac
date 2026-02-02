@@ -54,7 +54,7 @@ export default {
         this.imageUrl = this.config.image;
         this.helpText = 'Se recomienda una imagen de 1000x1000px con fondo transparente en formato PNG o SVG';
       } else {
-          this.imageUrl = this.config.logo || '';
+          this.imageUrl = this.config.logo || '/logo/tulogo.png';
           this.helpText = 'Se recomienda una imagen de 600x300px con fondo transparente en formato PNG';
       }
     if (this.type === 'bg') {

@@ -37,7 +37,7 @@
                 <div class="data-table-visible-columns" style="top: 10px;">
                     <el-dropdown :hide-on-click="false">
                         <el-button type="secondary">
-                            Mostrar/Ocultar columnas<i
+                            Mostrar columnas<i
                                 class="el-icon-arrow-down el-icon--right"
                             ></i>
                         </el-button>

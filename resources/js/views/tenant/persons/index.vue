@@ -84,7 +84,7 @@
             <div class="data-table-visible-columns">
                 <el-dropdown :hide-on-click="false">
                     <el-button type="secondary">
-                        Mostrar/Ocultar columnas<i
+                        Mostrar columnas<i
                             class="el-icon-arrow-down el-icon--right"
                         ></i>
                     </el-button>
@@ -293,42 +293,57 @@
                                     <i class="fas fa-ellipsis-h" style="display: none;"></i>
                                 </button>
                                 <el-dropdown-menu slot="dropdown" class="actions-dropdown">
+                                  <el-dropdown-item
+                                    v-if="row.enabled"
+                                    :command="{ action: 'edit', id: row.id }"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" /><path d="M16 5l3 3" /></svg>
+                                    Editar
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item
+                                    :command="{ action: 'barcode', row }"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-barcode me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7v-1a2 2 0 0 1 2 -2h2" /><path d="M4 17v1a2 2 0 0 0 2 2h2" /><path d="M16 4h2a2 2 0 0 1 2 2v1" /><path d="M16 20h2a2 2 0 0 0 2 -2v-1" /><path d="M5 11h1v2h-1z" /><path d="M10 11l0 2" /><path d="M14 11h1v2h-1z" /><path d="M19 11l0 2" /></svg>
+                                    Cod. Barras
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item
+                                    :command="{ action: 'printBarcode', row }"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-tags"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 8v4.172a2 2 0 0 0 .586 1.414l5.71 5.71a2.41 2.41 0 0 0 3.408 0l3.592 -3.592a2.41 2.41 0 0 0 0 -3.408l-5.71 -5.71a2 2 0 0 0 -1.414 -.586h-4.172a2 2 0 0 0 -2 2z" /><path d="M18 19l1.592 -1.592a4.82 4.82 0 0 0 0 -6.816l-4.592 -4.592" /><path d="M7 10h-.01" /></svg>
+                                    Etiquetas
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item divided />
+                              
+                                  <template v-if="typeUser === 'admin'">
                                     <el-dropdown-item
-                                        v-if="row.enabled"
-                                        :command="{ action: 'edit', id: row.id }"
+                                      v-if="row.enabled"
+                                      :command="{ action: 'disable', id: row.id }"
+                                      class="text-danger option-delete"
                                     >
-                                        Editar
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-ban me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M5.7 5.7l12.6 12.6" /></svg>
+                                      Inhabilitar
                                     </el-dropdown-item>
+                                
                                     <el-dropdown-item
-                                        v-if="typeUser === 'admin'"
-                                        :command="{ action: 'delete', id: row.id }"
+                                      v-else
+                                      :command="{ action: 'enable', id: row.id }"
                                     >
-                                        Eliminar
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-circle-check me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
+                                      Habilitar
                                     </el-dropdown-item>
-                                    <template v-if="typeUser === 'admin'">
-                                        <el-dropdown-item
-                                            v-if="row.enabled"
-                                            :command="{ action: 'disable', id: row.id }"
-                                        >
-                                            Inhabilitar
-                                        </el-dropdown-item>
-                                        <el-dropdown-item
-                                            v-else
-                                            :command="{ action: 'enable', id: row.id }"
-                                        >
-                                            Habilitar
-                                        </el-dropdown-item>
-                                    </template>
-                                    <el-dropdown-item
-                                        :command="{ action: 'barcode', row }"
-                                    >
-                                        Cod. Barras
-                                    </el-dropdown-item>
-                                    <el-dropdown-item
-                                        :command="{ action: 'printBarcode', row }"
-                                    >
-                                        Etiquetas
-                                    </el-dropdown-item>
+                                  </template>
+                              
+                                  <el-dropdown-item
+                                    v-if="typeUser === 'admin'"
+                                    :command="{ action: 'delete', id: row.id }"
+                                    class="text-danger option-delete"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                    Eliminar
+                                  </el-dropdown-item>
                                 </el-dropdown-menu>
                             </el-dropdown>
                         </td>

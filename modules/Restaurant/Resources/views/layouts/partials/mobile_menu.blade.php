@@ -78,7 +78,7 @@
                     <li><a href="single.html">Blog Post</a></li>
                 </ul>
             </li> --}}
-            <li><a href="{{ route('tenant_detail_cart') }}">Ver carrito</a></li>
+            <li><a href="{{ route('restaurant.detail.cart') }}">Ver carrito</a></li>
             {{-- <li><a href="#">Special Offer!<span class="tip tip-hot">Hot!</span></a></li>
             <li><a href="#">Buy Porto!</a></li> --}}
         </ul>

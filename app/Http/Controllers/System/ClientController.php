@@ -50,6 +50,7 @@ use App\Models\System\PlanPeriod;
             $types = [['type' => 'admin', 'description' => 'Administrador'], ['type' => 'integrator', 'description' => 'Listar Documentos']];
             $modules = Module::with('levels')
                 ->where('sort', '<', 14)
+                ->where('value', '!=', 'production_app')
                 ->orderBy('sort')
                 ->get()
                 ->each(function ($module) {
@@ -58,6 +59,7 @@ use App\Models\System\PlanPeriod;
 
             $apps = Module::with('levels')
                 ->where('sort', '>', 13)
+                ->where('value', '!=', 'production_app')
                 ->orderBy('sort')
                 ->get()
                 ->each(function ($module) {
@@ -295,11 +297,11 @@ public function records(Request $request)
             );
         }
 
-        $row->quantity_establishments = $this->getQuantityRecordsFromTable('establishments');
-    }
+                $row->quantity_establishments = $this->getQuantityRecordsFromTable('establishments');
+            }
 
-    return new ClientCollection($records);
-}
+            return new ClientCollection($records);
+        }
 
 
         /**
@@ -722,10 +724,11 @@ public function records(Request $request)
                 if ($temp_path) {
                     \Log::info('Procesando certificado', ['temp_path' => $temp_path]);
                     try {
+                        $number = $request->input('number');
                         $password = $request->input('password_certificate');
                         $pfx = file_get_contents($temp_path);
                         $pem = GenerateCertificate::typePEM($pfx, $password);
-                        $name = 'certificate_' . 'admin_tenant' . '.pem';
+                        $name = 'certificate_' . 'admin_tenant'. "_$number" . '.pem';
                         if (!file_exists(storage_path('app' . DIRECTORY_SEPARATOR . 'certificates'))) {
                             mkdir(storage_path('app' . DIRECTORY_SEPARATOR . 'certificates'));
                         }
@@ -880,7 +883,7 @@ public function records(Request $request)
             }
             DB::connection('tenant')->table('warehouses')->insertGetId([
                 'establishment_id' => $establishment_id,
-                'description' => $warehouseDescription,
+                'description' => 'Almacén Oficina Principal',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

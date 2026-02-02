@@ -1252,6 +1252,14 @@ export default {
         this.selected_option_price = this.price_options[0];
         this.loadConfiguration();
         this.$store.commit("setConfiguration", this.configuration2);
+        
+        // Actualizar price_options con los labels personalizados
+        if (this.config) {
+            this.price_options[1].description = this.config.price1_label || 'Precio 1';
+            this.price_options[2].description = this.config.price2_label || 'Precio 2';
+            this.price_options[3].description = this.config.price3_label || 'Precio 3';
+        }
+        
         await this.initForm();
         await this.getTables();
         await this.getPercentageIgv();

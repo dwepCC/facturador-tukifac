@@ -15,13 +15,13 @@
             <div class="invoice p-0">
                 <header class="clearfix clearfix-default p-2">
                     <div class="d-flex head-notes">
-                        <div class="col-sm-2 text-center mt-3 mb-0">
+                        <div class="col-sm-2 text-center mt-3 mb-0 is-hidden-mobile">
                             <logo 
                                 url="/"
                                 :path_logo="getCurrentLogo"
                             ></logo>
                         </div>
-                        <div class="text-left mt-3 mb-0">
+                        <div class="text-left mt-3 mb-0 is-hidden-mobile">
                             <address class="ib me-2">
                                 <span class="font-weight-bold d-block"
                                     >PEDIDO</span
@@ -136,7 +136,7 @@
                         <div class="row mt-1">
                             <div class="col-lg-8 pb-2">
                                 <div
-                                    class="form-group"
+                                    class="form-group position-relative"
                                     :class="{
                                         'has-danger': errors.customer_id
                                     }"
@@ -145,13 +145,13 @@
                                         class="control-label font-weight-bold"
                                     >
                                         Cliente
-                                        <a
+                                        <!-- <a
                                             href="#"
                                             @click.prevent="
                                                 showDialogNewPerson = true
                                             "
                                             >[+ Nuevo]</a
-                                        >
+                                        > -->
                                     </label>
                                     <el-select
                                         v-model="form.customer_id"
@@ -172,7 +172,28 @@
                                             :value="option.id"
                                             :label="option.description"
                                         ></el-option>
+
+                                        <template slot="empty">
+                                            <p v-if="loading_search" class="el-select-dropdown__empty">
+                                                Cargando...
+                                            </p>
+                                        
+                                            <p v-else class="el-select-dropdown__empty">
+                                                No se encontraron resultados
+                                            </p>
+                                        
+                                            <div
+                                                v-if="!loading_search"
+                                                class="el-select-dropdown__item new-option"
+                                                @click.stop="openNewPersonDialog"
+                                            >
+                                                <span>{{ customerSearchTerm ? `Crear cliente "${customerSearchTerm}"` : 'Crear cliente' }}</span>
+                                            </div>
+                                        </template>
                                     </el-select>
+                                    <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo cliente">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                                    </span>
                                     <small
                                         class="form-control-feedback"
                                         v-if="errors.customer_id"
@@ -924,7 +945,10 @@
                     </div>
 
                     <div
-                        class="form-actions footer-card-default mt-4 px-4 py-3"
+                        class="form-actions mt-4 footer-card-default gap-2
+                               d-flex flex-column flex-md-row
+                               justify-content-center justify-content-md-between
+                               align-items-stretch align-items-md-center px-4 py-3"
                     >
                         <el-button
                             class="second-buton btn btn-default second-buton-default"
@@ -959,7 +983,7 @@
             :showDialog.sync="showDialogNewPerson"
             type="customers"
             :external="true"
-            :input_person="input_person"
+            :input_person="personFormInput"
             :document_type_id="form.document_type_id"
         ></person-form>
 
@@ -1152,14 +1176,26 @@ export default {
                     label: "FORMA DE PAGO"
                 }
             ],
-            payment_destinations: []
+            payment_destinations: [],
+            customerSearchTerm: ''
         };
+    },
+    watch: {
+        showDialogNewPerson(newVal) {
+            if (!newVal) {
+                this.customerSearchTerm = ''
+            }
+        }
     },
     created() {
         this.$store.commit("setConfiguration", this.configuration);
         this.loadConfiguration();
         this.loadEstablishment();
         this.loadCompany();
+        this.$eventHub.$on("reloadDataPersons", customer_id => {
+            this.reloadDataCustomers(customer_id);
+            this.customerSearchTerm = ''
+        });
     },
     async mounted() {
         this.initForm();
@@ -1332,6 +1368,8 @@ export default {
             }
         },
         searchRemoteCustomers(input) {
+            this.customerSearchTerm = input;
+
             if (input.length > 0) {
                 this.loading_search = true;
                 let parameters = `input=${input}`;
@@ -1714,7 +1752,28 @@ export default {
                 return `/storage/uploads/logos/${this.company.logo}`;
             }
             return '';
-        }
+        },
+        openNewPersonDialog() {
+            this.showDialogNewPerson = true
+        },
+        personFormInput() {
+            const term = (this.customerSearchTerm || '').trim()
+
+            if (!term) return ''
+
+            if (/^\d+$/.test(term)) {
+                let identity_document_type_id = null
+                if (term.length === 8) identity_document_type_id = '1'
+                if (term.length === 11) identity_document_type_id = '6'
+
+                return {
+                    number: term,
+                    ...(identity_document_type_id ? { identity_document_type_id } : {})
+                }
+            }
+
+            return term
+        },
     }
 };
 </script>

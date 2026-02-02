@@ -9,6 +9,9 @@
                     </el-tooltip>  
                 </span></li>
             </ol>
+            <div class="right-wrapper pull-right">
+                <button type="button" class="btn btn-custom btn-sm  mt-2 me-2" @click.prevent="clickCreate()"><i class="fa fa-plus-circle"></i> Nuevo</button>
+            </div>
         </div>
         <div class="tab-content-default row-new">
             <!-- <div class="card-header bg-info">

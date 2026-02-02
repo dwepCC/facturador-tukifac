@@ -62,6 +62,7 @@ class PaymentOrderController extends Controller
                 'plan_id' => $row->plan_id,
                 'plan_period_id' => $row->plan_period_id,
                 'ending_billing_cycle' => $row->ending_billing_cycle,
+                'start_billing_cycle' => $row->start_billing_cycle,
                 'plan' => [
                     'name' => $row->plan ? $row->plan->name : 'Sin plan',
                     'price' => $row->getPricePlan(),
@@ -268,6 +269,29 @@ class PaymentOrderController extends Controller
             'plan_period_id' => 'required|integer|exists:plan_periods,id',
             'phone_ws' => 'nullable|string|max:20',
             'ending_billing_cycle' => 'nullable|date',
+            'start_billing_cycle' => [
+                'nullable',
+                'date',
+                function ($attribute, $value, $fail) use ($id, $request) {
+                    if (is_null($value)) {
+                        return;
+                    }
+
+                    $client = Client::find($id);
+                    $start_billing_cycle = Carbon::parse($value)->startOfDay();
+                    if (!isset($client->ending_billing_cycle)) {
+                        return;
+                    }
+                    $ending_billing_cycle = $client->ending_billing_cycle->startOfDay();
+                    if (isset($request->ending_billing_cycle)) {
+                        $ending_billing_cycle = Carbon::parse($request->ending_billing_cycle)->startOfDay();
+                    }
+
+                    if ($start_billing_cycle->day > $ending_billing_cycle->day) {
+                        $fail('La fecha de activación debe ser anterior a la fecha de finalización del servicio');
+                    }
+                },
+            ],
             'price' => 'numeric|min:0',
         ]);
 
@@ -278,7 +302,8 @@ class PaymentOrderController extends Controller
             'plan_id' => $validated['plan_id'],
             'plan_period_id' => $validated['plan_period_id'],
             'phone_ws' => $validated['phone_ws'] ?? null,
-            'ending_billing_cycle' => $validated['ending_billing_cycle'],
+            'ending_billing_cycle' => isset($validated['ending_billing_cycle']) ? $validated['ending_billing_cycle'] : null,
+            'start_billing_cycle' => isset($validated['start_billing_cycle']) ? $validated['start_billing_cycle'] : null,
         ]);
         
         return [

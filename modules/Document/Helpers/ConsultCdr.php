@@ -115,22 +115,32 @@ class ConsultCdr
 
     public function consultaCdrSendfact($model)
     {
-        $response = $model->querySummary($this->document->filename);
-        // dd($response);
-            $this->response = [
-                'sent' => true,
-                'code' => $response['document_status'],
-                'description' => $response['message'],
-                'notes' => $response['notes'] ?? []
-            ];
 
-        $this->validationCodeResponseIntegration($response['document_status'], $response['message'], $response);
+        $response = $model->querySummary($this->document->filename);
+
+        if ($model instanceof Service) {
+            $code = $response['code'];
+        } else {
+            $code = $response['document_status'];
+        }
+
+        $this->response = [
+            'sent' => true,
+            'code' => $code,
+            'description' => $response['message'],
+            'notes' => isset($response['notes']) ? $response['notes'] : []
+        ];
+
+        if ($model instanceof Service) {
+            $this->validationCodeResponse($code, $response['message'], $response['cdr']);
+        } else {
+            $this->validationCodeResponseIntegration($code, $response['message'], $response);
+        }
 
         return [
             'success' => true,
             'message' => $response['message']
         ];
-
     }
 
     public function validationCodeResponseIntegration($document_status, $message, $cdrResponse)

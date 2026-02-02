@@ -21,10 +21,12 @@
                         <div id="custom-select"
                              :class="{'has-danger': errors.item_id}"
                              class="form-group ">
-                            <label class="control-label">
+                            <label class="control-label d-flex align-items-center">
                                 Producto/Servicio
-                                <a href="#"
-                                   @click.prevent="showDialogNewItem = true">[+ Nuevo]</a>
+                                <span class="btn-add-new-product"
+                                   @click.prevent="showDialogNewItem = true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                                </span>
                             </label>
                             <template id="select-append">
                                 <el-input id="custom-input" class="input-search-product">
@@ -56,7 +58,25 @@
                                                 :value="option.id"
                                             ></el-option>
 
-                                        </el-tooltip>
+                                        </el-tooltip>s
+
+                                        <template slot="empty">
+                                            <p v-if="loading_search" class="el-select-dropdown__empty">
+                                                Cargando...
+                                            </p>
+                                        
+                                            <p v-else class="el-select-dropdown__empty">
+                                                No se encontraron resultados
+                                            </p>
+                                        
+                                            <div
+                                                v-if="!loading_search"
+                                                class="el-select-dropdown__item new-option"
+                                                @click.stop="openNewItemDialog"
+                                            >
+                                                <span>{{ itemSearchTerm ? `Crear producto "${itemSearchTerm}"` : 'Crear producto' }}</span>
+                                            </div>
+                                        </template>
                                     </el-select>                                    
                                 </el-input>
                             </template>
@@ -353,7 +373,9 @@
             </div>
         </form>
         <item-form :external="true"
-                   :showDialog.sync="showDialogNewItem"></item-form>
+                   :showDialog.sync="showDialogNewItem"
+                   :input_item="itemSearchTerm">
+        </item-form>
         <lots-form
             :lots="lots"
             :showDialog.sync="showDialogLots"
@@ -432,6 +454,14 @@ export default {
             editors: {
                 classic: ClassicEditor
             },
+            itemSearchTerm: ''
+        }
+    },
+    watch: {
+        showDialog(newVal) {
+            if (newVal) {
+                this.itemSearchTerm = ''
+            }
         }
     },
     created() {
@@ -451,6 +481,7 @@ export default {
 
         this.$eventHub.$on('reloadDataItems', (item_id) => {
             this.reloadDataItems(item_id)
+            this.itemSearchTerm = ''
         })
     },
     computed: {
@@ -482,6 +513,8 @@ export default {
             return ItemOptionDescription(item)
         },
         async searchRemoteItems(input) {
+            this.itemSearchTerm = input
+            
             if (input.length > 2) {
                 this.loading_search = true
                 const params = {
@@ -760,7 +793,10 @@ export default {
             if (this.recordItem) {
                 this.reloadDataItems(this.recordItem.item_id)
             }
-        }
+        },
+        openNewItemDialog() {
+            this.showDialogNewItem = true;
+        },
     }
 }
 

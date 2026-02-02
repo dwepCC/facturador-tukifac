@@ -32,6 +32,15 @@
             <div class="right-wrapper pull-right">
                 <template v-if="typeUser === 'admin'">
                     <div class="btn-group flex-wrap dropdown">
+                        <!-- <button
+                            aria-expanded="false"
+                            class="btn btn-custom btn-sm mt-2 me-2 dropdown-toggle"
+                            @click="showDialogTagsExports = true"
+                            type="button"
+                        >
+                            <i class="fa fa-download"></i> Etiquetas
+                            <span class="caret"></span>
+                        </button> -->
                         <button
                             aria-expanded="false"
                             class="btn btn-custom btn-sm mt-2 me-2 dropdown-toggle"
@@ -68,8 +77,8 @@
                             <a
                                 class="dropdown-item text-1"
                                 href="#"
-                                @click.prevent="clickExportBarcode()"
-                                >Etiquetas</a
+                                @click="showDialogTagsExports = true"
+                                >Etiquetas Personalizadas PDF</a
                             >
                             <template v-if="config.show_extra_info_to_item">
                                 <a
@@ -84,7 +93,7 @@
                                 class="dropdown-item text-1"
                                 href="#"
                                 @click.prevent="clickExportBartender()"
-                                >Bartender</a
+                                >TXT para impresoras tiqueteras</a
                             >
                         </div>
                     </div>
@@ -159,7 +168,7 @@
             <div class="data-table-visible-columns">                
                 <el-dropdown v-if="selected.length > 0">
                   <el-button aria-expanded="false"
-                    class="btn btn-custom btn-sm dropdown-toggle me-2"
+                    class="dropdown-toggle me-2"
                     data-toggle="dropdown"
                     type="button">
                     Acciones masivas
@@ -186,7 +195,7 @@
                 </el-dropdown>
                 <el-dropdown :hide-on-click="false">
                     <el-button type="secondary">
-                        Mostrar/Ocultar columnas<i
+                        Mostrar columnas<i
                             class="el-icon-arrow-down el-icon--right"
                         ></i>
                     </el-button>
@@ -209,9 +218,14 @@
                 </el-dropdown>
             </div>
             <div class="card-body">
-                <data-table ref="DataTable" :productType="type" :resource="resource" :sort-field="sortField" :sort-direction="sortDirection" :showProductFilter="type !== 'ZZ'" @sort-change="handleSortChange">
+                <data-table ref="DataTable" :productType="type" :resource="resource" :sort-field="sortField" :sort-direction="sortDirection" :showProductFilter="type !== 'ZZ'" @sort-change="handleSortChange" @records-changed="handleRecordsChanged">
                     <tr slot="heading" width="100%" slot-scope="{ sort }">
-                        <th></th>
+                        <th class="text-center" style="width: 34px;">
+                            <el-checkbox
+                                :value="allSelectedInView"
+                                @change="toggleSelectAll"
+                            ></el-checkbox>
+                        </th>
                         <th class="text-end" style="max-width: 83px;">ID</th>
                         <th class="text-end">Cód. Interno</th>
                         <th>Unidad</th>
@@ -290,7 +304,7 @@
                     </tr>
 
                     <tr></tr>
-                    <tr
+                    <tr valign="middle"
                         slot-scope="{ index, row }"
                         :class="{ disable_color: !row.active }"
                     >
@@ -480,14 +494,82 @@
                                     <i class="fas fa-ellipsis-h" style="display: none;"></i>
                                 </button>
                                 <el-dropdown-menu slot="dropdown">
-                                    <template v-if="typeUser === 'admin'">
-                                        <el-dropdown-item @click.native.prevent="clickCreate(row.id)">Editar</el-dropdown-item>
-                                        <el-dropdown-item @click.native.prevent="clickBarcode(row)">Cod. Barras</el-dropdown-item>
-                                        <el-dropdown-item @click.native.prevent="clickPrintBarcode(row)">Etiquetas</el-dropdown-item>
-                                        <el-dropdown-item divided @click.native.prevent="clickPrintBarcodeX(row, 1)">Etiquetas 1x1</el-dropdown-item>
-                                        <el-dropdown-item @click.native.prevent="clickPrintBarcodeX(row, 2)">Etiquetas 1x2</el-dropdown-item>
-                                        <el-dropdown-item @click.native.prevent="clickPrintBarcodeX(row, 3)">Etiquetas 1x3</el-dropdown-item>
-                                    </template>
+                                  <template v-if="typeUser === 'admin'">                                    
+                                    <el-dropdown-item
+                                      @click.native.prevent="clickCreate(row.id)"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" /><path d="M16 5l3 3" /></svg>
+                                      Editar
+                                    </el-dropdown-item>
+                                
+                                    <el-dropdown-item
+                                      @click.native.prevent="clickPrintBarcode(row)"
+                                      class="d-flex align-items-center justify-content-between"
+                                    >
+                                      <span class="d-flex align-items-center me-5">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-tags me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 8v4.172a2 2 0 0 0 .586 1.414l5.71 5.71a2.41 2.41 0 0 0 3.408 0l3.592 -3.592a2.41 2.41 0 0 0 0 -3.408l-5.71 -5.71a2 2 0 0 0 -1.414 -.586h-4.172a2 2 0 0 0 -2 2z" /><path d="M18 19l1.592 -1.592a4.82 4.82 0 0 0 0 -6.816l-4.592 -4.592" /><path d="M7 10h-.01" /></svg>
+                                        Etiquetas
+                                      </span>
+                                
+                                      <el-tooltip
+                                        effect="dark"
+                                        content="Generar código de barras"
+                                        placement="top-start"
+                                      >
+                                        <button
+                                          class="position-relative btn barcode d-flex align-items-center justify-content-center"
+                                          @click.stop.prevent="clickBarcode(row)"
+                                        >
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                            <path d="M4 7v-1a2 2 0 0 1 2 -2h2" />
+                                            <path d="M4 17v1a2 2 0 0 0 2 2h2" />
+                                            <path d="M16 4h2a2 2 0 0 1 2 2v1" />
+                                            <path d="M16 20h2a2 2 0 0 0 2 -2v-1" />
+                                            <path d="M5 11h1v2h-1z" />
+                                            <path d="M10 11l0 2" />
+                                            <path d="M14 11h1v2h-1z" />
+                                            <path d="M19 11l0 2" />
+                                          </svg>
+                                        </button>
+                                      </el-tooltip>
+                                    </el-dropdown-item>
+                                
+                                    <el-dropdown-item
+                                      @click.native.prevent="duplicate(row.id)"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-copy me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg>
+                                      Duplicar
+                                    </el-dropdown-item>
+                                
+                                    <el-dropdown-item divided />
+                                
+                                    <el-dropdown-item
+                                      v-if="row.active"
+                                      @click.native.prevent="clickDisable(row.id)"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-ban me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M5.7 5.7l12.6 12.6" /></svg>
+                                      Inhabilitar
+                                    </el-dropdown-item>
+                                
+                                    <el-dropdown-item
+                                      v-else
+                                      @click.native.prevent="clickEnable(row.id)"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-circle-check me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
+                                      Habilitar
+                                    </el-dropdown-item>
+                                
+                                    <el-dropdown-item
+                                      @click.native.prevent="clickDelete(row.id)"
+                                      class="text-danger option-delete"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                      Eliminar
+                                    </el-dropdown-item>
+                                  </template>
                                 </el-dropdown-menu>
                             </el-dropdown>
                         </td>
@@ -533,6 +615,10 @@
                 :showDialog.sync="showImporUpdatePrice"
             ></items-import-update-price>
 
+            <items-import-tags
+                :showDialog.sync="showDialogTagsExports"
+            ></items-import-tags>
+
             <!--
             : false,
             show_extra_info_to_item
@@ -557,6 +643,13 @@
 .dropdown-menu.show {
     max-height: 130px;
 }
+.btn-icon{
+    border-radius: 8px;
+    padding: 2px !important;
+    line-height: normal;
+    width: 23px;
+    height: 23px;
+}
 </style>
 <script>
 import ItemsForm from "./form.vue";
@@ -574,6 +667,7 @@ import { deletable } from "../../../mixins/deletable";
 import ItemsHistory from "@viewsModuleItem/items/history.vue";
 import { mapActions, mapState } from "vuex";
 import ItemsImportUpdatePrice from "./partials/update_prices.vue";
+import ItemsImportTags from "./partials/export_tag.vue";
 import ItemsExportBartender from "./partials/export_bartender.vue";
 
 export default {
@@ -591,6 +685,7 @@ export default {
         ItemsImportListPrice,
         ItemsImportExtraInfo,
         ItemsHistory,
+        ItemsImportTags,
         ItemsImportUpdatePrice,
         ItemsExportBartender
     },
@@ -598,6 +693,7 @@ export default {
         return {
             selected: [],
             selectedMeta: {},
+            visibleRows: [],
             can_add_new_product: false,
             showDialog: false,
             showImportDialog: false,
@@ -606,6 +702,7 @@ export default {
             showExportBarcodeDialog: false,
             showExportBartenderDialog: false,
             showExportExtraDialog: false,
+            showDialogTagsExports: false,
             showImportListPriceDialog: false,
             showImportExtraWithExtraInfo: false,
             showImporUpdatePrice: false,
@@ -738,8 +835,42 @@ export default {
                  this.selectedDisabledCount === this.selected.length &&
                  this.selectedEnabledCount === 0;
         },
+
+        selectedInViewCount() {
+            if (!this.visibleRows.length) return 0;
+            const visibleIds = new Set(this.visibleRows.map(r => r.id));
+            return this.selected.reduce((acc, id) => acc + (visibleIds.has(id) ? 1 : 0), 0);
+        },
+        allSelectedInView() {
+            return this.visibleRows.length > 0 && this.selectedInViewCount === this.visibleRows.length;
+        },
+        isIndeterminate() {
+            return this.selectedInViewCount > 0 && this.selectedInViewCount < this.visibleRows.length;
+        },
     },
     methods: {
+        handleRecordsChanged(records) {
+            this.visibleRows = Array.isArray(records) ? records : [];
+        },
+        toggleSelectAll(checked) {
+            if (!this.visibleRows.length) return;
+
+            if (checked) {
+                this.visibleRows.forEach(row => {
+                    if (!this.selected.includes(row.id)) {
+                        this.selected.push(row.id);
+                    }
+                    this.$set(this.selectedMeta, row.id, { active: !!row.active });
+                });
+                return;
+            }
+
+            this.visibleRows.forEach(row => {
+                const idx = this.selected.indexOf(row.id);
+                if (idx > -1) this.selected.splice(idx, 1);
+                if (this.selectedMeta[row.id] !== undefined) this.$delete(this.selectedMeta, row.id);
+            });
+        },
         reloadTable() {
           localStorage.setItem('filterDisabled', this.filterDisabled)
           this.$refs.DataTable.showDisabled = this.filterDisabled;

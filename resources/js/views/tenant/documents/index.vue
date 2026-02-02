@@ -1,6 +1,6 @@
 <template>
     <div class="documents">
-        <div class="page-header pr-0">
+        <div class="page-header pe-0">
             <h2>
                 <a href="/documents">
                     <svg
@@ -120,7 +120,7 @@
 
                 <el-dropdown :hide-on-click="false">
                     <el-button type="primary">
-                        Mostrar/Ocultar columnas<i class="el-icon-arrow-down el-icon--right"></i>
+                        Mostrar columnas<i class="el-icon-arrow-down el-icon--right"></i>
                     </el-button>
                     <el-dropdown-menu slot="dropdown">
                         <el-dropdown-item v-for="(column, index) in columns"
@@ -135,7 +135,7 @@
                 <div class="data-table-visible-columns">
                     <el-dropdown :hide-on-click="false" slot="showhide">
                         <el-button type="secondary">
-                            Mostrar/Ocultar columnas<i
+                            Mostrar columnas<i
                                 class="el-icon-arrow-down el-icon--right"
                             ></i>
                         </el-button>
@@ -157,7 +157,7 @@
                     <tr slot="heading">
                         <!-- <th>#</th> -->
                         <th v-if="columns.soap_type.visible">SOAP</th>
-                        <th class="text-left" style="min-width: 95px;">
+                        <th class="text-start" style="min-width: 95px;">
                             Emisión
                         </th>
                         <th
@@ -185,7 +185,7 @@
                         <th>Estado</th>
                         <th v-if="columns.user_name.visible">Usuario</th>
                         <th
-                            class="text-right"
+                            class="text-end"
                             v-if="columns.exchange_rate_sale.visible"
                         >
                             T.C.
@@ -196,7 +196,7 @@
                         >
                             Moneda
                         </th>
-                        <th class="text-right" v-if="columns.guides.visible">
+                        <th class="text-end" v-if="columns.guides.visible">
                             Guia
                         </th>
 
@@ -208,41 +208,41 @@
                         </th>
 
                         <th
-                            class="text-right"
+                            class="text-end"
                             v-if="columns.total_exportation.visible"
                         >
                             T.Exportación
                         </th>
                         <th
-                            class="text-right"
+                            class="text-end"
                             v-if="columns.total_free.visible"
                         >
                             T.Gratuita
                         </th>
                         <th
-                            class="text-right"
+                            class="text-end"
                             v-if="columns.total_unaffected.visible"
                         >
                             T.Inafecta
                         </th>
                         <th
-                            class="text-right"
+                            class="text-end"
                             v-if="columns.total_exonerated.visible"
                         >
                             T.Exonerado
                         </th>
                         <th
-                            class="text-right"
+                            class="text-end"
                             v-if="columns.total_charge.visible"
                         >
                             {{ columns.total_charge.title }}
                         </th>
-                        <th class="text-right">T.Gravado</th>
-                        <th class="text-right">T.Igv</th>
-                        <th class="text-right" v-if="columns.total.visible">
+                        <th class="text-end">T.Gravado</th>
+                        <th class="text-end">T.Igv</th>
+                        <th class="text-end" v-if="columns.total.visible">
                             Total
                         </th>
-                        <th class="text-right" v-if="columns.balance.visible">
+                        <th class="text-end" v-if="columns.balance.visible">
                             Saldo
                         </th>
                         <th
@@ -254,14 +254,14 @@
                         </th>
                         <th class="text-center"></th>
                         <th
-                            class="text-right"
+                            class="text-end"
                             v-if="typeUser != 'integrator'"
                         ></th>
                     </tr>
                     <tr
-                        slot-scope="{ row }"
+                        slot-scope="{ index, row }"
                         :class="{
-                            'text-danger': row.state_type_id === '11',
+                            'anulate_color': row.state_type_id === '11',
                             'text-warning': row.state_type_id === '13',
                             'border-light': row.state_type_id === '01',
                             'border-left border-info':
@@ -282,7 +282,7 @@
                         <td v-if="columns.soap_type.visible">
                             {{ row.soap_type_description }}
                         </td>
-                        <td class="text-left">{{ row.date_of_issue }}</td>
+                        <td class="text-start">{{ row.date_of_issue }}</td>
                         <td
                             class="text-center"
                             v-if="columns.date_payment.visible"
@@ -317,25 +317,28 @@
                             ></small>
                         </td>
                         <td v-if="columns.notes.visible">
-                            <label 
-                                v-for="(note, index) in row.notes" 
-                                :key="index"
-                                class="d-block"
-                            >{{ note.note_type_description }}: {{ note.description }}</label>
+                            <template v-for="(row, index) in row.notes">
+                                <label class="d-block" :key="index"
+                                    >{{ row.note_type_description }}:
+                                    {{ row.description }}</label
+                                >
+                            </template>
                         </td>
                         <td v-if="columns.dispatch.visible">
-                            <label 
-                                v-for="(dispatch, index) in row.dispatches" 
-                                :key="index"
-                                class="d-block"
-                            >{{ dispatch.description }}</label>
+                            <template v-for="(row, index) in row.dispatches">
+                                <label class="d-block" :key="index">{{
+                                    row.description
+                                }}</label>
+                            </template>
                         </td>
                         <td v-if="columns.sales_note.visible">
-                            <label 
-                                v-for="(saleNote, index) in row.sales_note" 
-                                :key="index"
-                                class="d-block"
-                            >{{ saleNote.number_full }} ({{ saleNote.state_type_description }})</label>
+                            <template v-for="(row, index) in row.sales_note">
+                                <label class="d-block" :key="index"
+                                    >{{ row.number_full }} ({{
+                                        row.state_type_description
+                                    }})</label
+                                >
+                            </template>
                         </td>
                         <td v-if="columns.order_note.visible">
                             <template
@@ -483,7 +486,7 @@
                         </td>
 
                         <td
-                            class="text-right"
+                            class="text-end"
                             v-if="columns.total_exportation.visible"
                         >
                             {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
@@ -491,7 +494,7 @@
                         </td>
 
                         <td
-                            class="text-right"
+                            class="text-end"
                             v-if="columns.total_free.visible"
                         >
                             {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
@@ -499,39 +502,39 @@
                         </td>
 
                         <td
-                            class="text-right"
+                            class="text-end"
                             v-if="columns.total_unaffected.visible"
                         >
                             {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
                             {{ row.total_unaffected }}
                         </td>
                         <td
-                            class="text-right"
+                            class="text-end"
                             v-if="columns.total_exonerated.visible"
                         >
                             {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
                             {{ row.total_exonerated }}
                         </td>
                         <td
-                            class="text-right"
+                            class="text-end"
                             v-if="columns.total_charge.visible"
                         >
                             {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
                             {{ row.total_charge }}
                         </td>
-                        <td class="text-right">
+                        <td class="text-end">
                             {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
                             {{ row.total_taxed }}</td>
-                        <td class="text-right">
+                        <td class="text-end">
                             {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
                             {{ row.total_igv }}</td>
-                        <td class="text-right" v-if="columns.total.visible">
+                        <td class="text-end" v-if="columns.total.visible">
                             {{row.currency_type_id === 'PEN' ? 'S/' : '$'}}
                             {{ row.total }}
                         </td>
 
                         <td
-                            class="text-right"
+                            class="text-end"
                             v-if="columns.balance.visible"
                             :class="{
                                 'text-warning': row.balance > 0,
@@ -574,71 +577,182 @@
                             </button>
                         </td>
 
-                        <td class="text-right" v-if="typeUser != 'integrator'">
+                        <td class="text-end" v-if="typeUser != 'integrator'">
                             <el-dropdown trigger="click" size="small">
                                 <el-button class="btn-dropdown">
                                     <i class="fas fa-ellipsis-v"></i>
                                     <i class="fas fa-ellipsis-h" style="display: none;"></i>
                                 </el-button>
                                 <el-dropdown-menu slot="dropdown">
-                                    <el-dropdown-item v-if="configuration.permission_to_edit_cpe && row.state_type_id === '01' && userPermissionEditCpe && row.is_editable">
-                                        <a :href="`/documents/${row.id}/edit`" style="text-decoration: none; color: inherit;">
-                                            Editar
-                                        </a>
-                                    </el-dropdown-item>
-                                    <el-dropdown-item v-else-if="row.state_type_id === '01' && userId == row.user_id && row.is_editable">
-                                        <a :href="`/documents/${row.id}/edit`" style="text-decoration: none; color: inherit;">
-                                            Editar
-                                        </a>
-                                    </el-dropdown-item>
-                                    <el-dropdown-item v-if="row.btn_resend && !isClient" @click.native="clickResend(row.id)">
-                                        Reenviar
-                                    </el-dropdown-item>
-                                    <el-dropdown-item v-if="row.btn_recreate_document" @click.native="clickReStore(row.id)">
-                                        Volver a recrear
-                                    </el-dropdown-item>
-                                    <el-dropdown-item v-if="row.btn_change_to_registered_status" @click.native="clickChangeToRegisteredStatus(row.id)">
-                                        Cambiar a estado registrado
-                                    </el-dropdown-item>
-                                    <el-dropdown-item v-if="row.btn_note">
-                                        <a :href="`/${resource}/note/${row.id}`" style="text-decoration: none; color: inherit;">
-                                            Nota
-                                        </a>
-                                    </el-dropdown-item>
-                                    <el-dropdown-item v-if="row.btn_guide">
-                                        <a :href="`/dispatches/create_new/document/${row.id}`" style="text-decoration: none; color: inherit;">
-                                            Guía
-                                        </a>
-                                    </el-dropdown-item>
-                                    <el-dropdown-item v-if="row.btn_voided" @click.native="clickVoided(row.id)">
-                                        Anular
-                                    </el-dropdown-item>
-                                    <el-dropdown-item v-if="row.btn_delete_doc_type_03" @click.native="clickDeleteDocument(row.id)">
-                                        Eliminar
-                                    </el-dropdown-item>
-                                    <el-dropdown-item v-if="isClient && !row.send_server" @click.native="clickSendOnline(row.id)">
-                                        Enviar Servidor
-                                    </el-dropdown-item>
-                                    <el-dropdown-item v-if="isClient && row.send_server && (row.state_type_id === '01' || row.state_type_id === '03')" @click.native="clickCheckOnline(row.id)">
-                                        Consultar Servidor
-                                    </el-dropdown-item>
-                                    <el-dropdown-item v-if="row.btn_constancy_detraction" @click.native="clickCDetraction(row.id)">
-                                        C. Detracción
-                                    </el-dropdown-item>
-                                    <el-dropdown-item @click.native="clickOptions(row.id)">
-                                        Opciones
-                                    </el-dropdown-item>
+                                  <el-dropdown-item
+                                    v-if="configuration.permission_to_edit_cpe && row.state_type_id === '01' && userPermissionEditCpe && row.is_editable"
+                                  >
+                                    <a :href="`/documents/${row.id}/edit`" style="text-decoration: none; color: inherit;">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" /><path d="M16 5l3 3" /></svg>
+                                      Editar
+                                    </a>
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item
+                                    v-else-if="row.state_type_id === '01' && userId == row.user_id && row.is_editable"
+                                  >
+                                    <a :href="`/documents/${row.id}/edit`" style="text-decoration: none; color: inherit;">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" /><path d="M16 5l3 3" /></svg>
+                                      Editar
+                                    </a>
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item
+                                    v-if="row.btn_resend && !isClient"
+                                    @click.native="clickResend(row.id)"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-forward-up me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 14l4 -4l-4 -4" /><path d="M19 10h-11a4 4 0 1 0 0 8h1" /></svg>
+                                    Reenviar
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item
+                                    v-if="row.btn_recreate_document"
+                                    @click.native="clickReStore(row.id)"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-refresh-cw me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" /></svg>
+                                    Volver a recrear
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item
+                                    v-if="row.btn_change_to_registered_status"
+                                    @click.native="clickChangeToRegisteredStatus(row.id)"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-check-circle me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 12l2 2l4 -4" /><circle cx="12" cy="12" r="9" /></svg>
+                                    Cambiar a estado registrado
+                                  </el-dropdown-item>
 
-                                    <el-dropdown-item v-if="row.btn_force_send_by_summary && typeUser === 'admin'" @click.native="clickForceSendBySummary(row.id)">
-                                        Enviar por resumen
-                                    </el-dropdown-item>
-
-                                    <el-dropdown-item divided @click.native="clickPayment(row.id)">
-                                        Pagos
-                                    </el-dropdown-item>
-                                    <el-dropdown-item v-if="row.btn_retention" divided @click.native="clickRetention(row.id)">
-                                        Retención
-                                    </el-dropdown-item>
+                                  <el-dropdown-item
+                                      divided
+                                      v-if="
+                                          row.btn_change_to_registered_status ||
+                                          row.btn_recreate_document ||
+                                          (row.btn_resend && !isClient) ||
+                                          (
+                                              configuration.permission_to_edit_cpe &&
+                                              row.state_type_id === '01' &&
+                                              userPermissionEditCpe &&
+                                              row.is_editable
+                                          ) ||
+                                          (
+                                              row.state_type_id === '01' &&
+                                              userId == row.user_id &&
+                                              row.is_editable
+                                          )
+                                      "
+                                  ></el-dropdown-item>
+                    
+                                  <el-dropdown-item v-if="row.btn_note">
+                                    <a :href="`/${resource}/note/${row.id}`" style="text-decoration: none; color: inherit;">
+                                      <svg xmlns="http://www.w3.org/2000/svg" class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M5 4v17l2 -2l2 2l2 -2l2 2l2 -2l2 2l2 -2v-17z"></path><path d="M14 8h-4"></path><path d="M14 12h-4"></path><path d="M14 16h-4"></path></svg>
+                                      Nota
+                                    </a>
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item v-if="row.btn_guide">
+                                    <a :href="`/dispatches/create_new/document/${row.id}`" style="text-decoration: none; color: inherit;">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-truck me-2">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                        <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                                        <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                                        <path d="M5 17h-2v-11a1 1 0 0 1 1 -1h9v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5"></path>
+                                      </svg>
+                                      Guía
+                                    </a>
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item
+                                    v-if="row.btn_constancy_detraction"
+                                    @click.native="clickCDetraction(row.id)"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-text me-2">
+                                      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                      <path d="M14 3v4a1 1 0 0 0 1 1h4"></path>
+                                      <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"></path>
+                                      <line x1="9" y1="9" x2="10" y2="9"></line>
+                                      <line x1="9" y1="13" x2="15" y2="13"></line>
+                                      <line x1="9" y1="17" x2="15" y2="17"></line>
+                                    </svg>
+                                    C. Detracción
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item
+                                    v-if="isClient && !row.send_server"
+                                    @click.native="clickSendOnline(row.id)"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-server-2 me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 4m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z" /><path d="M3 12m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z" /><path d="M7 8l0 .01" /><path d="M7 16l0 .01" /><path d="M11 8h6" /><path d="M11 16h6" /></svg>
+                                    Enviar Servidor
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item
+                                    v-if="isClient && row.send_server && (row.state_type_id === '01' || row.state_type_id === '03')"
+                                    @click.native="clickCheckOnline(row.id)"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-server-cog me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 4m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z" /><path d="M12 20h-6a3 3 0 0 1 -3 -3v-2a3 3 0 0 1 3 -3h10.5" /><path d="M18 18m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M18 14.5v1.5" /><path d="M18 20v1.5" /><path d="M21.032 16.25l-1.299 .75" /><path d="M16.27 19l-1.3 .75" /><path d="M14.97 16.25l1.3 .75" /><path d="M19.733 19l1.3 .75" /><path d="M7 8v.01" /><path d="M7 16v.01" /></svg>
+                                    Consultar Servidor
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item 
+                                    divided
+                                    v-if="row.btn_note || row.btn_guide || row.btn_constancy_detraction ||
+                                     (isClient && !row.send_server) ||
+                                      (isClient && row.send_server && (row.state_type_id === '01' || row.state_type_id === '03'))"
+                                  />
+                              
+                                  <el-dropdown-item
+                                    @click.native="clickPayment(row.id)"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-cash me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 15h-3a1 1 0 0 1 -1 -1v-8a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v3" /><path d="M7 9m0 1a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v8a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1z" /><path d="M12 14a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /></svg>
+                                    Pagos
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item
+                                    v-if="row.btn_retention"
+                                    @click.native="clickRetention(row.id)"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-text me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"></path><line x1="9" y1="9" x2="10" y2="9"></line><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line></svg>
+                                    Retención
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item divided />
+                              
+                                  <el-dropdown-item
+                                    @click.native="clickOptions(row.id)"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-settings me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>
+                                    Opciones
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item
+                                    v-if="row.btn_voided"
+                                    @click.native="clickVoided(row.id)"
+                                    class="text-danger option-delete"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x-circle me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="12" cy="12" r="9" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+                                    Anular
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item
+                                    v-if="row.btn_delete_doc_type_03"
+                                    @click.native="clickDeleteDocument(row.id)"
+                                    class="text-danger option-delete"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><line x1="4" y1="7" x2="20" y2="7" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                    Eliminar
+                                  </el-dropdown-item>
+                              
+                                  <el-dropdown-item
+                                    v-if="row.btn_force_send_by_summary && typeUser === 'admin'"
+                                    @click.native="clickForceSendBySummary(row.id)"
+                                    class="text-warning"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-send me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><line x1="10" y1="14" x2="21" y2="3" /><path d="M21 3l-6.5 18a0.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a0.55 .55 0 0 1 0 -1l18 -6.5" /></svg>
+                                    Enviar por resumen
+                                  </el-dropdown-item>
                                 </el-dropdown-menu>
                             </el-dropdown>
                             <!-- funciona pero con funciones para cada boton, parametro command -->
@@ -816,6 +930,9 @@ export default {
         "view_apiperudev_validator_cpe",
         "view_validator_cpe"
     ],
+    computed: {
+        ...mapState(["config"])
+    },
     components: {
         DocumentsVoided,
         ItemsImport,
@@ -847,9 +964,6 @@ export default {
             recordId: null,
             showDialogOptions: false,
             showDialogPayments: false,
-            // OPTIMIZACIÓN: Cache para evitar cálculos repetidos
-            _todayCache: null,
-            _todayCacheDate: null,
             columns: {
                 notes: {
                     title: "Notas C/D",
@@ -942,9 +1056,6 @@ export default {
         this.$store.commit("setConfiguration", this.configuration);
         this.loadConfiguration();
         this.getColumnsToShow();
-    },
-    computed: {
-        ...mapState(["config"]),
     },
     methods: {
         formatDate(date) {
@@ -1051,31 +1162,24 @@ export default {
                     this.$message.error(error.response.data.message);
                 });
         },
-        // OPTIMIZACIÓN: Cachear resultados de tooltip para evitar cálculos repetidos
         tooltip(row, message = true) {
-            // Cachear el resultado si ya fue calculado
-            if (row._tooltipCache && row._tooltipCache.message === message) {
-                return row._tooltipCache.result;
-            }
-            
-            let result;
             if (message) {
-                if (row.shipping_status) {
-                    result = row.shipping_status.message;
-                } else if (row.sunat_shipping_status) {
-                    result = row.sunat_shipping_status.message;
-                } else if (row.query_status) {
-                    result = row.query_status.message;
-                } else {
-                    result = false;
-                }
-            } else {
-                result = !!(row.shipping_status || row.sunat_shipping_status || row.query_status);
+                if (row.shipping_status) return row.shipping_status.message;
+
+                if (row.sunat_shipping_status)
+                    return row.sunat_shipping_status.message;
+
+                if (row.query_status) return row.query_status.message;
             }
-            
-            // Guardar en cache
-            row._tooltipCache = { message, result };
-            return result;
+
+            if (
+                row.shipping_status ||
+                row.sunat_shipping_status ||
+                row.query_status
+            )
+                return true;
+
+            return false;
         },
         clickPayment(recordId) {
             this.recordId = recordId;
@@ -1129,15 +1233,9 @@ export default {
             this.recordId = recordId;
             this.showDialogRetention = true;
         },
-        // OPTIMIZACIÓN: Cachear fecha de hoy para evitar recalcular
         isDateWarning(date_due) {
-            if (!date_due) return false;
-            // Cachear la fecha de hoy durante el ciclo de vida del componente
-            if (!this._todayCache || this._todayCacheDate !== moment().format('YYYY-MM-DD')) {
-                this._todayCache = Date.now();
-                this._todayCacheDate = moment().format('YYYY-MM-DD');
-            }
-            return moment(date_due).isBefore(this._todayCache);
+            let today = Date.now();
+            return moment(date_due).isBefore(today);
         },
         go(url) {
           window.location.href = url;

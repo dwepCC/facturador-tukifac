@@ -450,6 +450,10 @@
                     @endforeach
                 @endif
 
+                @if($row->item !== null && property_exists($row->item,'extra_attr_value') && $row->item->extra_attr_value != '')
+                    <br/><span style="font-size: 9px">{{$row->item->extra_attr_name}}: {{ $row->item->extra_attr_value }}</span>
+                @endif
+
                 @if($row->item->used_points_for_exchange ?? false)
                     <br>
                     <span

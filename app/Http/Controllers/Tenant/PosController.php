@@ -172,6 +172,7 @@ class PosController extends Controller
         $user = User::findOrFail(auth()->user()->id);
 
         $items = $this->table('items');
+        $config_tap = BusinessTurn::configurationTaps()->first();
 
         $categories = Category::all();
         $payment_method_types = PaymentMethodType::getPaymentMethodTypes();
@@ -183,7 +184,8 @@ class PosController extends Controller
             'user',
             'currency_types',
             'payment_method_types',
-            'categories'
+            'categories',
+            'config_tap'
         );
 
     }
@@ -219,6 +221,12 @@ class PosController extends Controller
                     'has_discount' => $row->has_discount,
                     'discount_type' => $row->discount_type,
                     'discount_amount' => $row->discount_amount,
+                    'plates' => $row->plates->transform(function ($plate) {
+                        return [
+                            'id' => $plate->id,
+                            'value' => $plate->value,
+                        ];
+                    }),
                 ];
             });
             return $customers;

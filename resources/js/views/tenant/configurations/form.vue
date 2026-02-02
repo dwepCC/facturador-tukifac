@@ -142,8 +142,15 @@
                                 </div>
                             </div>
                             <div class="col-md-6 mt-4">
-                                <label class="control-label">Permitir editar precio unitario a
-                                    vendedores</label>
+                                <label class="control-label">
+                                    Editar precio para todos los vendedores
+                                    
+                                    <el-tooltip class="item"
+                                        content="Para habilitarlo solo a algunos usuarios, desactiva esta opción y configúralo en Usuarios."
+                                        effect="dark" placement="top-start">
+                                        <i class="fa fa-info-circle"></i>
+                                    </el-tooltip>
+                                </label>
                                 <div :class="{ 'has-danger': errors.allow_edit_unit_price_to_seller }" class="form-group">
                                     <el-switch v-model="form.allow_edit_unit_price_to_seller"
                                                 @change="submit"></el-switch>
@@ -209,7 +216,7 @@
                                 </div>
                             </div>
                             <!-- Para elementos de farmacia -->
-                            <div class="col-md-6 mt-4">
+                            <!-- <div class="col-md-6 mt-4">
                                 <label class="control-label">Habilita elementos de farmacia
                                     <el-tooltip class="item"
                                         content="Añade Codigo DIGEMID en Empresa y Codigo DIGEMID para productos, junto con el registro salitario"
@@ -223,7 +230,7 @@
                                     <small v-if="errors.is_pharmacy" class="form-control-feedback"
                                         v-text="errors.is_pharmacy[0]"></small>
                                 </div>
-                            </div>
+                            </div> -->
 
                             <div class="col-md-6 mt-4">
                                 <label class="control-label">
@@ -648,8 +655,45 @@
                                     <small v-if="errors.enable_consigned"
                                         class="invalid-feedback"
                                         v-text="errors.enable_consigned[0]"></small>
-                                    </div>
+                                </div>
+                            </div>
                         </div>
+
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <hr>
+                            </div>
+                        </div>
+
+                        <div class="row switch-configuration-container">
+                            <div class="col-md-12">
+                                <h4 class="text-primary mb-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-tag me-1" style="margin-top: -3px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M3 6v5.172a2 2 0 0 0 .586 1.414l7.71 7.71a2.41 2.41 0 0 0 3.408 0l5.592 -5.592a2.41 2.41 0 0 0 0 -3.408l-7.71 -7.71a2 2 0 0 0 -1.414 -.586h-5.172a3 3 0 0 0 -3 3z" /></svg>
+                                    Etiquetas de precios personalizadas
+                                </h4>
+                                <p class="text-muted small mb-1">Personaliza los nombres que se mostrarán para cada nivel de precio en todo el sistema</p>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="control-label">Nombre para Precio 1</label>
+                                    <el-input v-model="form.price1_label" placeholder="Ej: Precio Minorista" maxlength="15" show-word-limit @change="submit"></el-input>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="control-label">Nombre para Precio 2</label>
+                                    <el-input v-model="form.price2_label" placeholder="Ej: Precio Mayorista" maxlength="15" show-word-limit @change="submit"></el-input>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="control-label">Nombre para Precio 3</label>
+                                    <el-input v-model="form.price3_label" placeholder="Ej: Precio Especial" maxlength="15" show-word-limit @change="submit"></el-input>
+                                </div>
+                            </div>
                         </div>
                     </el-tab-pane>
                     <el-tab-pane class="mb-3" name="third">
@@ -2542,6 +2586,9 @@ export default {
                 show_bank_accounts_in_pdf: true,
                 disable_retention_for_amount: false,
                 restaurant_tip_factor: 0,
+                price1_label: 'Precio 1',
+                price2_label: 'Precio 2',
+                price3_label: 'Precio 3',
             };
         },
         UpdateFormPurchase(e) {

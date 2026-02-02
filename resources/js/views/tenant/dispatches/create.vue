@@ -60,10 +60,10 @@
                             </div>
                             <div class="col-lg-4">
                                 <template v-if="form.transfer_reason_type_id != '04'">
-                                    <div :class="{ 'has-danger': errors.customer_id }" class="form-group">
+                                    <div :class="{ 'has-danger': errors.customer_id }" class="form-group position-relative">
                                         <label class="control-label">
                                             Cliente<span class="text-danger"> *</span>
-                                            <a href="#" @click.prevent="showDialogNewPerson = true">[+ Nuevo]</a>
+                                            <!-- <a href="#" @click.prevent="showDialogNewPerson = true">[+ Nuevo]</a> -->
                                         </label>
                                         <el-select v-model="form.customer_id" :loading="loading_search"
                                             :remote-method="searchRemoteCustomers" filterable
@@ -72,7 +72,27 @@
                                             @keyup.enter.native="keyupCustomer">
                                             <el-option v-for="option in customers" :key="option.id" :label="option.description"
                                                 :value="option.id"></el-option>
+                                            <template slot="empty">
+                                                <p v-if="loading_search" class="el-select-dropdown__empty">
+                                                    Cargando...
+                                                </p>
+                                            
+                                                <p v-else class="el-select-dropdown__empty">
+                                                    No se encontraron resultados
+                                                </p>
+                                            
+                                                <div
+                                                    v-if="!loading_search"
+                                                    class="el-select-dropdown__item new-option"
+                                                    @click.stop="openNewPersonDialog"
+                                                >
+                                                    <span>{{ customerSearchTerm ? `Crear cliente "${customerSearchTerm}"` : 'Crear cliente' }}</span>
+                                                </div>
+                                            </template>
                                         </el-select>
+                                        <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo cliente">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                                        </span>
                                         <small v-if="errors.customer_id" class="form-control-feedback"
                                             v-text="errors.customer_id[0]"></small>
                                     </div>
@@ -483,22 +503,22 @@
                                     <thead>
                                         <template v-if="config.enabled_price_items_dispatch">
                                             <tr>
-                                                <th>#</th>
+                                                <th style="min-width: 70px;">#</th>
                                                 <th class="font-weight-bold">Unidad</th>
-                                                <th class="font-weight-bold">Descripción</th>
+                                                <th class="font-weight-bold" style="min-width: 200px;">Descripción</th>
                                                 <th class="text-end font-weight-bold">Cantidad</th>
                                                 <th class="text-end font-weight-bold">Precio</th>
-                                                <th class="text-end font-weight-bold">Total</th>
+                                                <th class="text-end font-weight-bold" style="min-width: 100px;">Total</th>
                                                 <th></th>
                                             </tr>
                                         </template>
                                         <template v-else>
                                             <tr>
-                                                <th>#</th>
+                                                <th style="min-width: 70px;">#</th>
                                                 <th class="font-weight-bold">Unidad</th>
-                                                <th class="font-weight-bold">Descripción</th>
-                                                <th class="text-end font-weight-bold">Cantidad</th>
-                                                <th></th>
+                                                <th class="font-weight-bold" style="min-width: 200px;">Descripción</th>
+                                                <th class="text-end font-weight-bold" style="min-width: 100px;">Cantidad</th>
+                                                <th style="min-width: 100px;"></th>
                                             </tr>
                                         </template>
                                     </thead>
@@ -778,7 +798,10 @@
                             </div>
                         </div>
                         <div class="col-lg-12"></div>
-                        <div class="form-actions d-flex justify-content-between mt-4">
+                        <div class="form-actions mt-4 footer-card-default gap-2
+                               d-flex flex-column flex-md-row
+                               justify-content-center justify-content-md-between
+                               align-items-stretch align-items-md-center">
                             <el-button class="second-buton btn btn-default second-buton-default" @click.prevent="close()">Cancelar</el-button>
                             <el-button class="btn btn-primary btn-submit-default" v-if="(form.items.length > 0)" :loading="loading_submit" native-type="submit"
                                 type="primary">Generar
@@ -788,7 +811,7 @@
                 </form>
             </div>
 
-            <person-form :external="true" :showDialog.sync="showDialogNewPerson" :input_person="input_person"
+            <person-form :external="true" :showDialog.sync="showDialogNewPerson" :input_person="personFormInput"
                 :is_dispatch="true" type="customers"></person-form>
 
             <driver-form :showDialog.sync="showDialogDriverForm" @success="successDriver"></driver-form>
@@ -921,7 +944,25 @@ export default {
                 return true;
             }
             return false;
-        }
+        },
+        personFormInput() {
+            const term = (this.customerSearchTerm || '').trim()
+
+            if (!term) return ''
+
+            if (/^\d+$/.test(term)) {
+                let identity_document_type_id = null
+                if (term.length === 8) identity_document_type_id = '1'
+                if (term.length === 11) identity_document_type_id = '6'
+
+                return {
+                    number: term,
+                    ...(identity_document_type_id ? { identity_document_type_id } : {})
+                }
+            }
+
+            return term
+        },
     },
     data() {
         return {
@@ -1000,7 +1041,8 @@ export default {
             lots: [],
             showDialogLotsGroupSelected:false,
             lotsGroupSelected:[],
-            supplier_data: {}
+            supplier_data: {},
+            customerSearchTerm: ''
         }
     },
     created() {
@@ -1008,6 +1050,10 @@ export default {
         this.loadConfiguration()
         this.$store.commit('setConfiguration', this.configuration)
         this.canCreateProduct();
+        this.$eventHub.$on("reloadDataPersons", customer_id => {
+            this.reloadDataCustomers(customer_id);
+            this.customerSearchTerm = ''
+        });
     },
     async mounted() {
         const itemsFromSummary = localStorage.getItem('items');
@@ -1263,6 +1309,8 @@ export default {
             this.lotsGroupSelected = lotsGroupSelected;
         },
         async searchRemoteItems(input) {
+            this.customerSearchTerm = input;
+
             if (input.length > 2) {
                 this.loading_search = true
                 const params = {
@@ -1366,6 +1414,7 @@ export default {
             localStorage.removeItem('items');
         },
         searchRemoteCustomers(input) {
+            this.customerSearchTerm = input
             this.loading_search = true
             let identity_document_type_id = ['6', '4', '1', '0'];
             if (this.form.transfer_reason_type_id === '09') {
@@ -1916,9 +1965,17 @@ export default {
                     
                     this.buyers = response.data;
                 });
-        }
+        },
+        openNewPersonDialog() {
+            this.showDialogNewPerson = true
+        },
     },
     watch: {
+        showDialogNewPerson(newVal) {
+            if (!newVal) {
+                this.customerSearchTerm = ''
+            }
+        },
         'config.establishment.id': {
             handler: function(newVal, oldVal) {
                 if (newVal && newVal !== oldVal) {

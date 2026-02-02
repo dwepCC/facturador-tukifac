@@ -633,20 +633,13 @@ class DispatchInput
 
     private static function payer($inputs)
     {
-        if (key_exists('pagador_flete', $inputs)) {
-            $payer = $inputs['pagador_flete'];
+        if (key_exists('payer', $inputs)) {
+            $payer = $inputs['payer'];
 
-            if(!isset($payer['indicador_pagador_flete'])){
+            if(!isset($payer['description'])){
                 return null;
             }
-
-            return [
-                'description' => Functions::valueKeyInArray($payer, 'indicador_pagador_flete'),
-                'identity_document_type_id' => Functions::valueKeyInArray($payer, 'codigo_tipo_documento_identidad'),
-                'identity_document_type_description' => Functions::valueKeyInArray($payer, 'descripcion_tipo_documento_identidad'),
-                'number' => Functions::valueKeyInArray($payer, 'numero'),
-                'name' => Functions::valueKeyInArray($payer, 'nombres'),
-            ];
+            return $payer;
         }
         return null;
     }

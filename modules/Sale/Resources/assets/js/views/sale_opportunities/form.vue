@@ -45,23 +45,48 @@
                     <div class="form-body m-4">
                         <div class="row mt-1">
                             <div class="col-lg-8 pb-2">
-                                <div class="form-group" :class="{'has-danger': errors.customer_id}">
+                                <div class="form-group position-relative" :class="{'has-danger': errors.customer_id}">
                                     <label class="control-label font-weight-bold">
                                         Cliente
-                                        <a href="#" @click.prevent="showDialogNewPerson = true">[+ Nuevo]</a>
                                     </label>
-                                    <el-select v-model="form.customer_id" filterable remote
-                                               class="border-left rounded-left border-info"
-                                               popper-class="el-select-customers"
-                                               dusk="customer_id"
-                                               placeholder="Escriba el nombre o número de documento del cliente"
-                                               :remote-method="searchRemoteCustomers"
-                                               :loading="loading_search">
+                                    <el-select 
+                                        v-model="form.customer_id"
+                                        filterable
+                                        remote
+                                        class="border-left rounded-left border-info"
+                                        popper-class="el-select-customers"
+                                        placeholder="Escriba el nombre o número de documento del cliente"
+                                        :remote-method="searchRemoteCustomers"
+                                        :loading="loading_search"
+                                    >                                        
+                                        <el-option
+                                            v-for="option in customers"
+                                            :key="option.id"
+                                            :value="option.id"
+                                            :label="option.description"
+                                        ></el-option>
 
-                                        <el-option v-for="option in customers" :key="option.id" :value="option.id"
-                                                   :label="option.description"></el-option>
-
+                                        <template slot="empty">
+                                            <p v-if="loading_search" class="el-select-dropdown__empty">
+                                                Cargando...
+                                            </p>
+                                        
+                                            <p v-else class="el-select-dropdown__empty">
+                                                No se encontraron resultados
+                                            </p>
+                                        
+                                            <div
+                                                v-if="!loading_search"
+                                                class="el-select-dropdown__item new-option"
+                                                @click.stop="openNewPersonDialog"
+                                            >
+                                                <span>{{ customerSearchTerm ? `Crear cliente "${customerSearchTerm}"` : 'Crear cliente' }}</span>
+                                            </div>
+                                        </template>
                                     </el-select>
+                                    <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo cliente">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                                    </span>
                                     <small class="form-control-feedback" v-if="errors.customer_id"
                                            v-text="errors.customer_id[0]"></small>
                                 </div>
@@ -235,7 +260,8 @@
         <person-form :showDialog.sync="showDialogNewPerson"
                      type="customers"
                      :external="true"
-                     :document_type_id=form.document_type_id></person-form>
+                     :input_person="personFormInput"
+                     :document_type_id="form.document_type_id"></person-form>
 
         <sale-opportunity-options :showDialog.sync="showDialogOptions"
                                   :recordId="saleOpportunityNewId"
@@ -274,6 +300,24 @@ export default {
                 return `/storage/uploads/logos/${this.company.logo}`;
             }
             return '';
+        },
+        personFormInput() {
+            const term = (this.customerSearchTerm || '').trim()
+
+            if (!term) return ''
+
+            if (/^\d+$/.test(term)) {
+                let identity_document_type_id = null
+                if (term.length === 8) identity_document_type_id = '1'
+                if (term.length === 11) identity_document_type_id = '6'
+
+                return {
+                    number: term,
+                    ...(identity_document_type_id ? { identity_document_type_id } : {})
+                }
+            }
+
+            return term
         }
     },
     components: {SaleOpportunityFormItem, PersonForm, SaleOpportunityOptions, Logo},
@@ -298,7 +342,16 @@ export default {
             currency_type: {},
             saleOpportunityNewId: null,
             activePanel: 0,
-            loading_search: false
+            loading_search: false,
+            customerSearchTerm: ''
+        }
+    },
+    watch: {
+        showDialogNewPerson(newVal) {
+            if (!newVal) {
+                // Limpiar el término de búsqueda cuando se cierra el diálogo
+                this.customerSearchTerm = ''
+            }
         }
     },
     async created() {
@@ -321,6 +374,7 @@ export default {
         this.loading_form = true
         this.$eventHub.$on('reloadDataPersons', (customer_id) => {
             this.reloadDataCustomers(customer_id)
+            this.customerSearchTerm = ''
         })
 
         await this.isUpdate()
@@ -379,23 +433,20 @@ export default {
             // return unit_price.toFixed(6)
         },
         searchRemoteCustomers(input) {
-
+            this.customerSearchTerm = input;
+                
             if (input.length > 0) {
-                this.loading_search = true
-                let parameters = `input=${input}`
-
+                this.loading_search = true;
+                let parameters = `input=${input}`;
+            
                 this.$http.get(`/${this.resource}/search/customers?${parameters}`)
                     .then(response => {
-                        this.customers = response.data.customers
-                        this.loading_search = false
-                        if (this.customers.length == 0) {
-                            this.allCustomers()
-                        }
-                    })
+                        this.customers = response.data.customers;
+                        this.loading_search = false;
+                    });
             } else {
-                this.allCustomers()
+                this.allCustomers();
             }
-
         },
         initForm() {
             this.errors = {}
@@ -549,6 +600,9 @@ export default {
                 this.customers = response.data.customers
                 this.form.customer_id = customer_id
             })
+        },
+        openNewPersonDialog() {
+            this.showDialogNewPerson = true
         },
     }
 }

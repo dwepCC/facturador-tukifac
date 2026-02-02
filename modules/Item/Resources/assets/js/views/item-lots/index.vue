@@ -12,9 +12,6 @@
             </div>
         </div>
         <div class="card tab-content-default row-new mb-0">
-            <!-- <div class="card-header bg-info">
-                <h3 class="my-0">Listado de {{ title }}</h3>
-            </div> -->
             <div class="card-body">
              
                 <div v-loading="loading_submit">
@@ -72,7 +69,6 @@
                                 <table class="table">
                                     <thead>
                                         <tr>
-                                            <!-- <th>#</th> -->
                                             <th>Serie</th>
                                             <th>Producto</th>
                                             <th>Fecha</th>
@@ -82,8 +78,8 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        <!-- FILAS DE DATOS -->
                                         <tr v-for="(row, index) in records" :key="index">
-                                            <!-- <td>{{ customIndex(index) }}</td> -->
                                             <td>{{ row.series }}</td>
                                             <td>{{ row.item_description }}</td>
                                             <td>{{ row.date }}</td>
@@ -93,15 +89,24 @@
                                                 <button type="button" class="btn waves-effect waves-light btn-xs btn-info" @click.prevent="clickCreate(row.id)" v-if="!row.has_sale">Editar</button>
                                             </td>
                                         </tr>
+                                        
+                                        <!-- EMPTY STATE DENTRO DEL TBODY -->
+                                        <tr v-if="records.length === 0">
+                                            <td colspan="6" style="border: none; padding: 0;">
+                                                <empty-state message="No hay series registradas" />
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
-                                <div>
+                                
+                                <!-- PAGINACIÓN (solo si hay datos) -->
+                                <div v-if="records.length > 0">
                                     <el-pagination
-                                            @current-change="getRecords"
-                                            layout="total, prev, pager, next"
-                                            :total="pagination.total"
-                                            :current-page.sync="pagination.current_page"
-                                            :page-size="pagination.per_page">
+                                        @current-change="getRecords"
+                                        layout="total, prev, pager, next"
+                                        :total="pagination.total"
+                                        :current-page.sync="pagination.current_page"
+                                        :page-size="pagination.per_page">
                                     </el-pagination>
                                 </div>
                             </div>
@@ -113,8 +118,8 @@
 
             <item-lot-form 
                 :showDialog.sync="showDialog"
-                :recordId="recordId"
-                    ></item-lot-form> 
+                :recordId="recordId">
+            </item-lot-form> 
         </div>
     </div>
 </template>
@@ -236,6 +241,7 @@
                 window.open(`/${this.resource}/export?${query}`, '_blank');
 
             },
+            
             clickCreate(recordId = null) {
                 this.recordId = recordId
                 this.showDialog = true

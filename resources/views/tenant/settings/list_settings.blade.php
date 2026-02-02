@@ -22,8 +22,8 @@
     </ol>
 </div>
 
-<div class="row tab-content-default row-new bg-transparent border-0" style="background: transparent !important;">
-    <div class="col-6 col-md-4 mb-4">
+<div class="row tab-content-default row-new bg-transparent border-0 px-2 px-md-0" style="background: transparent !important;">
+    <div class="col-12 col-sm-6 col-md-4 mb-4">
         <div class="card card-dashboard card-reports">
             <div class="card-body">
                 <h6 class="card-title">General</h6>
@@ -50,7 +50,7 @@
         </div>
     </div>
         @if(!empty($companyMenu))
-    <div class="col-6 col-md-4 mb-4">
+    <div class="col-12 col-sm-6 col-md-4 mb-4">
         <div class="card card-dashboard card-reports">
             <div class="card-body">
                 <h6 class="card-title">Empresa</h6>
@@ -61,9 +61,9 @@
                     <li>
                         <a href="{{route('tenant.bussiness_turns.index')}}">Giro de negocio</a>
                     </li>
-                    {{--<li>
+                    <li>
                         <a href="#" class="style-switcher-open">Estilos y temas</a>
-                    </li>--}}
+                    </li>
                     <li>
                         <a href="{{route('tenant.advanced.index')}}">Avanzado</a>
                     </li>
@@ -79,7 +79,7 @@
         </div>
     </div>
         @endif
-    <div class="col-6 col-md-4 mb-4">
+    <div class="col-12 col-sm-6 col-md-4 mb-4">
         <div class="card card-dashboard card-reports">
             <div class="card-body">
                 <h6 class="card-title">SUNAT</h6>
@@ -95,6 +95,12 @@
                         <a href="{{url('list-units')}}">Listado de unidades</a>
                     </li>
                     <li>
+                        <a href="{{url('list-item-affectations')}}">Listado de afectación por producto
+                                        <sup
+                                        style="background: #ffc300;padding: 3px 3px;border-radius: 4px;">Nuevo</sup>
+                        </a>
+                    </li>
+                    <li>
                         <a href="{{url('list-transfer-reason-types')}}">Tipos de motivos de transferencias</a>
                     </li>
                     @endif
@@ -102,7 +108,7 @@
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-4 mb-4">
+    <div class="col-12 col-sm-6 col-md-4 mb-4">
         <div class="card card-dashboard card-reports">
             <div class="card-body">
                 <h6 class="card-title">Ingresos/Egresos</h6>
@@ -127,7 +133,7 @@
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-4 mb-4">
+    <div class="col-12 col-sm-6 col-md-4 mb-4">
         <div class="card card-dashboard card-reports">
             <div class="card-body">
                 <h6 class="card-title">Plantillas PDF</h6>
@@ -146,7 +152,7 @@
         </div>
     </div>
         @if(!empty($advanceMenu))
-    <div class="col-6 col-md-4 mb-4">
+    <div class="col-12 col-sm-6 col-md-4 mb-4">
         <div class="card card-dashboard card-reports">
             <div class="card-body">
                 <h6 class="card-title">Avanzado</h6>
@@ -184,7 +190,12 @@
                                         </a>
                                     </li>
                                 @endif
-
+                    <li>
+                        <a href="{{route('tenant.item-editor-tag.index')}}">Editor de etiqueta
+                                        <sup
+                                        style="background: #ffc300;padding: 3px 3px;border-radius: 4px;">Nuevo</sup>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -192,7 +203,7 @@
         @endif
     @if (! $useLoginGlobal)
             @if(!empty($visualMenu))
-    <div class="col-6 col-md-4 mb-4">
+    <div class="col-12 col-sm-6 col-md-4 mb-4">
         <div class="card card-dashboard card-reports">
             <div class="card-body">
                 <h6 class="card-title">Visual</h6>
@@ -213,7 +224,7 @@
     </div>
             @endif
     @endif
-    <div class="col-6 col-md-4 mb-4">
+    <div class="col-12 col-sm-6 col-md-4 mb-4">
         <div class="card card-dashboard card-reports">
             <div class="card-body">
                 <h6 class="card-title">Comisiones</h6>

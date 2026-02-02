@@ -8,7 +8,7 @@
                 <li class="active"><span> Consulta kardex </span></li>
             </ol>
         </div>
-        <div class="card tab-content tab-content-default row-new mb-0">
+        <div class="card tab-content-default row-new mb-0">
             <!-- <div class="card-header bg-info">
                 <h3 class="my-0">Consulta kardex</h3>
             </div> -->
@@ -34,11 +34,6 @@
         </div>
     </div>
 </template>
-<style>
-.row-new {
-    background-color: #ffffff !important;
-}
-</style>
 <style scoped>
 .invoice table.table {
     table-layout: auto !important;

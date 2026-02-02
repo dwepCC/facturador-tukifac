@@ -5,12 +5,38 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group" :class="{'has-danger': errors.fixed_asset_item_id}">
-                            <label class="control-label">
+                            <label class="control-label d-flex align-items-center">
                                 Producto/Servicio
-                                <a href="#" @click.prevent="showDialogNewItem = true">[+ Nuevo]</a>
+                                <span class="btn-add-new-product" href="#" @click.prevent="showDialogNewItem = true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                                </span>
                             </label>
-                            <el-select v-model="form.fixed_asset_item_id" @change="changeItem" filterable>
+                            <el-select 
+                                v-model="form.fixed_asset_item_id" 
+                                @change="changeItem" 
+                                filterable
+                                remote
+                                :remote-method="searchRemoteItems"
+                                :loading="loading_search"
+                                placeholder="Buscar producto">
                                 <el-option v-for="option in items" :key="option.id" :value="option.id" :label="option.full_description"></el-option>
+                                <template slot="empty">
+                                    <p v-if="loading_search" class="el-select-dropdown__empty">
+                                        Cargando...
+                                    </p>
+                                
+                                    <p v-else class="el-select-dropdown__empty">
+                                        No se encontraron resultados
+                                    </p>
+                                
+                                    <div
+                                        v-if="!loading_search"
+                                        class="el-select-dropdown__item new-option"
+                                        @click.stop="openNewItemDialog"
+                                    >
+                                        <span>{{ itemSearchTerm ? `Crear producto "${itemSearchTerm}"` : 'Crear producto' }}</span>
+                                    </div>
+                                </template>
                             </el-select>
                             <small class="form-control-feedback" v-if="errors.fixed_asset_item_id" v-text="errors.fixed_asset_item_id[0]"></small>
                         </div>
@@ -163,7 +189,8 @@
         </form>
 
         <fa-item-form :showDialog.sync="showDialogNewItem"
-                   :external="true"></fa-item-form>
+                   :external="true"
+                   :input_item="itemSearchTerm"></fa-item-form>
 
 
     </el-dialog>
@@ -191,6 +218,7 @@
                 errors: {},
                 form: {},
                 items: [],
+                all_items: [],
                 affectation_igv_types: [],
                 system_isc_types: [],
                 discount_types: [],
@@ -198,6 +226,20 @@
                 charge_types: [],
                 attribute_types: [],
                 showAdditionalInfo: false,
+                loading_search: false,
+                itemSearchTerm: ''
+            }
+        },
+        watch: {
+            showDialog(newVal) {
+                if (!newVal) {
+                    this.itemSearchTerm = ''
+                }
+            },
+            showDialogNewItem(newVal) {
+                if (!newVal) {
+                    this.itemSearchTerm = ''
+                }
             }
         },
         created() {
@@ -205,6 +247,7 @@
             this.$http.get(`/${this.resource}/item/tables`).then(response => {
 
                 this.items = response.data.fixed_asset_items
+                this.all_items = response.data.fixed_asset_items
                 this.affectation_igv_types = response.data.affectation_igv_types
                 this.system_isc_types = response.data.system_isc_types
                 this.discount_types = response.data.discount_types
@@ -214,6 +257,7 @@
 
             this.$eventHub.$on('reloadDataFixedAssetItems', (fixed_asset_item_id) => {
                 this.reloadDataFixedAssetItems(fixed_asset_item_id)
+                this.itemSearchTerm = ''
             })
         },
         methods: {
@@ -353,9 +397,37 @@
             reloadDataFixedAssetItems(fixed_asset_item_id) {
                 this.$http.get(`/${this.resource}/table/fixed_asset_items`).then((response) => {
                     this.items = response.data
+                    this.all_items = response.data
                     this.form.fixed_asset_item_id = fixed_asset_item_id
                     this.changeItem()
                 })
+            },
+            async searchRemoteItems(input) {
+                this.itemSearchTerm = input;
+
+                if (input.length > 2) {
+                    this.loading_search = true;
+                    const params = {
+                        input: input
+                    };
+                    await this.$http
+                        .get(`/${this.resource}/search-items/`, { params })
+                        .then(response => {
+                            this.items = response.data.fixed_asset_items || response.data.items;
+                            this.loading_search = false;
+                        })
+                        .catch(() => {
+                            this.loading_search = false;
+                        });
+                } else {
+                    this.filterItems();
+                }
+            },
+            filterItems() {
+                this.items = this.all_items;
+            },
+            openNewItemDialog() {
+                this.showDialogNewItem = true;
             },
         }
     }

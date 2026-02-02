@@ -4,6 +4,7 @@ namespace Modules\Restaurant\Models;
 
 use App\Models\Tenant\ModelTenant;
 use Modules\Restaurant\Models\RestaurantTable;
+use App\Models\Tenant\Item;
 
 class RestaurantItemOrderStatus extends ModelTenant
 {
@@ -18,10 +19,14 @@ class RestaurantItemOrderStatus extends ModelTenant
         'status_description',
         'customer_name'
     ];
-    
+
     public function table()
     {
         return $this->belongsTo(RestaurantTable::class, 'table_id');
     }
 
+    public function itemModel()
+    {
+        return $this->belongsTo(Item::class, 'item_id');
+    }
 }

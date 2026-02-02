@@ -16,7 +16,7 @@
                 </div>
             </div>
             <div class="row form-actions mt-4">
-                <div class="col-md-8">
+                <div class="col-12">
                     <b class="text-danger">Recuerda completar la anulación en la sección de Anulaciones</b>
                     <!--
                     <span v-if="hasSaleNote">
@@ -27,12 +27,12 @@
                     </span>
                     -->
                 </div>
-                <div class="col-4 text-right">
-                    <el-button @click.prevent="close()">Cancelar</el-button>
-                    <el-button type="danger" native-type="submit" dusk="annulment-voided" :loading="loading_submit">
-                        Anular
-                    </el-button>
-                </div>
+            </div>
+            <div class="form-actions text-end pt-2">
+                <el-button class="me-2" @click.prevent="close()">Cancelar</el-button>
+                <el-button type="danger" native-type="submit" dusk="annulment-voided" :loading="loading_submit">
+                    Anular
+                </el-button>
             </div>
         </form>
     </el-dialog>

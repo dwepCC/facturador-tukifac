@@ -197,7 +197,9 @@ class WeightedAverageCostHelper
 
         $last_weighted_average_cost = $this->getLastWeightedAverageCost($item_id);
 
-        $last_stock = $last_weighted_average_cost->stock;
+        $last_stock = isset($last_weighted_average_cost)  ? $last_weighted_average_cost->stock : 0 ;
+
+        $weighted_cost = isset($last_weighted_average_cost) ? $last_weighted_average_cost->weighted_cost : 0 ;
 
         $stock = $this->calculateStock($purchase_item, $last_stock, $factor);
 
@@ -207,7 +209,7 @@ class WeightedAverageCostHelper
         }
         else
         {
-            $weighted_cost = $this->calculateWeightedCost($last_stock, $last_weighted_average_cost->weighted_cost, ($purchase_item->total * $factor), $stock);
+            $weighted_cost = $this->calculateWeightedCost($last_stock, $weighted_cost, ($purchase_item->total * $factor), $stock);
         }
 
         $this->createWeightedAverageCost($purchase_item, [

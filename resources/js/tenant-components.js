@@ -16,6 +16,7 @@ import TenantWhatsappApiIndex from './views/tenant/companies/whatsapp_api/index.
 import TenantCompaniesForm from './views/tenant/companies/form.vue'
 import TenantCompaniesLogo from './views/tenant/companies/logo.vue'
 import TenantCertificatesQztray from './views/tenant/companies/certificates_qztray/index.vue'
+import TenantSystemEnvironment from './views/tenant/companies/system_environment/index.vue'
 import TenantCertificatesIndex from './views/tenant/certificates/index.vue'
 import TenantCertificatesForm from './views/tenant/certificates/form.vue'
 import TenantConfigurationsForm from './views/tenant/configurations/form.vue'
@@ -182,6 +183,7 @@ import TenantEcommerceConfigurationSocial from '../../modules/Ecommerce/Resource
 import TenantEcommerceConfigurationTag from '../../modules/Ecommerce/Resources/assets/js/views/configuration_tags/index.vue'
 import TenantEcommerceItemSetsIndex from '../../modules/Ecommerce/Resources/assets/js/views/item_sets/index.vue'
 import TenantEcommerceConfigurationLinks from '../../modules/Ecommerce/Resources/assets/js/views/configuration_links/index.vue'
+import TenantEcommerceConfigurationColor from '../../modules/Ecommerce/Resources/assets/js/views/configuration_color/index.vue'
 
 import TenantPurchaseQuotationsIndex from '../../modules/Purchase/Resources/assets/js/views/purchase-quotations/index.vue'
 import TenantPurchaseQuotationsForm from '../../modules/Purchase/Resources/assets/js/views/purchase-quotations/form.vue'
@@ -345,6 +347,9 @@ import TenantRestaurantOrdersIndex from '../../modules/Restaurant/Resources/asse
 import TenantRestaurantCashIndex from '../../modules/Restaurant/Resources/assets/js/views/cash/index.vue'
 import TenantRestaurantCashFilterPos from '../../modules/Restaurant/Resources/assets/js/views/cash/filter-pos.vue'
 import TenantRestaurantConfiguration from '../../modules/Restaurant/Resources/assets/js/views/configuration/index.vue'
+import TenantRestaurantSuppliesIndex from '../../modules/Restaurant/Resources/assets/js/views/supplies/index.vue'
+import TenantRestaurantModifierGroupsIndex from '../../modules/Restaurant/Resources/assets/js/views/modifier-groups/index.vue'
+import TenantRestaurantModifierGroupsForm from '../../modules/Restaurant/Resources/assets/js/views/modifier-groups/form.vue'
 
 // Pagos
 import TenantPaymentConfigurationsIndex from '@viewsModulePayment/payment_configurations/index.vue'
@@ -364,8 +369,15 @@ import TenantSireIndex from './views/tenant/sire/index.vue'
 import TenantQrChat from '@viewsModuleQrChatBuho/Configuration.vue'
 import TenantQrApi from '@viewsModuleQrApi/ConfigurationQrApi.vue'
 import TenantReportPendingAccountCommissionsIndex from '@viewsModuleReport/pending-account-commissions/index.vue'
+import TenantReportSaleByBrand from '../../modules/Report/Resources/assets/js/views/sales_by_brand/index.vue'
+import TenatnEditorTag from '../../modules/Item/Resources/assets/js/views/editor-tag/index.vue'
+import EmptyState from './components/EmptyState.vue'
+import TenantItemAffectations from './views/tenant/item_affectations/index.vue';
 
-import TenantProfileIndex from './views/tenant/profile/index.vue'
+import TenantProfileIndex from './views/tenant/profile/index.vue';
+
+//componente agregado para issue #93 añadir icono cuando no hay datos
+Vue.component('empty-state', EmptyState);  
 // Sire
 Vue.component('tenant-sire-index', TenantSireIndex);
 
@@ -393,6 +405,7 @@ Vue.component('tenant-companies-form', TenantCompaniesForm)
 Vue.component('tenant-companies-logo', TenantCompaniesLogo)
 Vue.component('tenant-certificates-qztray', TenantCertificatesQztray)
 Vue.component('tenant-certificates-index', TenantCertificatesIndex)
+Vue.component('tenant-system-environment', TenantSystemEnvironment)
 Vue.component('tenant-certificates-form', TenantCertificatesForm)
 Vue.component('tenant-configurations-form', TenantConfigurationsForm)
 Vue.component('tenant-configurations-form-purchases', TenantConfigurationsFormPurchases)
@@ -452,6 +465,7 @@ Vue.component('tenant-dispatch_carrier-form', TenantDispatchCarrierForm)
 
 Vue.component('tenant-purchases-items', TenantPurchasesItems)
 Vue.component('tenant-attribute_types-index', TenantAttributeTypesIndex)
+Vue.component('tenant-item-affectations', TenantItemAffectations)
 Vue.component('tenant-calendar', TenantCalendar)
 Vue.component('tenant-warehouses', TenantWarehouses)
 Vue.component('tenant-calendar-quotation', TenantCalendarQuotation)
@@ -557,6 +571,7 @@ Vue.component('tenant-ecommerce-configuration-social', TenantEcommerceConfigurat
 Vue.component('tenant-ecommerce-configuration-tag', TenantEcommerceConfigurationTag)
 Vue.component('tenant-ecommerce-item-sets-index', TenantEcommerceItemSetsIndex)
 Vue.component('tenant-ecommerce-configuration-links', TenantEcommerceConfigurationLinks)
+Vue.component('tenant-ecommerce-configuration-color', TenantEcommerceConfigurationColor)
 
 Vue.component('tenant-purchase-quotations-index', TenantPurchaseQuotationsIndex)
 Vue.component('tenant-purchase-quotations-form', TenantPurchaseQuotationsForm)
@@ -629,6 +644,7 @@ Vue.component('tenant-dispatch-addresses-index', TenantDispatchAddressesIndex)
 Vue.component('tenant-order-forms-index', TenantOrderFormsIndex)
 Vue.component('tenant-order-forms-form', TenantOrderFormsForm)
 
+Vue.component('tenant-report-sales-by-brand-index', TenantReportSaleByBrand);
 Vue.component('tenant-multi-users-change-client', TenantMultiUsersChangeClient)
 
 // Hoteles
@@ -720,6 +736,9 @@ Vue.component('tenant-restaurant-orders-index', TenantRestaurantOrdersIndex)
 Vue.component('tenant-restaurant-cash-index', TenantRestaurantCashIndex)
 Vue.component('tenant-restaurant-cash-filter-pos', TenantRestaurantCashFilterPos)
 Vue.component('tenant-restaurant-configuration', TenantRestaurantConfiguration)
+Vue.component('tenant-restaurant-supplies-index', TenantRestaurantSuppliesIndex)
+Vue.component('tenant-restaurant-modifier-groups-index', TenantRestaurantModifierGroupsIndex)
+Vue.component('tenant-restaurant-modifier-groups-form', TenantRestaurantModifierGroupsForm)
 
 // Pagos
 Vue.component('tenant-payment-configurations-index', TenantPaymentConfigurationsIndex)
@@ -735,11 +754,7 @@ Vue.component('tenant-system-activity-logs-generals-index', TenantSystemActivity
 Vue.component('tenant-system-activity-logs-transactions-index', TenantSystemActivityLogsTransactionsIndex)
 Vue.component('tenant-remember-change-password', TenantRememberChangePassword)
 Vue.component('tenant-report-pending-account-commissions-index', TenantReportPendingAccountCommissionsIndex)
+Vue.component('tenant-item-editor-tag', TenatnEditorTag)
 
+//profile
 Vue.component('tenant-profile-index', TenantProfileIndex)
-
-// OPTIMIZACIÓN: Eliminar logs en producción para mejorar rendimiento
-if (process.env.NODE_ENV !== 'production') {
-    console.log('✅ tenant-components.js ejecutado completamente');
-    console.log('✅ Total componentes registrados:', Object.keys(Vue.options.components).filter(c => c.startsWith('tenant-') || c.startsWith('x-') || c.startsWith('inventory-') || c.startsWith('warehouses-') || c.startsWith('cash-') || c.startsWith('data-table-')).length);
-}

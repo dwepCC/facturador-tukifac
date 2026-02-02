@@ -981,6 +981,19 @@ $inventory_configuration = InventoryConfiguration::getSidebarPermissions();
                                 </li>
 
                                 <li
+                                    class="{{ ($secondLevel != null && $secondLevel == 'supplies' && $firstLevel === 'restaurant') ? 'nav-active' : '' }}">
+                                    <a class="nav-link" href="{{ route('tenant.restaurant.supplies.index') }}">
+                                        Insumos
+                                    </a>
+                                </li>
+
+                                <li class="{{ ($secondLevel != null && $secondLevel == 'modifier-groups' && $firstLevel === 'restaurant') ? 'nav-active' : '' }}">
+                                    <a class="nav-link" href="{{ url('restaurant/modifier-groups') }}">
+                                        Modificadores
+                                    </a>
+                                </li>
+
+                                <li
                                     class="nav-parent
                                                                                                                                                     {{ ($secondLevel != null && $secondLevel == 'promotions') || ($secondLevel != null && $secondLevel == 'orders') ? 'nav-active nav-expanded' : '' }}">
                                     <a class="nav-link" href="#">
@@ -1645,5 +1658,23 @@ $inventory_configuration = InventoryConfiguration::getSidebarPermissions();
     .sidebar-blue .more-config a:hover,
     .sidebar-green .more-config a:hover {
         color: #fff !important;
+    }
+
+    .nav-main .nav-children li.nav-item-with-action {
+        position: relative;
+    }
+
+    .nav-main .nav-children li.nav-item-with-action > .nav-action {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2;
+        padding: 2px 6px;
+        line-height: 1.2;
+    }
+    .nav-item-with-action button{
+        padding: 0 4px !important;
+        font-size: 12px !important;
     }
 </style>

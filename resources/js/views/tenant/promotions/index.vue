@@ -24,8 +24,8 @@
       </div> -->
     </div>
 
-    <div class="row">
-      <div class=" col-12 card-header d-flex justify-content-between align-items-center">
+    <div class="card tab-content-default row-new mb-0 bg-transparent promotions-section">
+      <div class=" col-12 d-flex justify-content-between align-items-center bg-transparent promotions-header">
         <h3 class="">Banners principales</h3>
         <div class="right-wrapper pull-right">
           <template>
@@ -39,14 +39,12 @@
           </template>
         </div>
       </div>
-    </div>
-    <div class="card tab-content-default row-new mb-0">
       <div class="card-body">
         <data-table :apply-filter="false" :promotionType="'banners'" :resource="resource">
           <tr slot="heading" width="100%">
             <!-- <th>#</th> -->
             <th>Nombre</th>
-            <th>Descripción</th>
+            <!-- <th>Descripción</th> -->
             <th class="text-center">Imagen</th>
             <th class="text-end">Acciones</th>
           </tr>
@@ -54,7 +52,7 @@
           <tr slot-scope="{ index, row }">
             <!-- <td>{{ index }}</td> -->
             <td>{{ row.name }}</td>
-            <td>{{ row.description }}</td>
+            <!-- <td>{{ row.description }}</td> -->
             <td class="text-center">
               <img :src="row.image_url" alt width="170" height="130" />
             </td>
@@ -68,7 +66,7 @@
                 >Editar</button>
                 <button
                   type="button"
-                  class="btn waves-effect waves-light btn-xs btn-danger"
+                  class="btn waves-effect waves-light btn-xs btn-danger ms-1"
                   @click.prevent="clickDelete(row.id)"
                 >Eliminar</button>
               </template>
@@ -80,8 +78,8 @@
       <promotions-form :showDialog.sync="showDialog" :recordId="recordId"></promotions-form>
     </div>
 
-    <div class="row">
-      <div class=" col-12 card-header d-flex justify-content-between align-items-center">
+    <!-- <div class="card tab-content-default row-new mb-0 bg-transparent promotions-section">
+      <div class=" col-12 d-flex justify-content-between align-items-center bg-transparent promotions-header">
         <h3 class="">Listado de Promociones</h3>
         <div class="right-wrapper pull-right">
           <template>
@@ -95,13 +93,9 @@
           </template>
         </div>
       </div>
-    </div>
-
-    <div class="card tab-content-default row-new mb-0">
       <div class="card-body">
         <data-table :apply-filter="false" :promotionType="'promotions'" :resource="resource">
           <tr slot="heading" width="100%">
-            <!-- <th>#</th> -->
             <th>Nombre</th>
             <th>Descripción</th>
             <th class="text-center">Imagen</th>
@@ -109,7 +103,6 @@
           </tr>
           <tr></tr>
           <tr slot-scope="{ index, row }">
-            <!-- <td>{{ index }}</td> -->
             <td>{{ row.name }}</td>
             <td>{{ row.description }}</td>
             <td class="text-center">
@@ -117,7 +110,6 @@
             </td>
             <td class="text-end">
               <template>
-                <!-- v-if="typeUser === 'admin'" -->
                 <button
                   type="button"
                   class="btn waves-effect waves-light btn-xs btn-info"
@@ -125,7 +117,7 @@
                 >Editar</button>
                 <button
                   type="button"
-                  class="btn waves-effect waves-light btn-xs btn-danger"
+                  class="btn waves-effect waves-light btn-xs btn-danger ms-1"
                   @click.prevent="clickDeletePromotionList(row.id)"
                 >Eliminar</button>
               </template>
@@ -135,6 +127,55 @@
       </div>
 
       <promotions-list-form :showDialog.sync="showDialogPromotionList" :recordId="recordIdPromotion"></promotions-list-form>
+    </div> -->
+
+    <div class="card tab-content-default row-new mb-0 bg-transparent promotions-section">
+      <div class="col-12 d-flex justify-content-between align-items-center bg-transparent promotions-header">
+        <h3 class="">Listado de Promociones <small class="text-muted">(Hasta 4 imágenes)</small></h3>
+        <div class="right-wrapper pull-right">
+          <template>
+            <button
+              type="button"
+              class="btn btn-custom btn-sm me-2"
+              @click.prevent="clickCreateSpotList()"
+            >
+              <i class="fa fa-plus-circle"></i> Nuevo
+            </button>
+          </template>
+        </div>
+      </div>
+      <div class="card-body">
+        <data-table :apply-filter="false" :promotionType="'spots'" :resource="resource">
+          <tr slot="heading" width="100%">  
+            <th>Nombre</th>          
+            <th class="text-center">Imagen</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+          <tr></tr>
+          <tr slot-scope="{ index, row }">
+            <td>{{ row.name }}</td>
+            <td class="text-center">
+              <img :src="row.image_url" alt width="170" height="130" />
+            </td>
+            <td class="text-end">
+              <template>
+                <button
+                  type="button"
+                  class="btn waves-effect waves-light btn-xs btn-info"
+                  @click.prevent="clickCreateSpotList(row.id)"
+                >Editar</button>
+                <button
+                  type="button"
+                  class="btn waves-effect waves-light btn-xs btn-danger ms-1"
+                  @click.prevent="clickDeleteSpotList(row.id)"
+                >Eliminar</button>
+              </template>
+            </td>
+          </tr>
+        </data-table>
+      </div>
+    
+      <spot-list-form :showDialog.sync="showDialogSpotList" :recordId="recordIdSpot"></spot-list-form>
     </div>
 
   </div>
@@ -144,26 +185,63 @@
   display: none;
 }
 </style>
+<style scoped>
+.card-body .table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.card-body .table th:nth-child(1),
+.card-body .table td:nth-child(1) {
+  width: 20%;
+  word-wrap: break-word;
+}
+
+.card-body .table th:nth-child(2),
+.card-body .table td:nth-child(2) {
+  width: 30%;
+  word-wrap: break-word;
+}
+
+.card-body .table th:nth-child(3),
+.card-body .table td:nth-child(3) {
+  width: 30%;
+}
+
+.card-body .table th:nth-child(4),
+.card-body .table td:nth-child(4) {
+  width: 20%;
+}
+.card-body .table img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+</style>
 <script>
 import PromotionsForm from "./form.vue";
 import PromotionsListForm from "./promotionListForm.vue";
 // import ItemsImport from './import.vue'
 import DataTable from "../../../components/DataTablePromotionsEcommerce.vue";
 import { deletable } from "../../../mixins/deletable";
+import SpotListForm from "./spotListForm.vue";
 
 export default {
   props: [], //'typeUser'
   mixins: [deletable],
-  components: { PromotionsForm, DataTable,PromotionsListForm }, //ItemsImport
+  components: { PromotionsForm, DataTable,PromotionsListForm, SpotListForm}, //ItemsImport
   data() {
     return {
       showDialog: false,
       showDialogPromotionList: false,
+      showDialogSpotList: false,
       showImportDialog: false,
       showImageDetail: false,
       resource: "promotions",
       recordId: null,
-      recordIdPromotion: null
+      recordIdPromotion: null,
+      recordIdSpot: null
     };
   },
   created() {},
@@ -189,6 +267,15 @@ export default {
         this.$eventHub.$emit("reloadData")
       );
     },
+    clickCreateSpotList(recordId = null) {
+      this.recordIdSpot = recordId;
+      this.showDialogSpotList = true;
+    },
+    clickDeleteSpotList(id) {
+      this.destroy(`/${this.resource}/${id}`).then(() =>
+        this.$eventHub.$emit("reloadData")
+      );
+    }
   }
 };
 </script>

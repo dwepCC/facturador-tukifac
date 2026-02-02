@@ -21,6 +21,8 @@ class CompanyAccountResource extends JsonResource
             'subtotal_usd'=> $this->subtotal_usd, 
             'total_usd'=> $this->total_usd, 
             'igv_usd'=> $this->igv_usd, 
+            'exonerated' => $this->exonerated,
+            'unaffected' => $this->unaffected,
         ];
     }
 }

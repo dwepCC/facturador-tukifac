@@ -169,7 +169,73 @@
                         <div class="col-md-12 col-lg-12">
                             <div class="form-group">
                                 <label class="control-label mb-0">Número de Placa</label>
-                                <el-input v-model="form.plate_number" type="text"></el-input>
+                                <template v-if="config_tap.save_plates_client">
+                                <a
+                                        v-if="!btn_save_plates"
+                                        href="#"
+                                        @click.prevent="
+                                            btn_save_plates = true
+                                        "
+                                    >
+                                        [+ Nuevo]
+                                    </a>
+                                <a
+                                        v-else
+                                        href="#"
+                                        @click.prevent="
+                                            btn_save_plates = false
+                                        "
+                                    >
+                                        [ Cancelar]
+                                    </a>
+                                </template>
+                                <template v-if="!config_tap.save_plates_client">
+                                    <el-input v-model="form.plate_number" type="text">
+                                        <el-tooltip
+                                            slot="append"
+                                            placement="right"
+                                            >
+                                                <div
+                                                    slot="content"
+                                                    v-html="
+                                                        messageBoxPlate
+                                                    "
+                                                    >
+                                                </div>
+                                            <el-button :disabled="!Boolean(form.customer_id)" v-if="btn_save_plates" @click="savePlates"  icon="el-icon-folder-add"></el-button>
+                                        </el-tooltip>
+                                    </el-input>
+                                </template>
+                                <template v-else>
+                                    <el-select
+                                        v-if="!btn_save_plates"
+                                        v-model="form.plate_number"
+                                        filterable
+                                        placeholder="Seleccione Placa"
+                                    >
+                                        <el-option
+                                            v-for="option in current_plates"
+                                            :key="option"
+                                            :label="option.value"
+                                            :value="option.value"
+                                        ></el-option>
+                                    </el-select>
+                                    <el-input v-else v-model="form.plate_number" type="text">
+                                        <el-tooltip
+                                            slot="append"
+                                            placement="right"
+                                            >
+                                                <div
+                                                    slot="content"
+                                                    v-html="
+                                                        messageBoxPlate
+                                                    "
+                                                    >
+                                                </div>
+                                            <el-button :disabled="!Boolean(form.customer_id)" v-if="btn_save_plates" @click="savePlates"  icon="el-icon-folder-add"></el-button>
+                                        </el-tooltip>
+                                    </el-input>
+                                </template> 
                             </div>
                         </div>
                     </div>
@@ -397,6 +463,9 @@ export default {
     data() {
         return {
             showDialogPlateNumber: false,
+            messageBoxPlate: '',
+            btn_save_plates: false,
+            current_plates: [],
             enabled_discount: false,
             discount_amount: 0,
             discount_type: '01',
@@ -499,6 +568,17 @@ export default {
     methods: {
         openPlateNumberDialog() {
             this.showDialogPlateNumber = true;
+            let customer = _.find(this.all_customers, {
+                id: this.form.customer_id
+            });
+
+            if (!customer) {
+                this.messageBoxPlate =  'Debe seleccionar un cliente para guardar la placa.'
+            } else {
+                this.messageBoxPlate = `Se guardara la placa al cliente: ${customer.name}.` 
+                this.getPlates()
+            }
+
             this.$nextTick(() => {
                 this.$refs.plateNumberInput.focus();
             });
@@ -516,6 +596,7 @@ export default {
         },
         clickDeleteCustomer() {
             this.form.customer_id = null;
+            this.messageBoxPlate = '';
             this.customer = null;
             this.userSelectedDocType = false;
             this.setLocalStorageIndex("customer", null);
@@ -888,7 +969,7 @@ export default {
         },
         setAmountCash(amount) {
             let row = _.last(this.payments, {'payment_method_type_id': '01'})
-            row.payment = parseFloat(row.payment) + parseFloat(amount)
+            row.payment = parseFloat(amount)
             // console.log(row.payment)
 
             this.form.payments = this.payments
@@ -1178,11 +1259,14 @@ export default {
 
                         // this.form_payment.sale_note_id = response.data.data.id;
                         this.form_cash_document.sale_note_id = response.data.data.id;
-
+                        this.documentNewId = response.data.data.id;
                     } else {
-                        if(this.configuration.send_auto) {
-                            response_sent = await this.sendDocument(response.data.data.id); 
-                            this.statusDocument = response_sent.data.response
+                        this.documentNewId = response.data.data.id;
+                        
+                        if(this.configuration.send_auto && this.form.document_type_id === '01') {
+                            response_sent = await this.sendDocument(this.documentNewId); 
+                        } else if (this.configuration.ticket_single_shipment && this.form.document_type_id === '03') {
+                            response_sent = await this.sendDocument(this.documentNewId); 
                         }
 
                         // this.form_payment.document_id = response.data.data.id;
@@ -1190,7 +1274,6 @@ export default {
 
                     }
 
-                    this.documentNewId = response.data.data.id;
                     this.showDialogOptions = true;
 
                     // this.savePaymentMethod();
@@ -1300,6 +1383,7 @@ export default {
 
             await this.$http.get(`/${this.resource}/tables`).then(response => {
                 //this.all_items = response.data.items;
+                this.config_tap = response.data.config_tap;
                 this.affectation_igv_types =
                     response.data.affectation_igv_types;
                 this.all_customers = response.data.customers;
@@ -1362,6 +1446,33 @@ export default {
             }
 
         },
+        savePlates()
+        {
+            this.$http
+                .post(`\\bussiness_turns\\plates`, {
+                    plates: this.form.plate_number,
+                    person_id: this.form.customer_id
+                })
+                .then((response) => {
+                    if (response.data.success) {
+                        this.$message.success(response.data.message);
+                        this.getPlates()
+                    }
+                })
+                .finally(() => {
+                    this.btn_save_plates = false
+                });
+        },
+        getPlates() 
+        {
+            this.$http
+                .get(`\\bussiness_turns\\plates\\${this.form.customer_id}`)
+                .then((response) => {
+                    if (response.data.success) {
+                        this.current_plates = response.data.plates
+                    }
+                });
+        }
     }
 }
 </script>

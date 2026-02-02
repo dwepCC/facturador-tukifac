@@ -41,7 +41,7 @@
                     >
                         <el-dropdown :hide-on-click="false" slot="showhide">
                             <el-button type="secondary">
-                                Mostrar/Ocultar columnas<i class="el-icon-arrow-down el-icon--right"></i>
+                                Mostrar columnas<i class="el-icon-arrow-down el-icon--right"></i>
                             </el-button>
                             <el-dropdown-menu slot="dropdown">
                                 <el-dropdown-item v-for="(column, index) in columns"
@@ -62,14 +62,14 @@
                                     <th>#</th>
                                     <th>Número</th>
                                     <th class="text-center">Moneda</th>
-                                    <th class="text-right" v-if="columns.total_exportation.visible">T.Exportación</th>
-                                    <th class="text-right" v-if="columns.total_free.visible">T.Gratuita</th>
-                                    <th class="text-right" v-if="columns.total_unaffected.visible">T.Inafecta</th>
-                                    <th class="text-right" v-if="columns.total_exonerated.visible">T.Exonerado</th>
-                                    <th class="text-right" v-if="columns.total_charge.visible">T.Cargos</th>
-                                    <th class="text-right">T.Gravado</th>
-                                    <th class="text-right">T.Igv</th>
-                                    <th class="text-right">Total</th>
+                                    <th class="text-end" v-if="columns.total_exportation.visible">T.Exportación</th>
+                                    <th class="text-end" v-if="columns.total_free.visible">T.Gratuita</th>
+                                    <th class="text-end" v-if="columns.total_unaffected.visible">T.Inafecta</th>
+                                    <th class="text-end" v-if="columns.total_exonerated.visible">T.Exonerado</th>
+                                    <th class="text-end" v-if="columns.total_charge.visible">T.Cargos</th>
+                                    <th class="text-end">T.Gravado</th>
+                                    <th class="text-end">T.Igv</th>
+                                    <th class="text-end">Total</th>
                                     <th></th>
                                 </tr>
                                 </thead>
@@ -82,39 +82,39 @@
                                     </td>
                                     <td class="text-center">{{ row.currency_type_id }}</td>
                                     <td
-                                        class="text-right"
+                                        class="text-end"
                                         v-if="columns.total_exportation.visible"
                                     >
                                         {{ row.total_exportation }}
                                     </td>
                                     <td
-                                        class="text-right"
+                                        class="text-end"
                                         v-if="columns.total_free.visible"
                                     >
                                         {{ row.total_free }}
                                     </td>
                                     <td
-                                        class="text-right"
+                                        class="text-end"
                                         v-if="columns.total_unaffected.visible"
                                     >
                                         {{ row.total_unaffected }}
                                     </td>
                                     <td
-                                        class="text-right"
+                                        class="text-end"
                                         v-if="columns.total_exonerated.visible"
                                     >
                                         {{ row.total_exonerated }}
                                     </td>
                                     <td
-                                        class="text-right"
+                                        class="text-end"
                                         v-if="columns.total_charge.visible"
                                     >
                                         {{ row.total_charge }}
                                     </td>
-                                    <td class="text-right">{{ row.total_taxed }}</td>
-                                    <td class="text-right">{{ row.total_igv }}</td>
-                                    <td class="text-right white-space">{{ row.total }}</td>
-                                    <td class="text-right">
+                                    <td class="text-end">{{ row.total_taxed }}</td>
+                                    <td class="text-end">{{ row.total_igv }}</td>
+                                    <td class="text-end white-space">{{ row.total }}</td>
+                                    <td class="text-end">
                                         <button type="button" class="btn waves-effect waves-light btn-xs btn-danger" @click.prevent="clickRemoveDocument(index)">x</button>
                                     </td>
                                 </tr>
@@ -124,8 +124,8 @@
                     </div>
                 </div>
             </div>
-            <div class="form-actions text-right pt-2">
-                <el-button class="second-buton" @click.prevent="close()">Cancelar</el-button>
+            <div class="form-actions text-end pt-2">
+                <el-button class="second-buton me-2" @click.prevent="close()">Cancelar</el-button>
                 <el-button type="primary" native-type="submit" :loading="loading_submit" v-if="form.documents.length > 0" dusk="save-summary">Guardar</el-button>
             </div>
         </form>

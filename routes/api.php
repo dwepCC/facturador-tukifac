@@ -1,4 +1,5 @@
 <?php
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Tenant\ConfigurationImageController;
 
 Route::get('generate_token', 'Tenant\Api\MobileController@getSeries');

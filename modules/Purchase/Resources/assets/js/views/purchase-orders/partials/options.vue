@@ -46,22 +46,22 @@
 
 
         </div>
-        <span slot="footer" class="dialog-footer row">
-            <div class="col-md-7">
+        <div class="row form-actions mt-3">
+            <div class="col-12">
                 <el-input v-model="form.customer_email">
                     <el-button slot="append" icon="el-icon-message"   @click="clickSendEmail" :loading="loading">Enviar</el-button>
                 </el-input>
-            </div>
-            <div class="col-md-5 d-flex">
-                <template v-if="showClose">
-                    <el-button class="me-2" @click="clickClose">Cerrar</el-button>
-                </template>
-                <template v-else>
-                    <el-button class="me-2" @click="clickFinalize">Ir al listado</el-button>
-                    <el-button type="primary" @click="clickNewDocument">{{button_text}}</el-button>
-                </template>
-            </div>
-        </span>
+            </div>            
+        </div>
+        <div class="form-actions text-end pt-4">
+            <template v-if="showClose">
+                <el-button @click="clickClose">Cerrar</el-button>
+            </template>
+            <template v-else>
+                <el-button class="me-2" @click="clickFinalize">Ir al listado</el-button>
+                <el-button type="primary" @click="clickNewDocument">{{button_text}}</el-button>
+            </template>
+        </div>
     </el-dialog>
 </template>
 

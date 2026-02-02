@@ -466,11 +466,11 @@
                                 <table class="table">
                                     <thead>
                                     <tr>
-                                        <th>#</th>
-                                        <th class="font-weight-bold">Unidad</th>
-                                        <th class="font-weight-bold">Descripción</th>
-                                        <th class="text-end font-weight-bold">Cantidad</th>
-                                        <th></th>
+                                        <th style="min-width: 70px;">#</th>
+                                        <th class="font-weight-bold" style="min-width: 100px;">Unidad</th>
+                                        <th class="font-weight-bold" style="min-width: 200px;">Descripción</th>
+                                        <th class="text-end font-weight-bold" style="min-width: 100px;">Cantidad</th>
+                                        <th style="min-width: 100px;"></th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -613,7 +613,10 @@
                             </div>
                         </div>
                         <div class="col-lg-12"></div>
-                        <div class="form-actions d-flex justify-content-between mt-4">
+                        <div class="form-actions mt-4 footer-card-default gap-2
+                               d-flex flex-column flex-md-row
+                               justify-content-center justify-content-md-between
+                               align-items-stretch align-items-md-center">
                             <el-button class="second-buton btn btn-default second-buton-default" @click.prevent="clickClose">Cancelar</el-button>
                             <el-button class="btn btn-primary btn-submit-default" v-if="(form.items.length > 0) || existReferenceDocuments"
                                        :loading="loading_submit"

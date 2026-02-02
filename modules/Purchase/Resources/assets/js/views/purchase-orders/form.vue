@@ -10,7 +10,7 @@
                     <div class="d-flex head-notes">
                         <div class="d-flex">
                             <div class="mt-3 mb-0">
-                                <logo 
+                                <logo
                                     url="/"
                                     :path_logo="getCurrentLogo"
                                 ></logo>
@@ -30,7 +30,7 @@
                                 </address>
                             </div>
                         </div>
-    
+
                         <div class="col-md-12  row align-items-center dates justify-content-end pe-2">
                             <div class=" col-6 w-40 p-2 issue-date">
                                 <div class="form-group" :class="{'has-danger': errors.date_of_issue}">
@@ -41,7 +41,7 @@
                                            v-text="errors.date_of_issue[0]"></small>
                                 </div>
                             </div>
-    
+
                             <div class="col-6 w-40 p-2 expiration-date">
                                 <div class="form-group" :class="{'has-danger': errors.date_of_due}">
                                     <label class="control-label">Fec. Vencimiento</label>
@@ -86,13 +86,16 @@
 
 
                             <div class="col-lg-3">
-                                <div class="form-group" :class="{'has-danger': errors.supplier_id}">
+                                <div class="form-group position-relative" :class="{'has-danger': errors.supplier_id}">
                                     <label class="control-label">
                                         Proveedor
-                                        <a href="#" @click.prevent="showDialogNewPerson = true">[+ Nuevo]</a>
+                                        <!-- <a href="#" @click.prevent="showDialogNewPerson = true">[+ Nuevo]</a> -->
                                     </label>
                                     <el-select v-model="form.supplier_id"
                                                filterable
+                                               remote
+                                               :remote-method="searchRemoteSuppliers"
+                                               :loading="loading_search"
                                                @change="changeSupplier"
                                                ref="select_person"
                                                @keyup.native="keyupSupplier"
@@ -102,7 +105,28 @@
                                                    :key="option.id"
                                                    :value="option.id"
                                                    :label="option.description"></el-option>
+
+                                        <template slot="empty">
+                                            <p v-if="loading_search" class="el-select-dropdown__empty">
+                                                Cargando...
+                                            </p>
+
+                                            <p v-else class="el-select-dropdown__empty">
+                                                No se encontraron resultados
+                                            </p>
+
+                                            <div
+                                                v-if="!loading_search"
+                                                class="el-select-dropdown__item new-option"
+                                                @click.stop="openNewPersonDialog"
+                                            >
+                                                <span>{{ supplierSearchTerm ? `Crear cliente "${supplierSearchTerm}"` : 'Crear cliente' }}</span>
+                                            </div>
+                                        </template>
                                     </el-select>
+                                    <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo cliente">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                                    </span>
                                     <small class="form-control-feedback" v-if="errors.supplier_id"
                                            v-text="errors.supplier_id[0]"></small>
                                 </div>
@@ -171,7 +195,7 @@
                                            v-text="errors.file[0]"></small>
                                 </div>
                             </div>
-                            
+
                         </div>
                         <div class="row">
                             <div class="col-lg-12 col-md-6 d-flex align-items-end mt-4">
@@ -329,7 +353,7 @@
 
         <person-form :showDialog.sync="showDialogNewPerson"
                      type="suppliers"
-                     :input_person="input_person"
+                     :input_person="personFormInput"
                      :external="true"></person-form>
 
         <purchase-options :showDialog.sync="showDialogOptions"
@@ -384,7 +408,7 @@ export default {
     computed: {
         getCurrentLogo() {
             const isDarkMode = document.documentElement.classList.contains('dark');
-        
+
             if (isDarkMode && this.company.logo_dark) {
                 return `/storage/uploads/logos/${this.company.logo_dark}`;
             }
@@ -392,7 +416,25 @@ export default {
                 return `/storage/uploads/logos/${this.company.logo}`;
             }
             return '';
-        }
+        },
+        personFormInput() {
+            const term = (this.supplierSearchTerm || '').trim()
+
+            if (!term) return ''
+
+            if (/^\d+$/.test(term)) {
+                let identity_document_type_id = null
+                if (term.length === 8) identity_document_type_id = '1'
+                if (term.length === 11) identity_document_type_id = '6'
+
+                return {
+                    number: term,
+                    ...(identity_document_type_id ? { identity_document_type_id } : {})
+                }
+            }
+
+            return term
+        },
     },
     mixins: [functions, exchangeRate],
     data() {
@@ -428,6 +470,14 @@ export default {
             currency_type: {},
             purchaseNewId: null,
             recordItem: null,
+            supplierSearchTerm: '',
+        }
+    },
+    watch: {
+        showDialogNewPerson(newVal) {
+            if (!newVal) {
+                this.supplierSearchTerm = ''
+            }
         }
     },
     async created() {
@@ -452,6 +502,7 @@ export default {
 
         this.$eventHub.$on('reloadDataPersons', (supplier_id) => {
             this.reloadDataSuppliers(supplier_id)
+            this.supplierSearchTerm = ''
         })
         await this.getPercentageIgv();
         this.loading_form = true
@@ -681,6 +732,22 @@ export default {
             this.fileList = []
 
         },
+        searchRemoteSuppliers(input) {
+            this.supplierSearchTerm = input;
+
+            if (input.length > 1) {
+                this.loading_search = true
+                let parameters = `input=${input}`
+
+                this.$http.get(`/reports/data-table/persons/suppliers?${parameters}`)
+                    .then(response => {
+                        this.suppliers = response.data.persons
+                        this.loading_search = false
+                    })
+            } else {
+                this.filterSuppliers()
+            }
+        },
         resetForm() {
             this.initForm()
             this.form.currency_type_id = (this.currency_types.length > 0) ? this.currency_types[0].id : null
@@ -874,6 +941,9 @@ export default {
             row.indexi = index
             this.recordItem = row
             this.showDialogAddItem = true
+        },
+        openNewPersonDialog() {
+            this.showDialogNewPerson = true
         },
     }
 }

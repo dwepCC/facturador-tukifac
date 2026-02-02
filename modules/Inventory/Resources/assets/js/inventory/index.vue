@@ -133,7 +133,8 @@
                         <th>
                             <el-dropdown>
                                 <el-button class="btn-default">
-                                    <i class="fa fa-ellipsis-v"></i>
+                                    <i class="fas fa-ellipsis-v"></i>
+                                    <i class="fas fa-ellipsis-h" style="display: none;"></i>
                                 </el-button>
                                 <el-dropdown-menu slot="dropdown">
                                     <el-dropdown-item

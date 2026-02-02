@@ -2011,7 +2011,7 @@ export default {
         },
         setAmountCash(amount) {
             let row = _.last(this.payments, {'payment_method_type_id': '01'})
-            row.payment = parseFloat(row.payment) + parseFloat(amount)
+            row.payment = parseFloat(amount)
             // console.log(row.payment)
 
             this.form.payments = this.payments

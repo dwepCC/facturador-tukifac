@@ -9,7 +9,7 @@
                         <small class="form-control-feedback" v-if="errors.password" v-text="errors.password[0]"></small>
                     </div>
                 </div>
-                <div class="col-md-5"> 
+                <div class="col-md-5">
                     <div class="form-group" :class="{'has-danger': errors.certificate}">
                         <label class="control-label">Certificado pfx</label>
                         <el-upload

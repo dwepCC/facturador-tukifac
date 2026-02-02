@@ -14,6 +14,7 @@ use App\Models\Tenant\Catalogs\{
     Province,
     District
 };
+use Illuminate\Support\Facades\DB;
 use Modules\BusinessTurn\Models\DocumentTransport;
 use Modules\BusinessTurn\Http\Requests\DocumentHotelGuestRequest;
 
@@ -44,10 +45,40 @@ class BusinessTurnController extends Controller
         $record->active = ($record->active) ? false:true;
         $record->save();
 
+        // Si es el giro de farmacia, actualizar la configuración
+        if ($record->value == 'pharmacy') {
+            $configuration = \App\Models\Tenant\Configuration::first();
+            if ($configuration) {
+                $configuration->is_pharmacy = $record->active;
+                $configuration->save();
+            }
+        }
+
         return [
             'success' => true,
             'message' => $record->active ? 'Giro de negocio activado' : 'Giro de negocio desactivado',
         ];
+    }
+
+    public function getConfigurationTaps() 
+    {
+        return BusinessTurn::configurationTaps()->first();
+    }
+
+    public function saveConfigurationTaps(Request $request) 
+    {
+        $configuration = DB::connection('tenant')->table('configuration_taps')->first();
+
+        DB::connection('tenant')->table('configuration_taps')->where('id', $configuration->id)->update([
+            'save_plates_client' => $request->save_plates_client,
+            'updated_at' => now(),
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Configuración guardada con éxito',
+        ];
+
     }
 
     public function validate_hotel(DocumentHotelRequest $request)
@@ -136,5 +167,35 @@ class BusinessTurnController extends Controller
         }
 
         return compact('identity_document_types','locations');
+    }
+
+    public function savePlates(Request $request)
+    {
+        $request->validate([
+            'plates' => 'required|string|max:20',
+            'person_id' => 'required',
+        ]);
+
+        DB::connection('tenant')->table('plates')->insert([
+            'value' => $request->plates,
+            'person_id' => $request->person_id,
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Placa guardada con éxito',
+        ];
+    }
+
+    public function getPlates($person_id)
+    {
+        $plates = DB::connection('tenant')->table('plates')
+                    ->where('person_id', $person_id)
+                    ->get();
+
+        return [
+            'success' => true,
+            'plates' => $plates,
+        ];
     }
 }

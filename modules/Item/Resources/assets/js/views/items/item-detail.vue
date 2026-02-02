@@ -398,13 +398,13 @@
                                                         </el-checkbox>
                                                     </div>
                                                 </th>
-                                                <th width="25%">
+                                                <!-- <th width="25%">
                                                     <div v-show="form.unit_type_id !='ZZ' && canSeeProduction">
                                                         <el-checkbox v-model="form.is_for_production"
                                                                     @change="changeProductioTab">Este producto, ¿requiere insumos?
                                                         </el-checkbox>
                                                     </div>
-                                                </th>
+                                                </th> -->
                                             </tr>
                                                                                 </thead>
                                             <tbody>
@@ -632,9 +632,9 @@
                                                         <i class="fa fa-info-circle"></i>
                                                     </el-tooltip>
                                                 </th>
-                                                <th class="text-center">Precio 1</th>
-                                                <th class="text-center">Precio 2</th>
-                                                <th class="text-center">Precio 3</th>
+                                                <th class="text-center">{{ config.price1_label }}</th>
+                                                <th class="text-center">{{ config.price2_label }}</th>
+                                                <th class="text-center">{{ config.price3_label }}</th>
                                                 <th class="text-center">P. Defecto</th>
                                                 <th></th>
                                             </tr>
@@ -712,13 +712,13 @@
                                                             <el-select v-model="row.price_default">
                                                                 <el-option :key="1"
                                                                         :value="1"
-                                                                        label="Precio 1"></el-option>
+                                                                        :label="config.price1_label"></el-option>
                                                                 <el-option :key="2"
                                                                         :value="2"
-                                                                        label="Precio 2"></el-option>
+                                                                        :label="config.price2_label"></el-option>
                                                                 <el-option :key="3"
                                                                         :value="3"
-                                                                        label="Precio 3"></el-option>
+                                                                        :label="config.price3_label"></el-option>
                                                             </el-select>
                                                         </div>
                                                     </td>

@@ -37,7 +37,7 @@
                                 <button type="button" class="btn waves-effect waves-light btn-xs btn-info me-1" @click.prevent="clickCreate(row.id)">Editar</button>
 
                                 <template v-if="typeUser === 'admin'">
-                                    <button type="button" class="btn waves-effect waves-light btn-xs btn-danger"  @click.prevent="clickDelete(row.id)">Eliminar</button>
+                                    <button v-if="row.can_delete" type="button" class="btn waves-effect waves-light btn-xs btn-danger"  @click.prevent="clickDelete(row.id)">Eliminar</button>
                                 </template>
 
                             </template>

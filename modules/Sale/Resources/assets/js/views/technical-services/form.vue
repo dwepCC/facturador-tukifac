@@ -14,17 +14,17 @@
                     <div class="col-md-6 pb-2">
                         <div
                             :class="{ 'has-danger': errors.customer_id }"
-                            class="form-group"
+                            class="form-group position-relative"
                         >
                             <label
                                 class="control-label font-weight-bold"
                             >
                                 Cliente
-                                <a
+                                <!-- <a
                                     href="#"
                                     @click.prevent="showDialogNewPerson = true"
                                     >[+ Nuevo]</a
-                                >
+                                > -->
                             </label>
                             <el-select
                                 v-model="form.customer_id"
@@ -44,7 +44,28 @@
                                     :label="option.description"
                                     :value="option.id"
                                 ></el-option>
+
+                                <template slot="empty">
+                                    <p v-if="loading_search" class="el-select-dropdown__empty">
+                                        Cargando...
+                                    </p>
+                                
+                                    <p v-else class="el-select-dropdown__empty">
+                                        No se encontraron resultados
+                                    </p>
+                                
+                                    <div
+                                        v-if="!loading_search"
+                                        class="el-select-dropdown__item new-option"
+                                        @click.stop="openNewPersonDialog"
+                                    >
+                                        <span>{{ customerSearchTerm ? `Crear cliente "${customerSearchTerm}"` : 'Crear cliente' }}</span>
+                                    </div>
+                                </template>
                             </el-select>
+                            <span class="btn-add-new" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo cliente">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                            </span>
                             <small
                                 v-if="errors.customer_id"
                                 class="form-control-feedback"
@@ -597,6 +618,7 @@
             :currency_types="currency_types"
             :showDialog.sync="showDialogNewPerson"
             type="customers"
+            :input_person="personFormInput"
         ></person-form>
     </el-dialog>
 </template>
@@ -613,7 +635,25 @@ import {
 export default {
     props: ["showDialog", "recordId", "configuration"],
     computed: {
-        ...mapState(["exchange_rate", "config", "currency_types"])
+        ...mapState(["exchange_rate", "config", "currency_types"]),
+        personFormInput() {
+            const term = (this.customerSearchTerm || '').trim()
+
+            if (!term) return ''
+
+            if (/^\d+$/.test(term)) {
+                let identity_document_type_id = null
+                if (term.length === 8) identity_document_type_id = '1'
+                if (term.length === 11) identity_document_type_id = '6'
+
+                return {
+                    number: term,
+                    ...(identity_document_type_id ? { identity_document_type_id } : {})
+                }
+            }
+
+            return term
+        },
     },
     mixins: [functions, exchangeRate],
     components: { PersonForm },
@@ -692,8 +732,16 @@ export default {
             btnText: "Generar",
             payment_conditions: [],
             affectation_igv_types: [],
-            total_discount_no_base: 0
+            total_discount_no_base: 0,
+            customerSearchTerm: ''
         };
+    },
+    watch: {
+        showDialogNewPerson(newVal) {
+            if (!newVal) {
+                this.customerSearchTerm = ''
+            }
+        }
     },
     async created() {
         this.load_record = true;
@@ -775,6 +823,7 @@ export default {
         await this.getPercentageIgv();
         this.$eventHub.$on("reloadDataPersons", customer_id => {
             this.reloadDataCustomers(customer_id);
+            this.customerSearchTerm = ''
         });
     },
     methods: {
@@ -1441,6 +1490,7 @@ export default {
         },
         searchRemoteCustomers(input) {
             /* Extraido de resources/js/views/tenant/documents/invoice.vue */
+            this.customerSearchTerm = input;
 
             if (input.length > 0) {
                 this.loading_search = true;
@@ -1451,9 +1501,6 @@ export default {
                     .then(response => {
                         this.customers = response.data.customers;
                         this.loading_search = false;
-                        if (this.customers.length == 0) {
-                            this.allCustomers();
-                        }
                     });
             } else {
                 this.allCustomers();
@@ -2675,7 +2722,10 @@ export default {
                 row.payment = amount;
                 // console.error(row.payment)
             });
-        }
+        },
+        openNewPersonDialog() {
+            this.showDialogNewPerson = true
+        },
     }
 };
 </script>

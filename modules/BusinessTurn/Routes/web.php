@@ -17,8 +17,12 @@ if($hostname) {
                 Route::post('validate_transports', 'BusinessTurnController@validate_transports');
                 Route::get('tables/transports', 'BusinessTurnController@tablesTransports');
                 Route::post('validate_hotel_guest', 'BusinessTurnController@validate_hotel_guest');
+                Route::post('configuration/tap', 'BusinessTurnController@saveConfigurationTaps');
+                Route::get('configuration/tap', 'BusinessTurnController@getConfigurationTaps');
 
-
+                Route::post('plates', 'BusinessTurnController@savePlates');
+                Route::get('plates/{person_id}', 'BusinessTurnController@getPlates');
+                
             });
 
 

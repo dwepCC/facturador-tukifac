@@ -95,6 +95,7 @@
                             <label class="control-label">Exportar a</label>
                             <el-select v-model="form.type">
                                 <el-option key="concar" value="concar" label="CONCAR"></el-option>
+                                <el-option key="concar_simple" value="concar_simple" label="CONCAR SIMPLE"></el-option>
                                 <el-option key="siscont" value="siscont" label="SISCONT"></el-option>
                                 <el-option key="siscont" value="siscont_excel" label="SISCONT EXCEL"></el-option>
                                 <el-option key="foxcont" value="foxcont" label="FOXCONT"></el-option>

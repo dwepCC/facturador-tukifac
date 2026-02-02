@@ -15,7 +15,7 @@
         }*/
     </style>
 @endpush
- 
+
 @section('content')
 {{--tukifac--}}
          <div class="page-header pr-0">

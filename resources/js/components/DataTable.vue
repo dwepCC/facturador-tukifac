@@ -23,7 +23,7 @@
                       'col-md-6 col-lg-6': fromEcommerce || fromRestaurant
                     }">
                         <div class="d-flex">
-                            <div class="d-flex align-items-center" style="width:100px">
+                            <div class="d-flex align-items-center me-2 text-nowrap">
                                 Filtrar por:
                             </div>
                             <el-select
@@ -74,50 +74,72 @@
                             </el-input>
                         </template>
                     </div>
-                    <div class="col-lg-5 col-md-5 col-sm-12 pb-2 d-flex" v-if="showProductFilter">
-                        <div class="d-flex align-items-center col-4 justify-content-end">
-                            {{ filterLabel }}
-                        </div>
-                        <div class="col-8 pe-0">
-                            <el-select                               
-                              v-model="showDisabledValue" 
-                              :placeholder="filterPlaceholder" 
-                              size="small" 
-                              @change="handleShowDisabledChange"
+                    <div
+                        v-if="showProductFilter"
+                        class="col-lg-4 col-md-5 col-sm-12 pb-2 d-flex align-items-center justify-content-lg-end ms-auto"
+                    >
+                        <div class="datatable-product-filter">
+                            <span class="datatable-filter-label" :title="filterLabel">{{ filterLabel }}</span>
+                            <el-select
+                                class="datatable-filter-select"
+                                v-model="showDisabledValue"
+                                :placeholder="filterPlaceholder"
+                                size="small"
+                                @change="handleShowDisabledChange"
                             >
-                              <el-option label="Todos" value="all"></el-option>
-                              <el-option label="Habilitados" value="enabled"></el-option>
-                              <el-option label="Inhabilitados" value="disabled"></el-option>
+                                <el-option label="Todos" value="all"></el-option>
+                                <el-option label="Habilitados" value="enabled"></el-option>
+                                <el-option label="Inhabilitados" value="disabled"></el-option>
                             </el-select>
                         </div>
                     </div>
+                    <div v-if="showWarehouseFilter" class="col-lg-3 col-md-3 col-sm-12 pb-2 d-flex ms-auto">
+                        <div class="d-flex align-items-center me-2 text-nowrap">
+                            Almacén:
+                        </div>
+                        <el-select
+                          v-model="warehouse_id"
+                          size="small"
+                          @change="handleWarehouseChange"
+                          placeholder="Seleccionar"
+                        >
+                          <el-option label="Todos" value="all"></el-option>
+                          <el-option
+                            v-for="warehouse in warehouses"
+                            :key="warehouse.id"
+                            :label="warehouse.description"
+                            :value="warehouse.id"
+                          ></el-option>
+                        </el-select>
+                    </div>
                 </div>
-            </div>            
+            </div>
             <div class="col-md-6 col-lg-6 col-xl-6">
                 <div class="row" v-if="fromRestaurant||fromEcommerce">
-                    <div class="col-lg-12 col-md-12 col-sm-12 pb-2 d-flex justify-content-end">
-                        <div class="d-flex col-5 ps-0" v-if="fromRestaurant||fromEcommerce">                            
-                            <div class="my-auto w-100">
-                                <el-button  @click="methodVisibleAllProduct" type="primary" icon="el-icon-check" class="w-100 button-truncate ps-2 pe-4 position-relative" style="padding-right: 25px !important;" title="Mostrar todos los productos">
-                                    Mostrar todos los productos
+                    <div class="col-lg-12 col-md-12 col-sm-12 pb-2 d-flex flex-wrap justify-content-end align-items-center">
+                        <div class="d-flex col-12 col-md-6 mb-2 mb-md-0 ps-0 pe-2" v-if="fromRestaurant||fromEcommerce">
+                            <div class="my-auto w-100 text-end">
+                                <el-button  @click="methodVisibleAllProduct" type="primary" class="button-truncate position-relative btn-show-all-products" title="Mostrar todos los productos">
+                                    <span class="d-inline d-lg-none">Mostrar todos</span>
+                                    <span class="d-none d-lg-inline">Mostrar todos los productos</span>
                                     <el-tooltip
                                         class="item"
                                         content="Solo se mostrarán productos con código interno registrado. Esta opción aplica para el canal actual."
                                         effect="dark"
                                         placement="top-start"
                                     >
-                                        <i class="fa fa-info-circle" style="position: absolute; right: 24px; top: 10px; color: #fff;"></i>
-                                    </el-tooltip>                                
-                                </el-button>                                
+                                        <i class="fa fa-info-circle ms-1"></i>
+                                    </el-tooltip>
+                                </el-button>
                             </div>
                         </div>
 
-                        <div class="d-flex col-5 px-0">
+                        <div class="d-flex col-12 col-md-6 px-0">
                             <el-select
                                 class="pe-0"
                                 v-model="search.list_value"
                                 placeholder="Select"
-                                @change="getRecords"
+                                @change="handleListValueChange"
                             >
                                 <el-option
                                     v-for="(label, key) in list_columns"
@@ -137,17 +159,26 @@
                 <div class="table-responsive table-responsive-new" ref="scrollContainer">
                     <table class="table">
                         <thead>
-                            <slot name="heading" :sort="handleSort"></slot>
+                            <slot name="heading" :sort="handleSort" :showRestaurantStock="showRestaurantStock"></slot>
                         </thead>
                         <tbody>
+                            <!-- FILAS DE DATOS -->
                             <slot
                                 v-for="(row, index) in records"
                                 :row="row"
                                 :index="customIndex(index)"
+                                :showRestaurantStock="showRestaurantStock"
                             ></slot>
+                            <tr v-if="records.length === 0">
+                                <td colspan="100" style="border: none; padding: 0;">
+                                    <empty-state />
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
-                    <div>
+                
+                    <!-- PAGINACIÓN (solo si hay datos) -->
+                    <div v-if="records.length > 0">
                         <el-pagination
                             @current-change="getRecords"
                             layout="total, prev, pager, next"
@@ -175,6 +206,35 @@
 }
 .btn-show-filter.shift {
     display: block !important;
+}
+
+.datatable-product-filter {
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    gap: 8px;
+    width: 100%;
+}
+
+.datatable-filter-label {
+    display: inline-block;
+    max-width: 140px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.datatable-filter-select {
+    width: 100%;
+    max-width: 220px;
+}
+
+.btn-show-all-products__info {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #fff;
 }
 </style>
 <script>
@@ -218,6 +278,11 @@ export default {
             type: String,
             default: 'Filtrar productos',
             required: false
+        },
+        customListColumns: {
+            type: Object,
+            required: false,
+            default: null
         }
     },
     data() {
@@ -247,7 +312,17 @@ export default {
             showLeftShadow: false,
             showRightShadow: false,
             showDisabledValue: 'all',
+            warehouse_id: 'all',
+            warehouses: [],
         };
+    },
+    computed: {
+        showRestaurantStock() {
+            return this.search.list_value === 'with_supplies';
+        },
+        showWarehouseFilter() {
+            return this.resource === 'inventory' && window.location.pathname === '/inventory';
+        }
     },
     created() {
         if(this.pharmacy !== undefined && this.pharmacy === true){
@@ -259,6 +334,22 @@ export default {
         if(this.restaurant !== undefined && this.restaurant === true){
             this.fromRestaurant = true;
         }
+
+        // Si se proporcionan columnas personalizadas, usarlas
+        if (this.customListColumns) {
+            this.list_columns = this.customListColumns;
+        }
+
+        const storedShowDisabled = localStorage.getItem(this.getShowDisabledStorageKey());
+        if (['all', 'enabled', 'disabled'].includes(storedShowDisabled)) {
+            this.showDisabledValue = storedShowDisabled;
+        }
+
+        const storedListValue = localStorage.getItem(this.getListValueStorageKey());
+        if (storedListValue && Object.prototype.hasOwnProperty.call(this.list_columns, storedListValue)) {
+            this.search.list_value = storedListValue;
+        }
+
         this.$eventHub.$on("reloadData", () => {
             this.getRecords();
         });
@@ -272,6 +363,12 @@ export default {
                 this.columns = response.data;
                 this.search.column = _.head(Object.keys(this.columns));
             });
+        
+        // Cargar almacenes si debe mostrar el filtro de almacén
+        if (this.resource === 'inventory' && window.location.pathname === '/inventory') {
+            await this.loadWarehouses();
+        }
+        
         await this.getRecords();
 
         this.$nextTick(() => {
@@ -283,8 +380,37 @@ export default {
         });
     },
     methods: {
+                handleListValueChange() {
+                        localStorage.setItem(this.getListValueStorageKey(), this.search.list_value);
+                        this.getRecords();
+                },
         handleShowDisabledChange() {
+          localStorage.setItem(this.getShowDisabledStorageKey(), this.showDisabledValue);
           this.getRecords();
+        },
+        getShowDisabledStorageKey() {
+            // Key única por recurso/tipo para evitar colisiones entre pantallas
+            const resourceKey = this.resource || 'resource';
+            const typeKey = this.productType || 'type';
+            return `datatable_show_disabled:${resourceKey}:${typeKey}`;
+        },
+        getListValueStorageKey() {
+            const resourceKey = this.resource || 'resource';
+            const typeKey = this.productType || 'type';
+            return `datatable_list_value:${resourceKey}:${typeKey}`;
+        },
+        async loadWarehouses() {
+            try {
+                const response = await this.$http.get('/inventory/tables');
+                if (response.data && response.data.warehouses) {
+                    this.warehouses = response.data.warehouses;
+                }
+            } catch (error) {
+                console.error('Error al cargar almacenes:', error);
+            }
+        },
+        handleWarehouseChange() {
+            this.getRecords();
         },
         checkScrollShadows() {
             const el = this.$refs.scrollContainer;
@@ -316,6 +442,8 @@ export default {
                     this.pagination.per_page = parseInt(
                         response.data.meta.per_page
                     );
+
+                    this.$emit('records-changed', this.records);
                 })
                 .catch(error => {})
                 .then(() => {
@@ -327,7 +455,6 @@ export default {
                 this.search.type = 'ZZ';
             }
             if (this.productType == 'PRODUCTS') {
-                // Debe listar solo productos
                 this.search.type = this.productType;
             }
             return queryString.stringify({
@@ -339,6 +466,7 @@ export default {
                 sort_field: this.currentSort.field,
                 sort_direction: this.currentSort.direction,
                 show_disabled: this.showDisabledValue,
+                warehouse_id: this.warehouse_id,
                 ...this.search
             });
         },
@@ -354,7 +482,7 @@ export default {
                 resource: this.fromRestaurant ? 'restaurant' : 'ecommerce',
             });
             console.log(response);
-                
+
             if (response.status === 200) {
                 this.$message.success(response.data.message);
                 this.getRecords()
@@ -383,6 +511,29 @@ export default {
         }
     },
     watch: {
+        // Si el componente cambia de resource/tipo, recargar preferencia
+        resource() {
+            const storedShowDisabled = localStorage.getItem(this.getShowDisabledStorageKey());
+            this.showDisabledValue = ['all', 'enabled', 'disabled'].includes(storedShowDisabled)
+                ? storedShowDisabled
+                : 'all';
+
+            const storedListValue = localStorage.getItem(this.getListValueStorageKey());
+            this.search.list_value = (storedListValue && Object.prototype.hasOwnProperty.call(this.list_columns, storedListValue))
+                ? storedListValue
+                : 'all';
+        },
+        productType() {
+            const storedShowDisabled = localStorage.getItem(this.getShowDisabledStorageKey());
+            this.showDisabledValue = ['all', 'enabled', 'disabled'].includes(storedShowDisabled)
+                ? storedShowDisabled
+                : 'all';
+
+            const storedListValue = localStorage.getItem(this.getListValueStorageKey());
+            this.search.list_value = (storedListValue && Object.prototype.hasOwnProperty.call(this.list_columns, storedListValue))
+                ? storedListValue
+                : 'all';
+        },
         showDisabled(newVal) {
             if (newVal) {
               this.getRecords();

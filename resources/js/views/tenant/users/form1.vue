@@ -857,8 +857,27 @@ export default {
 
             const exist_document_type = this.getExistDocumentType(current_document_type_id, index)
 
+            // Logica para series de notas de credito y debito (boleta y factura)
+
             if(exist_document_type)
             {
+                if (["07", '08'].includes(current_document_type_id))
+                {
+                    let arr = (this.form.default_document_types).filter(row =>  {
+                        return (row.document_type_id === current_document_type_id)})
+
+                    if (arr.length > 0 && arr.length < 3) {
+                        console.log({
+                            current: exist_document_type,
+                            series: this.series
+                        });
+                        
+                        this.form.default_document_types[index].default_series = this.series.filter(el => el.document_type_id === current_document_type_id && exist_document_type.series_id !== el.id) 
+                        return; 
+                    }
+                    
+                }
+
                 this.form.default_document_types[index].document_type_id = null
                 return this.$message.warning('Ya agregó ese tipo de documento')
             }

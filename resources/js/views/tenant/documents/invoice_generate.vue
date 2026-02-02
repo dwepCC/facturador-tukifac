@@ -305,19 +305,19 @@
                         <div class="row inputs-container">
                             <div
                                 :class="{ 'has-danger': errors.customer_id }"
-                                class="form-group col-md-4"
+                                class="form-group col-md-4 position-relative"
                             >
                                 <label
                                     class="control-label font-weight-bold"
                                 >
                                     Cliente
-                                    <a
+                                    <!-- <a
                                         href="#"
                                         @click.prevent="
                                             showDialogNewPerson = true
                                         "
                                         >[+ Nuevo]</a
-                                    >
+                                    > -->
                                 </label>
                                 <el-select
                                     v-model="form.customer_id"
@@ -340,7 +340,28 @@
                                         :label="option.description"
                                         :value="option.id"
                                     ></el-option>
+
+                                    <template slot="empty">
+                                        <p v-if="loading_search" class="el-select-dropdown__empty">
+                                            Cargando...
+                                        </p>
+
+                                        <p v-else class="el-select-dropdown__empty">
+                                            No se encontraron resultados
+                                        </p>
+
+                                        <div
+                                            v-if="!loading_search"
+                                            class="el-select-dropdown__item new-option"
+                                            @click.stop="openNewPersonDialog"
+                                        >
+                                            <span>{{ customerSearchTerm ? `Crear cliente "${customerSearchTerm}"` : 'Crear cliente' }}</span>
+                                        </div>
+                                    </template>
                                 </el-select>
+                                <span class="btn-add-new btn-add-new-invoice" @click.prevent="showDialogNewPerson = true" title="Agregar nuevo cliente">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                                </span>
                                 <small
                                     v-if="errors.customer_id"
                                     class="form-control-feedback"
@@ -473,7 +494,7 @@
                                             href="#"
                                             @click.prevent="showDialogConsignedForm = true">[+ Nuevo]</a>
                                         </label>
-                                        <el-select class="w-100" 
+                                        <el-select class="w-100"
                                                 v-model="form.consigned_id"
                                                 @change="getConsignedAddresses"
                                                 filterable
@@ -528,9 +549,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <el-select
-                                        v-if="
-                                            !configuration.enable_list_product
-                                        "
+                                        v-if="!configuration.enable_list_product"
                                         v-model="selected_option_price"
                                         filterable
                                         popper-class="price-list"
@@ -606,7 +625,7 @@
                                                     <div
                                                         class="col-2 text-end"
                                                     >
-                                                        <el-switch                                                            
+                                                        <el-switch
                                                             v-model="
                                                                 form.has_prepayment
                                                             "
@@ -617,7 +636,7 @@
                                                     </div>
                                                 </div>
                                                 <div v-if="form.has_prepayment || prepayment_deduction" class="mt-3">
-                                                    <el-select                                                        
+                                                    <el-select
                                                         v-model="
                                                             form.affectation_type_prepayment
                                                         "
@@ -653,7 +672,7 @@
                                                     <div
                                                         class="col-2 text-end"
                                                     >
-                                                        <el-switch                                                            
+                                                        <el-switch
                                                             v-model="
                                                                 prepayment_deduction
                                                             "
@@ -664,7 +683,7 @@
                                                     </div>
                                                 </div>
                                                 <div v-if="form.has_prepayment || prepayment_deduction" class="mt-3">
-                                                    <el-select                                                        
+                                                    <el-select
                                                         v-model="
                                                             form.affectation_type_prepayment
                                                         "
@@ -785,7 +804,7 @@
                                                         </div>
                                                     </div>
                                                 </template>
-                                            </div>                                            
+                                            </div>
 
                                             <div
                                                 v-if="
@@ -1225,7 +1244,7 @@
                                             Total
                                         </th>
                                         <th
-                                            v-if="config.change_free_affectation_igv"                                            
+                                            v-if="config.change_free_affectation_igv"
                                         ></th>
                                     </tr>
                                 </thead>
@@ -2752,7 +2771,7 @@
                         </div>
                         <!-- @todo: Mejorar evitando duplicar codigo -->
                         <!-- Mostrar en cel -->
-                        <div class="row d-md-none">
+                        <div class="d-none">
                             <div class="col-12 text-center">
                                 <button
                                     class="btn waves-effect waves-light btn-primary btn-sm"
@@ -3551,7 +3570,7 @@
                                 @click.prevent="openDialogPreview()"
                             >
                                 Vista Previa
-                            </button>                        
+                            </button>
                             <el-popover
                                 placement="top-start"
                                 :open-delay="1000"
@@ -3578,35 +3597,37 @@
                     <!-- @todo: Mejorar evitando duplicar codigo -->
                     <!-- Mostrar en cel -->
                     <div class="card-footer d-md-none">
-                        <div class="col-12 row text-center">
-                            <div class="col-4 text-center px-1">
+                        <div class="row g-2 text-center px-3 pb-3">
+                            <!-- Vista previa -->
+                            <div class="col-6">
                                 <button
-                                    class="btn btn-success form-control"
-                                    v-if="
-                                        form.items.length > 0 && this.dateValid
-                                    "
+                                    class="btn btn-success w-100"
+                                    v-if="form.items.length > 0 && dateValid"
                                     @click.prevent="openDialogPreview()"
                                 >
-                                    Vista Previa
+                                    Vista previa
                                 </button>
                             </div>
-                            <div class="col-4 text-center">
+                        
+                            <!-- Cancelar -->
+                            <div class="col-6">
                                 <button
-                                    class="btn btn-default form-control"
+                                    class="btn btn-outline-secondary w-100"
                                     @click.prevent="close()"
                                 >
                                     Cancelar
                                 </button>
                             </div>
-                            <div class="col-4 text-center">
+                        
+                            <!-- Enviar -->
+                            <div class="col-12">
                                 <el-button
-                                    v-if="
-                                        form.items.length > 0 && this.dateValid
-                                    "
+                                    v-if="form.items.length > 0 && dateValid"
                                     :loading="loading_submit"
-                                    class="submit btn btn-primary form-control"
+                                    class="btn btn-primary w-100"
                                     native-type="submit"
-                                    >{{ btnText }}
+                                >
+                                    {{ btnText }}
                                 </el-button>
                             </div>
                         </div>
@@ -3648,7 +3669,7 @@
         <person-form
             :document_type_id="form.document_type_id"
             :external="true"
-            :input_person="input_person"
+            :input_person="personFormInput"
             :showDialog.sync="showDialogNewPerson"
             type="customers"
         ></person-form>
@@ -4093,11 +4114,11 @@ export default {
                 {
                     id: 1,
                     description: "Dirección anexo al cliente"
-                }, 
+                },
                 {
                     id: 2,
                     description: "Establecimiento de un tercero inscrito en el RUC"
-                }, 
+                },
             ],
             itinerant_option_id: 1,
             ruc_itinerant: null,
@@ -4107,6 +4128,7 @@ export default {
             total_consumption_charge : 0,
             consigneds:[],
             consigned_addresses:[],
+            customerSearchTerm: ''
         };
     },
     computed: {
@@ -4192,7 +4214,25 @@ export default {
             }
             return this.sellers;
         },
-                    loaderImageUrl() {
+        personFormInput() {
+            const term = (this.customerSearchTerm || '').trim()
+
+            if (!term) return ''
+
+            if (/^\d+$/.test(term)) {
+                let identity_document_type_id = null
+                if (term.length === 8) identity_document_type_id = '1'
+                if (term.length === 11) identity_document_type_id = '6'
+
+                return {
+                    number: term,
+                    ...(identity_document_type_id ? { identity_document_type_id } : {})
+                }
+            }
+
+            return term
+        },
+       loaderImageUrl() {
                 // La imagen está en public/logo/tuki-load.webp
                 // En Laravel, public es la raíz del servidor web, así que la ruta es /logo/tuki-load.webp
                 return '/logo/tuki-load.webp';
@@ -4202,9 +4242,17 @@ export default {
         this.selected_option_price = this.price_options[0].id;
         this.loadConfiguration();
         this.$store.commit("setConfiguration", this.configuration);
+        
+        // Actualizar price_options con los labels personalizados
+        if (this.config) {
+            this.price_options[1].description = this.config.price1_label || 'Precio 1';
+            this.price_options[2].description = this.config.price2_label || 'Precio 2';
+            this.price_options[3].description = this.config.price3_label || 'Precio 3';
+        }
+        
         await this.initForm();
         await this.$http.get(`/${this.resource}/tables`).then(response => {
-            
+
             this.document_types = response.data.document_types_invoice;
             this.document_types_guide = response.data.document_types_guide;
             this.currency_types = response.data.currency_types;
@@ -4266,10 +4314,13 @@ export default {
             this.startConnectionQzTray();
             this.verifySelectedSeller();
         });
+        console.log(this.config.ticket_single_shipment);
+        
         await this.getPercentageIgv();
         this.loading_form = true;
         this.$eventHub.$on("reloadDataPersons", customer_id => {
             this.reloadDataCustomers(customer_id);
+            this.customerSearchTerm = ''
         });
         this.$eventHub.$on("initInputPerson", () => {
             this.initInputPerson();
@@ -4416,7 +4467,12 @@ export default {
                 }
             },
             deep: true
-        } 
+        },
+        showDialogNewPerson(newVal) {
+            if (!newVal) {
+                this.customerSearchTerm = ''
+            }
+        }
     },
     methods: {
         searchNumber(data) {
@@ -4438,7 +4494,7 @@ export default {
             this.$message.success(
                 'Se agrego la dirección del RUC: ' + this.ruc_itinerant
                 );
-            
+
 
         },
         changeItineratOption()
@@ -4454,9 +4510,9 @@ export default {
                 } else if (this.itinerant_option_id == 2) {
                     this.form.customer_address_id = null;
                 }
-                
+
             } else {
-                this.form.itinerant = null; 
+                this.form.itinerant = null;
             }
         },
         toggleInformation() {
@@ -4775,23 +4831,6 @@ export default {
                 this.configuration.restrict_series_selection_seller &&
                 this.typeUser !== "admin"
             );
-        },
-        setDefaultSerieByDocument() {
-            if (this.authUser.multiple_default_document_types) {
-                const default_document_type_serie = _.find(
-                    this.authUser.default_document_types,
-                    { document_type_id: this.form.document_type_id }
-                );
-
-                if (default_document_type_serie) {
-                    const exist_serie = _.find(this.series, {
-                        id: default_document_type_serie.series_id
-                    });
-                    if (exist_serie)
-                        this.form.series_id =
-                            default_document_type_serie.series_id;
-                }
-            }
         },
         // #307 Ajuste para seleccionar automaticamente el tipo de comprobante y serie
         setDefaultDocumentType(from_function) {
@@ -5713,6 +5752,8 @@ export default {
             this.showDialogAddItem = true;
         },
         searchRemoteCustomers(input) {
+            this.customerSearchTerm = input;
+
             if (input.length > 0) {
                 this.loading_search = true;
                 let parameters = `input=${input}&document_type_id=${
@@ -6042,6 +6083,26 @@ export default {
             this.cleanCustomer();
             this.filterCustomers();
             this.setDefaultSerieByDocument();
+        },
+        setDefaultSerieByDocument() {
+            if (!this.authUser || !this.authUser.multiple_default_document_types)
+                return;
+
+            const default_document_type_serie = _.find(
+                this.authUser.default_document_types,
+                { document_type_id: this.form.document_type_id }
+            );
+
+            if (!default_document_type_serie || !Array.isArray(this.series))
+                return;
+
+            const exist_serie = _.find(this.series, {
+                id: default_document_type_serie.series_id
+            });
+
+            if (exist_serie) {
+                this.form.series_id = default_document_type_serie.series_id;
+            }
         },
         cleanCustomer() {
             this.form.customer_id = null;
@@ -6425,8 +6486,8 @@ export default {
                 this.form.total_taxed =  _.round(total_taxed * ((1 + this.percentage_igv)/( 1 + this.percentage_igv + (this.restaurant_tip_factor / 100))),2)
                 total_igv = ((this.form.total - this.total_consumption_charge) / (1 + this.percentage_igv) ) * this.percentage_igv
                 this.form.total_value = this.form.total_taxed
-                
-            } 
+
+            }
 
             let total_taxes = total_igv + total_isc + total_plastic_bag_taxes;
             let total_all = total - this.total_discount_no_base;
@@ -6510,7 +6571,6 @@ export default {
             this.chargeGlobal();
 
             this.setTotalPointsBySale(this.config);
-            console.log(this.form);
         },
         recalculateDecimalTotalTaxed(total, igv) {
             return total - igv;
@@ -6615,7 +6675,7 @@ export default {
                 this.total_consumption_charge = _.round(this.form.total * (this.restaurant_tip_factor / 100),2)
                 let base = _.round(parseFloat(this.form.total),2);
                 let amount = Number(_.round(this.total_consumption_charge,2).toFixed(2));
-                let factor = _.round(this.restaurant_tip_factor / 100, 5);    
+                let factor = _.round(this.restaurant_tip_factor / 100, 5);
 
                 let charge = _.find(this.form.charges, { charge_type_id: "46" });
 
@@ -6724,7 +6784,7 @@ export default {
             if (input_global_discount > 0) {
                 const percentage_igv = this.percentage_igv * 100;
                 let base = this.isGlobalDiscountBase
-                    ? parseFloat(ctx.total_taxed)
+                    ? parseFloat(ctx.total_taxed + ctx.total_exportation + ctx.total_isc + ctx.total_plastic_bag_taxes)
                     : parseFloat(ctx.total);
 
                 let amount = 0;
@@ -6737,21 +6797,26 @@ export default {
                     factor = _.round(input_global_discount / 100, 5);
                     amount = factor * base;
                 }
-
+                
                 // descuentos que afectan la bi
                 if (this.isGlobalDiscountBase) {
-                    let total_taxed = base - amount;
+
+                    let total_taxed = base  - amount;
                     let total_igv = total_taxed * (percentage_igv / 100);
                     let total_taxes =
                         total_igv + ctx.total_isc + ctx.total_plastic_bag_taxes;
-                    let total = total_taxed + total_taxes;
+                    let total_out = _.round(
+                        ctx.total_exonerated + ctx.total_unaffected + ctx.total_exportation + ctx.total_free, 
+                        2
+                    );
+                    let total = total_taxed + total_out + total_taxes;
 
                     this.form.total_taxed = _.round(
                         parseFloat(total_taxed.toFixed(3)),
-                        2
-                    );
+                         2
+                     );
 
-                    this.form.total_value = this.form.total_taxed;
+                    this.form.total_value = total_taxed + total_out;
 
                     this.form.total_igv = _.round(
                         total_taxed * (percentage_igv / 100),
@@ -6857,7 +6922,7 @@ export default {
                     this.errors = { is_itinerant : ['Debe tener una guia vinculada al documento']}
                     return;
                 }
-                
+
             }
             if (errorSeries) {
                 this.$message.error("No se han seleccionado todas las series");
@@ -6943,14 +7008,19 @@ export default {
                 .post(path, this.form)
                 .then(async (response) => {
                     if (response.data.success) {
-                        this.$eventHub.$emit("reloadDataItems", null);
-                        this.resetForm();
+                        let response_sent = response
                         this.documentNewId = response.data.data.id;
 
-                        if(this.config.send_auto) {
-                            await this.sendDocument(this.documentNewId); 
+                        if(this.config.send_auto && this.form.document_type_id === '01') {
+                            response_sent = await this.sendDocument(this.documentNewId); 
+                        } else if (this.config.ticket_single_shipment && this.form.document_type_id === '03') {
+                            response_sent = await this.sendDocument(this.documentNewId); 
                         }
-                        this.showOptionsDialog(response);
+
+                        this.$eventHub.$emit("reloadDataItems", null);
+                        this.resetForm();
+
+                        this.showOptionsDialog(response_sent);
 
                         this.form_cash_document.document_id =
                             response.data.data.id;
@@ -6974,17 +7044,18 @@ export default {
                 .finally(() => {
                     this.loading_submit = false;
                     this.setDefaultDocumentType();
+                    this.selectDefaultCustomer()
                 });
         },
         showOptionsDialog(response) {
             if (this.hidePreviewPdf) {
-                const response_data = response.data.data;
+                const response_data = response.data;
 
-                if (response_data.response.sent) {
-                    this.$message.success(response_data.response.description);
+                if (this.config.send_auto || this.config.ticket_single_shipment) {
+                    this.$message.success(response_data.message);
                 } else {
                     this.$message.success(
-                        `Comprobante registrado: ${response_data.number_full}`
+                        `Comprobante registrado: ${response_data.data.number_full}`
                     );
                 }
             } else {
@@ -7071,7 +7142,7 @@ export default {
         {
             return await this.$http
                 .get(`/${this.resource}/send/${id}`)
-            
+
         },
         async reloadDataCustomers(customer_id) {
             await this.$http
@@ -7079,6 +7150,9 @@ export default {
                 .then(response => {
                     this.customers = response.data.customers;
                     this.form.customer_id = customer_id;
+                    let customer = _.find(this.customers, {'id': customer_id});
+                    this.form.has_retention = customer.is_agent_retention
+                    this.changeRetention();
 
                     this.setCustomerAccumulatedPoints(
                         customer_id,
@@ -7094,7 +7168,7 @@ export default {
             let customer = _.find(this.customers, {
                 id: this.form.customer_id
             });
-            
+
             this.customer_addresses = customer.addresses.filter(el => !el.has_consigned);
             if (customer.address) {
                 this.customer_addresses.unshift({
@@ -7103,6 +7177,7 @@ export default {
                 });
             }
 
+            this.form.has_retention = customer.is_agent_retention
             this.getConsigneds()
 
             this.setCustomerAccumulatedPoints(
@@ -7118,7 +7193,7 @@ export default {
             }
 
             // retencion para clientes con ruc
-            
+
             this.validateCustomerRetention(customer.identity_document_type_id);
 
             /*if(this.customer_addresses.length > 0) {
@@ -7518,6 +7593,9 @@ export default {
                 }
             }
         },
-    }        
+        openNewPersonDialog() {
+            this.showDialogNewPerson = true
+        },
+    }
 };
 </script>

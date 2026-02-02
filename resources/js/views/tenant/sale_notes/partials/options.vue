@@ -111,28 +111,27 @@
                         :wsData="form.pdf_a4_data"
                     />
                 </template>
-            <div class="col-md-6 mt-3">&nbsp;</div>
-                <div class="col-md-6 mt-3">
-                <template v-if="showClose">
-                    <el-button @click="clickClose">Cerrar</el-button>
-                </template>
-                <template v-else>
-                    <el-button @click="clickFinalize">Ir al listado</el-button>
-                     <el-popover
-                        :open-delay="1000"
-                         placement="top-start"
-                         width="145"
-                         trigger="hover"
-                         content="Presiona ALT + N">
-                            <el-button slot="reference"
-                                       type="primary"
-                                       ref="new_note"
-                                       @click="clickNewSaleNote"
-                            >
-                                Nueva nota de venta
-                            </el-button>
-                        </el-popover>
-                </template>
+                <div class="form-actions text-end pt-2">
+                    <template v-if="showClose">
+                        <el-button @click="clickClose">Cerrar</el-button>
+                    </template>
+                    <template v-else>
+                        <el-button class="me-2" @click="clickFinalize">Ir al listado</el-button>
+                         <el-popover
+                            :open-delay="1000"
+                             placement="top-start"
+                             width="145"
+                             trigger="hover"
+                             content="Presiona ALT + N">
+                                <el-button slot="reference"
+                                           type="primary"
+                                           ref="new_note"
+                                           @click="clickNewSaleNote"
+                                >
+                                    Nueva nota de venta
+                                </el-button>
+                            </el-popover>
+                    </template>
                 </div>
             </span>
         </el-dialog>
@@ -172,6 +171,10 @@ export default {
     created() {
         this.initForm()
         this.loadConfiguration(this.$store)
+        this.configuration = this.$store.state.config;
+        console.log('this.configuration asignado:', this.configuration);
+        this.$store.commit('setConfiguration', this.configuration)
+
     },
     mounted() {
         if(navigator.userAgent.indexOf("Safari") != -1) {

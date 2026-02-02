@@ -25,6 +25,7 @@
     use Modules\FullSuscription\Models\Tenant\FullSuscriptionUserDatum;
     use Illuminate\Foundation\Auth\User as Authenticatable;
     use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 
     /**
      * App\Models\Tenant\Person
@@ -154,6 +155,7 @@
             'has_discount',
             'discount_type',
             'discount_amount',
+            'is_agent_retention',
             'establishment_code',
         ];
 
@@ -170,6 +172,7 @@
             'accumulated_points' => 'float',
             'has_discount' => 'bool',
             'discount_amount' => 'float',
+            'is_agent_retention' => 'bool',
         ];
 
         // protected static function boot()
@@ -287,6 +290,15 @@
             return $this->belongsTo(AddressType::class);
         }
 
+
+        /**
+         * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+         */
+        public function plates()
+        {
+            return $this->hasMany(Plate::class);
+        }
+
         /**
          * @param $query
          * @param $type
@@ -356,6 +368,25 @@
         public function scopeWhereIsEnabled($query)
         {
             return $query->where('enabled', true);
+        }
+
+        /**
+         * Compatibilidad con UserControlHelper::checkActiveUser().
+         * En ecommerce (Person) la “actividad” suele depender de enabled/status.
+         *
+         * @return bool
+         */
+        public function isActive(): bool
+        {
+            if (!is_null($this->enabled) && $this->enabled === false) {
+                return false;
+            }
+
+            if (!is_null($this->status)) {
+                return (int)$this->status === 1;
+            }
+
+            return true;
         }
 
         /**
@@ -521,49 +552,48 @@
                     $optional_mail_send[] = $temp;
                 }
             }
-            
-            $location_id = [];
-            
             /** @var \App\Models\Tenant\Catalogs\Department  $department */
-            $department = $this->department;
+            $department = \App\Models\Tenant\Catalogs\Department::find($this->department_id);
             if(!empty($department)){
-                $department_data = [
-                    "id" => $department->id,
-                    "description" => $department->description,
-                    "active" => $department->active,
+                $department = [
+                "id" => $department->id,
+                "description" => $department->description,
+                "active" => $department->active,
                 ];
-                array_push($location_id, $department->id);
-            } else {
-                $department_data = null;
             }
-            
-            $province = $this->province;
+
+            $location_id = [];
+            /** @var \App\Models\Tenant\Catalogs\Department  $department */
+            $department = \App\Models\Tenant\Catalogs\Department::find($this->department_id);
+            if(!empty($department)){
+                $department = [
+                "id" => $department->id,
+                "description" => $department->description,
+                "active" => $department->active,
+                ];
+                array_push($location_id, $department['id']);
+            }
+            $province = \App\Models\Tenant\Catalogs\Province::find($this->province_id);
 
             if(!empty($province)){
-                $province_data = [
+                $province = [
                     "id" => $province->id,
                     "description" => $province->description,
                     "active" => $province->active,
                 ];
-                array_push($location_id, $province->id);
-            } else {
-                $province_data = null;
+                array_push($location_id, $province['id']);
             }
-
-            $district = $this->district;
+            $district = \App\Models\Tenant\Catalogs\District::find($this->district_id);
 
             if(!empty($district)){
-                $district_data = [
+                $district = [
                     "id" => $district->id,
                     "description" => $district->description,
                     "active" => $district->active,
                 ];
-                array_push($location_id, $district->id);
-            } else {
-                $district_data = null;
+                array_push($location_id, $district['id']);
             }
-
-            $seller = $this->seller;
+            $seller = User::find($this->seller_id);
             if(!empty($seller)){
                 $seller = $seller->getCollectionData();
             }
@@ -581,7 +611,7 @@
                 'barcode' => $this->barcode,
                 'observation' => $this->observation,
                 'seller' => $seller,
-                'zone' => $this->zone,
+                'zone' => $this->getZone(),
                 'zone_id' => $this->zone_id,
                 'seller_id' => $this->seller_id,
                 'website' => $this->website,
@@ -593,13 +623,13 @@
                 'trade_name' => $this->trade_name,
                 'country_id' => $this->country_id,
                 'nationality_id' => $this->nationality_id,
-                'department_id' => $department_data['id']??null,
-                'department' => $department_data,
+                'department_id' => $department['id']??null,
+                'department' => $department,
 
-                'province_id' => $province_data['id']??null,
-                'province' => $province_data,
-                'district_id' => $district_data['id']??null,
-                'district' => $district_data,
+                'province_id' => $province['id']??null,
+                'province' => $province,
+                'district_id' => $district['id']??null,
+                'district' => $district,
 
                 'telephone' => $this->telephone,
                 'email' => $this->email,
@@ -623,6 +653,7 @@
                 'discount_amount' => $this->discount_amount,
                 'location_id' => $location_id,
                 'establishment_code' => $this->establishment_code,
+                'is_agent_retention' => $this->is_agent_retention,
             ];
             if ($childrens == true) {
                 $child = $this->children_person->transform(function ($row) {

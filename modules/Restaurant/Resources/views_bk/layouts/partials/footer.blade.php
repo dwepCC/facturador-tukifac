@@ -48,7 +48,7 @@
                         <div class="col-sm-6 col-md-5">
                             <ul class="links">
                                 <li><a href="{{ route("tenant.restaurant.menu") }}">Inicio</a></li>
-                                <li><a href="{{ route('tenant_detail_cart') }}">Ver Carrito</a></li>
+                                <li><a href="{{ route('restaurant.detail.cart') }}">Ver Carrito</a></li>
                                 @guest
                                 <li><a href="{{route('tenant_ecommerce_login')}}" class="login-link">Login</a></li>
                                 @else
@@ -95,7 +95,7 @@
 <div class="container container-footer">
     <div class="footer-bottom" style="padding-bottom: 2rem;">
         <!-- <p class="footer-copyright">Facturador Pro 4. &copy; {{ now()->year }}. Todos los Derechos Reservados</p> -->
-        <img src="{{ asset('porto-ecommerce/assets/images/payments.png') }}" alt="payment methods"
+        <img src="{{ asset('porto-ecommerce/assets/images/payments.svg') }}" alt="payment methods"
             class="footer-payments">
     </div>
 </div>

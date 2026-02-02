@@ -184,7 +184,7 @@
             </div>
 
 
-            <div class="col-md-12">
+            <div class="col-md-12 position-relative">
                 <!-- <div id="scroll1" style="overflow-x:auto;">
                     <div style="height: 20px;"></div>
                 </div> -->
