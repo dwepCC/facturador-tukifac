@@ -30,24 +30,24 @@ class DashboardUtility
 
         switch ($period) {
             case 'month':
-                $d_start = Carbon::parse($month_start.'-01')->format('Y-m-d');
-                $d_end = Carbon::parse($month_start.'-01')->endOfMonth()->format('Y-m-d');
+                $d_start = Carbon::parse($this->parseMonth($month_start))->format('Y-m-d');
+                $d_end = Carbon::parse($this->parseMonth($month_start))->endOfMonth()->format('Y-m-d');
                 break;
             case 'between_months':
-                $d_start = Carbon::parse($month_start.'-01')->format('Y-m-d');
-                $d_end = Carbon::parse($month_end.'-01')->endOfMonth()->format('Y-m-d');
+                $d_start = Carbon::parse($this->parseMonth($month_start))->format('Y-m-d');
+                $d_end = Carbon::parse($this->parseMonth($month_end))->endOfMonth()->format('Y-m-d');
                 break;
             case 'date':
-                $d_start = $date_start;
-                $d_end = $date_start;
+                $d_start = $this->parseDate($date_start);
+                $d_end = $this->parseDate($date_start);
                 break;
             case 'between_dates':
-                $d_start = $date_start;
-                $d_end = $date_end;
+                $d_start = $this->parseDate($date_start);
+                $d_end = $this->parseDate($date_end);
                 break;
             case 'last_week':
-                $d_start = $date_start;
-                $d_end = $date_end;
+                $d_start = $this->parseDate($date_start);
+                $d_end = $this->parseDate($date_end);
                 break;
         }
 
@@ -58,6 +58,38 @@ class DashboardUtility
     }
 
 
+
+    private function parseDate($date)
+    {
+        if (!$date) return null;
+        try {
+            return Carbon::createFromFormat('d/m/Y', $date)->format('Y-m-d');
+        } catch (\Exception $e) {
+            try {
+                return Carbon::parse($date)->format('Y-m-d');
+            } catch (\Exception $e) {
+                return $date;
+            }
+        }
+    }
+
+    private function parseMonth($month)
+    {
+        if (!$month) return null;
+        try {
+            return Carbon::createFromFormat('Y-m', $month)->startOfMonth()->format('Y-m-d');
+        } catch (\Exception $e) {
+            try {
+                return Carbon::createFromFormat('m/Y', $month)->startOfMonth()->format('Y-m-d');
+            } catch (\Exception $e) {
+                try {
+                    return Carbon::parse($month)->startOfMonth()->format('Y-m-d');
+                } catch (\Exception $e) {
+                    return null;
+                }
+            }
+        }
+    }
 
     private function utilities_totals($establishment_id, $d_start, $d_end, $enabled_expense, $item_id){
 

@@ -5,6 +5,7 @@ namespace Modules\Dashboard\Helpers;
 use Modules\Inventory\Models\ItemWarehouse;
 use Modules\Dashboard\Http\Resources\DashboardInventoryCollection;
 use App\Models\Tenant\Establishment;
+use Carbon\Carbon;
 
 class DashboardInventory
 {
@@ -12,10 +13,24 @@ class DashboardInventory
     public function data($request)
     {
         $establishment_id = $request->establishment_id;
-        $date_start = $request->date_start;
-        $date_end = $request->date_end;
+        $date_start = $this->parseDate($request->date_start);
+        $date_end = $this->parseDate($request->date_end);
 
         return $this->products_date_of_due($establishment_id, $date_start, $date_end);
+    }
+
+    private function parseDate($date)
+    {
+        if (!$date) return null;
+        try {
+            return Carbon::createFromFormat('d/m/Y', $date)->format('Y-m-d');
+        } catch (\Exception $e) {
+            try {
+                return Carbon::parse($date)->format('Y-m-d');
+            } catch (\Exception $e) {
+                return $date;
+            }
+        }
     }
 
     

@@ -22,36 +22,44 @@ class DashboardData
 
     public function data($request)
     {
-        $establishment_id = $request['establishment_id'];
-        $period = $request['period'];
-        $date_start = $request['date_start'];
-        $date_end = $request['date_end'];
-        $month_start = $request['month_start'];
-        $month_end = $request['month_end'];
+        $establishment_id = $request['establishment_id'] ?? null;
+        $period = $request['period'] ?? 'month';
+        $date_start = $request['date_start'] ?? null;
+        $date_end = $request['date_end'] ?? null;
+        $month_start = $request['month_start'] ?? now()->format('Y-m');
+        $month_end = $request['month_end'] ?? now()->format('Y-m');
 
         $d_start = null;
         $d_end = null;
 
         switch ($period) {
             case 'month':
-                $d_start = Carbon::parse($month_start.'-01')->format('Y-m-d');
-                $d_end = Carbon::parse($month_start.'-01')->endOfMonth()->format('Y-m-d');
+                $parsed = $this->parseMonth($month_start) ?? now()->startOfMonth()->format('Y-m-d');
+                $d_start = Carbon::parse($parsed)->format('Y-m-d');
+                $d_end = Carbon::parse($parsed)->endOfMonth()->format('Y-m-d');
                 break;
             case 'between_months':
-                $d_start = Carbon::parse($month_start.'-01')->format('Y-m-d');
-                $d_end = Carbon::parse($month_end.'-01')->endOfMonth()->format('Y-m-d');
+                $parsedStart = $this->parseMonth($month_start) ?? now()->startOfMonth()->format('Y-m-d');
+                $parsedEnd = $this->parseMonth($month_end) ?? now()->endOfMonth()->format('Y-m-d');
+                $d_start = Carbon::parse($parsedStart)->format('Y-m-d');
+                $d_end = Carbon::parse($parsedEnd)->endOfMonth()->format('Y-m-d');
                 break;
             case 'date':
-                $d_start = $date_start;
-                $d_end = $date_start;
+                $parsed = $this->parseDate($date_start) ?? now()->format('Y-m-d');
+                $d_start = $parsed;
+                $d_end = $parsed;
                 break;
             case 'between_dates':
-                $d_start = $date_start;
-                $d_end = $date_end;
+                $d_start = $this->parseDate($date_start) ?? now()->format('Y-m-d');
+                $d_end = $this->parseDate($date_end) ?? now()->format('Y-m-d');
                 break;
             case 'last_week':
-                $d_start = $date_start;
-                $d_end = $date_end;
+                $d_start = $this->parseDate($date_start) ?? now()->format('Y-m-d');
+                $d_end = $this->parseDate($date_end) ?? now()->format('Y-m-d');
+                break;
+            default:
+                $d_start = $d_start ?? now()->startOfMonth()->format('Y-m-d');
+                $d_end = $d_end ?? now()->endOfMonth()->format('Y-m-d');
                 break;
         }
 
@@ -65,13 +73,16 @@ class DashboardData
         //     ];
         // });
 
+        $documentData = $this->document_totals($establishment_id, $d_start, $d_end);
+        $balanceData = $this->balance($establishment_id, $d_start, $d_end);
+
         return [
-            'document' => $this->document_totals($establishment_id, $d_start, $d_end),
+            'document' => $documentData,
             'sale_note' => $this->sale_note_totals($establishment_id, $d_start, $d_end),
             'general' => $this->totals($establishment_id, $d_start, $d_end, $period, $month_start, $month_end),
-            'balance' => $this->balance($establishment_id, $d_start, $d_end),
-            'items' => $this->getItems(),
-            // 'quantity' => Configuration::first()->quantity_documents,
+            'balance' => $balanceData,
+            'items' => $this->getItems($establishment_id, $d_start, $d_end),
+            'document_count' => $this->get_document_count($establishment_id, $d_start, $d_end),
         ];
     }
 
@@ -82,6 +93,38 @@ class DashboardData
             'document_total_global' => $this->document_totals_globals(),
             'sale_note_total_global' => $this->sale_note_totals_global(),
         ];
+    }
+
+    private function parseDate($date)
+    {
+        if (!$date) return null;
+        try {
+            return Carbon::createFromFormat('d/m/Y', $date)->format('Y-m-d');
+        } catch (\Exception $e) {
+            try {
+                return Carbon::parse($date)->format('Y-m-d');
+            } catch (\Exception $e) {
+                return $date;
+            }
+        }
+    }
+
+    private function parseMonth($month)
+    {
+        if (!$month) return null;
+        try {
+            return Carbon::createFromFormat('Y-m', $month)->startOfMonth()->format('Y-m-d');
+        } catch (\Exception $e) {
+            try {
+                return Carbon::createFromFormat('m/Y', $month)->startOfMonth()->format('Y-m-d');
+            } catch (\Exception $e) {
+                try {
+                    return Carbon::parse($month)->startOfMonth()->format('Y-m-d');
+                } catch (\Exception $e) {
+                    return null;
+                }
+            }
+        }
     }
 
     /**
@@ -139,15 +182,15 @@ class DashboardData
 
         return [
             'totals' => [
-                'total_payment' => number_format($sale_note_total_payment,2, ".", ""),
-                'total_to_pay' => number_format($sale_note_total_to_pay,2, ".", ""),
-                'total' => number_format($sale_note_total,2, ".", ""),
+                'total_payment' => number_format($sale_note_total_payment ?? 0, 2, ".", ""),
+                'total_to_pay' => number_format($sale_note_total_to_pay ?? 0, 2, ".", ""),
+                'total' => number_format($sale_note_total ?? 0, 2, ".", ""),
             ],
             'graph' => [
-                'labels' => ['Total cobrado', 'Pendiente de cobro'],
+                'labels' => ['Pagado', 'Por cobrar'],
                 'datasets' => [
                     [
-                        'label' => 'Notas de venta',
+                        'label' => 'NV',
                         'data' => [round($sale_note_total_payment,2), round($sale_note_total_to_pay,2)],
                         'backgroundColor' => [
                             'rgb(36, 71, 232, .1)',
@@ -303,15 +346,15 @@ class DashboardData
 
         return [
             'totals' => [
-                'total_payment' => number_format($document_total_payment,2, ".", ""),
-                'total_to_pay' => number_format($document_total_to_pay,2, ".", ""),
-                'total' => number_format($document_total,2, ".", ""),
+                'total_payment' => number_format($document_total_payment ?? 0, 2, ".", ""),
+                'total_to_pay' => number_format($document_total_to_pay ?? 0, 2, ".", ""),
+                'total' => number_format($document_total ?? 0, 2, ".", ""),
             ],
             'graph' => [
-                'labels' => ['Total cobrado', 'Pendiente de cobro'],
+                'labels' => ['Pagado', 'Por cobrar'],
                 'datasets' => [
                     [
-                        'label' => 'Comprobantes',
+                        'label' => 'CPE',
                         'data' => [round($document_total_payment,2), round($document_total_to_pay,2)],
                         'backgroundColor' => [
                             'rgb(36, 71, 232, .1)',
@@ -855,21 +898,27 @@ class DashboardData
         $total_payment_expense = $response_totals_expense['total_payment'];
 
         $all_totals = $total_document + $total_sale_note - $total_expense - $total_purchase;
-        $all_totals_payment = $total_payment_document + $total_payment_sale_note - $total_payment_purchase - $total_payment_expense ;
+        $all_totals_payment = $total_payment_document + $total_payment_sale_note - $total_payment_purchase - $total_payment_expense;
+
+        // Ingresos totales del periodo (ventas cobradas)
+        $total_payment = $total_payment_document + $total_payment_sale_note;
+        // Utilidad / balance del periodo
+        $balance = $all_totals_payment;
 
         return [
             'totals' => [
-                'total_document' => number_format($total_document,2),
-                'total_payment_document' => number_format($total_payment_document,2),
-                'total_sale_note' => number_format($total_sale_note,2),
-                'total_payment_sale_note' => number_format($total_payment_sale_note,2),
-                'total_purchase' => number_format($total_purchase,2),
-                'total_payment_purchase' => number_format($total_payment_purchase,2),
-                'total_expense' => number_format($total_expense,2),
-                'total_payment_expense' => number_format($total_payment_expense,2),
-
-                'all_totals' => number_format($all_totals,2),
-                'all_totals_payment' => number_format($all_totals_payment,2),
+                'total_payment' => number_format($total_payment ?? 0, 2, '.', ''),
+                'balance' => number_format($balance ?? 0, 2, '.', ''),
+                'total_document' => number_format($total_document ?? 0, 2, '.', ''),
+                'total_payment_document' => number_format($total_payment_document ?? 0, 2, '.', ''),
+                'total_sale_note' => number_format($total_sale_note ?? 0, 2, '.', ''),
+                'total_payment_sale_note' => number_format($total_payment_sale_note ?? 0, 2, '.', ''),
+                'total_purchase' => number_format($total_purchase ?? 0, 2, '.', ''),
+                'total_payment_purchase' => number_format($total_payment_purchase ?? 0, 2, '.', ''),
+                'total_expense' => number_format($total_expense ?? 0, 2, '.', ''),
+                'total_payment_expense' => number_format($total_payment_expense ?? 0, 2, '.', ''),
+                'all_totals' => number_format($all_totals ?? 0, 2, '.', ''),
+                'all_totals_payment' => number_format($all_totals_payment ?? 0, 2, '.', ''),
             ],
             'graph' => [
                 'labels' => ['Totales', 'Total pagos'],
@@ -891,17 +940,89 @@ class DashboardData
         ];
     }
 
-    public function getItems(){
+    /**
+     * Cantidad de comprobantes (CPE) en el periodo
+     */
+    private function get_document_count($establishment_id, $date_start, $date_end)
+    {
+        if ($establishment_id === null) {
+            return 0;
+        }
 
-        $items = Item::orderBy('description')->take(20)->get()->transform(function($row) {
+        $query = Document::query()
+            ->where('establishment_id', $establishment_id)
+            ->whereIn('state_type_id', ['01', '03', '05', '07', '13'])
+            ->whereIn('document_type_id', ['01', '03', '08']);
+
+        if ($date_start && $date_end) {
+            $query->whereBetween('date_of_issue', [$date_start, $date_end]);
+        }
+
+        return (int) $query->count();
+    }
+
+    /**
+     * Items con total según documentación del dashboard
+     */
+    public function getItems($establishment_id = null, $date_start = null, $date_end = null)
+    {
+        $items = Item::orderBy('description')->take(20)->get()->transform(function ($row) use ($establishment_id, $date_start, $date_end) {
+            $total = '0.00';
+            if ($establishment_id && $date_start && $date_end) {
+                $total = $this->getItemTotalForPeriod($row->id, $establishment_id, $date_start, $date_end);
+            }
+
             return [
-                'id' => $row->id,
-                'description' => ($row->internal_id) ? "{$row->internal_id} - {$row->description}" :$row->description,
+                'id' => $row->internal_id ?? (string) $row->id,
+                'description' => ($row->internal_id) ? "{$row->internal_id} - {$row->description}" : $row->description,
+                'total' => $total,
             ];
         });
 
         return $items;
+    }
 
+    /**
+     * Total vendido de un item en el periodo (documentos + notas de venta)
+     * Usa modelos Eloquent para respetar la conexión tenant
+     */
+    private function getItemTotalForPeriod($item_id, $establishment_id, $date_start, $date_end)
+    {
+        $documentItems = \App\Models\Tenant\DocumentItem::query()
+            ->where('item_id', $item_id)
+            ->whereHas('document', function ($q) use ($establishment_id, $date_start, $date_end) {
+                $q->where('establishment_id', $establishment_id)
+                    ->whereIn('state_type_id', ['01', '03', '05', '07', '13'])
+                    ->whereIn('document_type_id', ['01', '03', '08'])
+                    ->whereBetween('date_of_issue', [$date_start, $date_end]);
+            })
+            ->with('document:id,exchange_rate_sale')
+            ->get();
+
+        $documentTotal = 0;
+        foreach ($documentItems as $item) {
+            $rate = $item->document->exchange_rate_sale ?? 1;
+            $documentTotal += (float) $item->total * (float) $rate;
+        }
+
+        $saleNoteItems = \App\Models\Tenant\SaleNoteItem::query()
+            ->where('item_id', $item_id)
+            ->whereHas('sale_note', function ($q) use ($establishment_id, $date_start, $date_end) {
+                $q->where('establishment_id', $establishment_id)
+                    ->where('changed', false)
+                    ->whereIn('state_type_id', ['01', '03', '05', '07', '13'])
+                    ->whereBetween('date_of_issue', [$date_start, $date_end]);
+            })
+            ->with('sale_note:id,exchange_rate_sale')
+            ->get();
+
+        $saleNoteTotal = 0;
+        foreach ($saleNoteItems as $item) {
+            $rate = $item->sale_note->exchange_rate_sale ?? 1;
+            $saleNoteTotal += (float) $item->total * (float) $rate;
+        }
+
+        return number_format((float) ($documentTotal + $saleNoteTotal), 2, '.', '');
     }
 
     public function data_mobile($request)
