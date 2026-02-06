@@ -180,6 +180,7 @@ class RestaurantItemOrderStatusController extends Controller
     private function transformOrderData($order)
     {
         $itemData = json_decode($order->item);
+        $table = $order->table;
 
         return [
             'id' => $order->id,
@@ -191,11 +192,11 @@ class RestaurantItemOrderStatusController extends Controller
             'status_description' => $order->status_description,
             'customer_name' => $order->customer_name,
             'mesa_id' => $order->table_id,
-            'mesa' => $order->table->label ?? null,
-            'environment_id' => $order->table->environment_id ?? null,
-            'environment' => $order->table->environment ?? null,
-            'preparation_area_id' => $order->itemModel->preparation_area_id ?? null,
-            'preparation_area_name' => $order->itemModel->preparationArea->name ?? null,
+            'mesa' => $table?->label ?? null,
+            'environment_id' => $table?->environment_id ?? null,
+            'environment' => $table?->environment ?? null,
+            'preparation_area_id' => $order->itemModel?->preparation_area_id ?? null,
+            'preparation_area_name' => $order->itemModel?->preparationArea?->name ?? null,
             'created_at' => $order->created_at?->toISOString(),
             'updated_at' => $order->updated_at?->toISOString(),
         ];
@@ -218,10 +219,54 @@ class RestaurantItemOrderStatusController extends Controller
         }
         $order->save();
 
+        // Pedidos rápidos (sin mesa): eliminar registro cuando llega a status 4 (entregado).
+        // Los pedidos con mesa se eliminan al generar la venta desde saveTable.
+        if ($order->status == self::STATUS_DELIVERED && $order->table_id === null) {
+            $this->releaseStockAndDeleteOrder($order);
+        }
+
         return [
             'success' => true,
             'message' => 'Estado cambiado con éxito'
         ];
+    }
+
+    /**
+     * Libera stock reservado y elimina el registro (para pedidos rápidos sin mesa).
+     */
+    private function releaseStockAndDeleteOrder(RestaurantItemOrderStatus $order)
+    {
+        $stockService = app(RestaurantStockService::class);
+        $itemData = json_decode($order->item, true);
+
+        try {
+            if (is_array($itemData)) {
+                if (isset($itemData['has_sets']) && $itemData['has_sets']) {
+                    foreach ($itemData['items_sets'] as $itemSet) {
+                        $componentQuantity = ($itemSet['pivot']['quantity'] ?? 1) * $order->quantity;
+                        $stockService->releaseQuantity($itemSet['id'], $componentQuantity);
+                    }
+                }
+                $stockService->releaseQuantity($order->item_id, $order->quantity);
+
+                if (isset($itemData['modifiersApplied']) && is_array($itemData['modifiersApplied'])) {
+                    foreach ($itemData['modifiersApplied'] as $group) {
+                        if (isset($group['items']) && is_array($group['items'])) {
+                            foreach ($group['items'] as $modifierItem) {
+                                if (isset($modifierItem['type'], $modifierItem['item_id'])
+                                    && $modifierItem['type'] === 'item' && $modifierItem['item_id']) {
+                                    $stockService->releaseQuantity($modifierItem['item_id'], $order->quantity);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error("Error liberando stock en pedido rápido: " . $e->getMessage());
+        }
+
+        $order->delete();
     }
 
 }
