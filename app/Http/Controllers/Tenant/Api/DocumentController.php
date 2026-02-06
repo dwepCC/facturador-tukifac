@@ -282,6 +282,16 @@ class DocumentController extends Controller
             ];
         })->toArray();
 
+        // Obtener información de pagos detallada
+        $payments = $document->payments->map(function($payment) {
+            return [
+                'name' => $payment->payment_method_type->description ?? '',
+                'method' => $payment->payment_method_type->description ?? '',
+                'amount' => (float) $payment->payment,
+                'reference' => $payment->reference ?? '',
+            ];
+        })->toArray();
+
         // Obtener información de pagos
         $firstPayment = $document->payments->first();
         $paymentMethod = null;
@@ -423,6 +433,7 @@ class DocumentController extends Controller
             'paymentMethod' => $paymentMethod,
             'payment_method_name' => $paymentMethod,
             'payment_condition' => $paymentCondition,
+            'payments' => $payments,
             'cash' => $cash,
             'efectivo' => $cash,
             'change' => $change,

@@ -266,6 +266,16 @@ class DownloadController extends Controller
             ];
         })->toArray();
 
+        // Obtener información de pagos detallada
+        $payments = $document->payments->map(function($payment) {
+            return [
+                'name' => $payment->payment_method_type->description ?? '',
+                'method' => $payment->payment_method_type->description ?? '',
+                'amount' => (float) $payment->payment,
+                'reference' => $payment->reference ?? '',
+            ];
+        })->toArray();
+
         $firstPayment = $document->payments->first();
         $paymentMethod = null;
         
@@ -390,6 +400,7 @@ class DownloadController extends Controller
             'paymentMethod' => $paymentMethod,
             'payment_method_name' => $paymentMethod,
             'payment_condition' => $paymentCondition,
+            'payments' => $payments,
             'cash' => $cash,
             'efectivo' => $cash,
             'change' => $change,
@@ -493,6 +504,16 @@ class DownloadController extends Controller
                 'sale_unit_price' => (float) $item->unit_price,
                 'subtotal' => (float) $item->total,
                 'total' => (float) $item->total,
+            ];
+        })->toArray();
+
+        // Obtener información de pagos detallada
+        $payments = $saleNote->payments->map(function($payment) {
+            return [
+                'name' => $payment->payment_method_type->description ?? '',
+                'method' => $payment->payment_method_type->description ?? '',
+                'amount' => (float) $payment->payment,
+                'reference' => $payment->reference ?? '',
             ];
         })->toArray();
 
@@ -620,6 +641,7 @@ class DownloadController extends Controller
             'paymentMethod' => $paymentMethod,
             'payment_method_name' => $paymentMethod,
             'payment_condition' => $paymentCondition,
+            'payments' => $payments,
             'cash' => $cash,
             'efectivo' => $cash,
             'change' => $change,
