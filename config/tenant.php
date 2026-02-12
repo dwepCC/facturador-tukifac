@@ -42,7 +42,7 @@ return [
 
     'igv_31556_start' => env('IGV_31556_START', '2022-09-01'),
     'igv_31556_end' => env('IGV_31556_END', '2026-12-31'),
-    'igv_31556_percentage' => env('IGV_31556_PERCENTAGE', 0.105),
+    'igv_31556_percentage' => env('IGV_31556_PERCENTAGE', 0.10),
 
     'save_qrcode' => env('SAVE_QRCODE', false),
 
