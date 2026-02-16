@@ -403,13 +403,13 @@
                                                 </el-checkbox>
                                             </div>
                                         </th>
-                                        <!-- <th width="25%">
+                                         <th width="25%">
                                             <div v-show="form.unit_type_id !='ZZ' && canSeeProduction">
                                                 <el-checkbox v-model="form.is_for_production"
                                                              @change="changeProductioTab">Este producto, ¿requiere insumos?
                                                 </el-checkbox>
                                             </div>
-                                        </th> -->
+                                        </th>
                                     </tr>
                                                                         </thead>
                                     <tbody>
@@ -957,7 +957,7 @@
                 <el-tab-pane class
                              v-if="!isService"
                              name="five">
-                    <span slot="label">Compra</span>
+                    <span slot="label">Compras</span>
                     <div class="row">
                         <div class="col-md-8">
                             <div :class="{'has-danger': errors.purchase_affectation_igv_type_id}"

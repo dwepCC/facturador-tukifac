@@ -259,6 +259,7 @@ class DispatchController extends Controller
             } else if ($parentTable === 'sale_note' ) { 
                 $observations = $document->observation;
             }
+            $company = Company::first();
             $data = [
                 'establishment_id' => $document->establishment_id,
                 'customer_id' => $document->customer_id,
@@ -273,8 +274,9 @@ class DispatchController extends Controller
                     'document_type_id' => $document->document_type_id,
                     'serie' => $document->series,
                     'number' => $document->number,
-                    'customer' => $parentTable == 'purchases' ? $document->supplier->number : $document->customer->number,
-                    'name' => $parentTable == 'purchases' ? $document->supplier->name : $document->customer->name
+                    'customer' => $parentTable == 'purchases' ? $document->supplier->number : $company->number,
+                    'name' => $parentTable == 'purchases' ? $document->supplier->name : $company->name
+
                 ],
                 'observations' => $observations,
 

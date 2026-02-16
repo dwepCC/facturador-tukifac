@@ -15,6 +15,11 @@ import 'bootstrap/dist/js/bootstrap.bundle.js'; // Incluye Popper
 import '../sass/element-ui.scss';
 import 'element-ui/lib/theme-chalk/index.css';
 
+// Tukifac: estilos base de la aplicación (incluidos en el bundle para dev y build)
+import '../../public/porto-light/css/tukifac.css';
+import '../../public/css/tukifac-inicio.css';
+import '../../public/css/tukifac-soporte.css';
+
 // Personalizar textos del idioma español
 lang.el.select.noData = 'No se encontraron resultados'
 lang.el.cascader.noData = 'No se encontraron resultados'

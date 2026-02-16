@@ -87,9 +87,7 @@
 
     <link rel="stylesheet" type="text/css" href="{{ asset('porto-light/master/style-switcher/style-switcher.css')}}">
 
-    <link rel="stylesheet" href="{{ asset('porto-light/css/tukifac.css') }}?v=0.0.12" /><!--tukifac-->
-    <link rel="stylesheet" href="{{ asset('css/tukifac-inicio.css') }}?v=0.0.07" /><!--tukifac-->
-    <link rel="stylesheet" href="{{ asset('css/tukifac-soporte.css') }}?v=0.0.05" /><!--tukifac-->
+    {{-- Tukifac: ahora se carga desde app.js (bundle Vite) para garantizar orden correcto en dev y build --}}
     {{--<link rel="stylesheet" href="{{ asset('porto-light/css/theme.css') }}" />--}}
     {{--<link rel="stylesheet" href="{{ asset('porto-light/css/custom.css') }}" />
 
