@@ -247,8 +247,10 @@ class DocumentController extends Controller
             ];
         }
 
-        // Obtener tipo de documento
+        // Obtener tipo de documento y moneda
         $documentType = $document->document_type ? $document->document_type->description : '';
+        $currencyCode = $document->currency_type_id ?? '';
+        $currencySymbol = $document->currency_type ? $document->currency_type->symbol : '';
 
         // Construir items
         $items = $document->items->map(function ($item) {
@@ -420,15 +422,53 @@ class DocumentController extends Controller
             'due_date' => $dueDate,
             'customer' => $customer,
             'items' => $items,
+
+            // Información de moneda
+            'currency_type_id' => $currencyCode,
+            'currency_code' => $currencyCode,
+            'currency_symbol' => $currencySymbol,
+
+            // Totales básicos
             'subtotal' => (float) ($document->total_value ?? 0),
             'total_value' => (float) ($document->total_value ?? 0),
-            'taxable_operations' => (float) ($document->total_taxed ?? 0),
-            'tax' => (float) ($document->total_igv ?? 0),
-            'total_igv' => (float) ($document->total_igv ?? 0),
-            'total_taxes' => (float) ($document->total_igv ?? 0),
             'total' => (float) ($document->total ?? 0),
             'total_venta' => (float) ($document->total ?? 0),
+
+            // Operaciones por tipo (mismos nombres que en Document)
+            'total_taxed' => (float) ($document->total_taxed ?? 0),
+            'total_exonerated' => (float) ($document->total_exonerated ?? 0),
+            'total_unaffected' => (float) ($document->total_unaffected ?? 0),
+            'total_free' => (float) ($document->total_free ?? 0),
+            'total_exportation' => (float) ($document->total_exportation ?? 0),
+
+            // Alias para compatibilidad con integraciones existentes
+            'taxable_operations' => (float) ($document->total_taxed ?? 0),
+            'exonerated_operations' => (float) ($document->total_exonerated ?? 0),
+            'unaffected_operations' => (float) ($document->total_unaffected ?? 0),
+            'free_operations' => (float) ($document->total_free ?? 0),
+            'exportation_operations' => (float) ($document->total_exportation ?? 0),
+
+            // Impuestos
+            'tax' => (float) ($document->total_igv ?? 0),
+            'total_igv' => (float) ($document->total_igv ?? 0),
+            'total_igv_free' => (float) ($document->total_igv_free ?? 0),
+            'total_base_isc' => (float) ($document->total_base_isc ?? 0),
+            'total_isc' => (float) ($document->total_isc ?? 0),
+            'total_base_other_taxes' => (float) ($document->total_base_other_taxes ?? 0),
+            'total_other_taxes' => (float) ($document->total_other_taxes ?? 0),
+            'total_taxes' => (float) ($document->total_taxes ?? $document->total_igv ?? 0),
+            'total_plastic_bag_taxes' => (float) ($document->total_plastic_bag_taxes ?? 0),
+
+            // Descuentos, cargos y anticipos
+            'total_discount' => (float) ($document->total_discount ?? 0),
+            'total_charge' => (float) ($document->total_charge ?? 0),
+            'total_prepayment' => (float) ($document->total_prepayment ?? 0),
+            'subtotal_document' => (float) ($document->subtotal ?? 0),
+
+            // Total en letras
             'total_in_words' => $totalInWords,
+
+            // Información de pago
             'payment_method' => $paymentMethod,
             'paymentMethod' => $paymentMethod,
             'payment_method_name' => $paymentMethod,
@@ -438,6 +478,8 @@ class DocumentController extends Controller
             'efectivo' => $cash,
             'change' => $change,
             'vuelto' => $change,
+
+            // Cuentas bancarias y otros datos
             'bank_accounts' => $bankAccounts,
             'qr_data' => $qrData,
             'hash_code' => $hashCode,
