@@ -236,6 +236,7 @@ class DocumentController extends Controller
             
             $companyData = [
                 'name' => $company->name ?? '',
+                'trade_name' => $company->trade_name ?? '',
                 'ruc' => $company->number ?? '',
                 'address' => $address,
                 'commercial_address' => ($establishment && isset($establishment->trade_address) && $establishment->trade_address !== '-') ? $establishment->trade_address : '',
@@ -243,7 +244,7 @@ class DocumentController extends Controller
                 'email' => ($establishment && isset($establishment->email) && $establishment->email !== '-') ? $establishment->email : '',
                 'web' => ($establishment && isset($establishment->web_address) && $establishment->web_address !== '-') ? $establishment->web_address : '',
                 'slogan' => ($establishment && isset($establishment->aditional_information) && $establishment->aditional_information !== '-') ? $establishment->aditional_information : '',
-                'logo' => $logoBase64,
+                'logo' => null,//$logoBase64,
             ];
         }
 

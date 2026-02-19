@@ -497,6 +497,28 @@
                               v-text="errors.replace_template_mozo[0]"></small>
                     </div>
                   </div>
+                  <div class="col-md-4">
+                    <label class="control-label">
+                      PIN para anular comandas (4 dígitos)
+                    </label>
+                    <div :class="{'has-danger': errors.comanda_removal_pin}" class="form-group">
+                      <el-input v-model="form.comanda_removal_pin"
+                                type="password"
+                                maxlength="4"
+                                show-password
+                                placeholder="Mismo PIN para todos al quitar ítem"
+                                autocomplete="off"
+                                style="max-width: 120px;"
+                                @change="submit"></el-input>
+                      <small class="form-control-feedback d-block" v-if="form.comanda_removal_pin_configured && !form.comanda_removal_pin">
+                        Dejar en blanco para no cambiar. Ingrese 4 dígitos para configurar o cambiar.
+                      </small>
+                      <small class="form-control-feedback d-block" v-else-if="!form.comanda_removal_pin_configured">
+                        Todos los usuarios deberán ingresar este PIN para quitar un ítem de la comanda.
+                      </small>
+                      <small v-if="errors.comanda_removal_pin" class="form-control-feedback" v-text="errors.comanda_removal_pin[0]"></small>
+                    </div>
+                  </div>
                 </div>
               </div>
             </el-tab-pane>
@@ -699,6 +721,7 @@ export default {
         await this.$http.get(`/${this.resource}/configuration/record`).then(response => {
           if (response.data !== '') {
             this.form = response.data.data;
+            this.$set(this.form, 'comanda_removal_pin', '');
             const infoData = response.data.info
             this.info.ruc = infoData.ruc
             this.info.userEmail = infoData.userEmail

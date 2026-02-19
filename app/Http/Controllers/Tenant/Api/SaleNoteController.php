@@ -801,6 +801,7 @@ class SaleNoteController extends Controller
             
             $companyData = [
                 'name' => $company->name ?? '',
+                'trade_name' => $company->trade_name ?? '',
                 'ruc' => $company->number ?? '',
                 'address' => $address,
                 'commercial_address' => ($establishment && $establishment->trade_address && $establishment->trade_address !== '-') ? $establishment->trade_address : '',

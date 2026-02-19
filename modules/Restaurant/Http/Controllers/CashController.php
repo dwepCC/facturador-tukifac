@@ -227,12 +227,20 @@ class CashController extends Controller
      *
      * @return array
      */
-    public function cash_document(Request $request) {
-
+    public function cash_document(Request $request)
+    {
         $cash = Cash::where([
-                                ['user_id', auth()->user()->id],
-                                ['state', true],
-                            ])->first();
+            ['user_id', auth()->user()->id],
+            ['state', true],
+        ])->first();
+
+        if (!$cash) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Debe aperturar su caja para registrar esta venta.',
+                'code' => 'CASH_REQUIRED',
+            ], 422);
+        }
 
         (int)$payment_credit = 0;
 

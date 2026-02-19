@@ -3,11 +3,15 @@
 namespace Modules\Restaurant\Models;
 
 use App\Models\Tenant\ModelTenant;
-use Modules\Restaurant\Models\RestaurantTable;
 use App\Models\Tenant\Item;
+use App\Models\Tenant\User;
 
 class RestaurantItemOrderStatus extends ModelTenant
 {
+    const STATUS_RECEIVED = 1;
+    const STATUS_PROCESSING = 2;
+    const STATUS_TO_DELIVER = 3;
+    const STATUS_DELIVERED = 4;
 
     protected $fillable = [
         'table_id',
@@ -17,7 +21,8 @@ class RestaurantItemOrderStatus extends ModelTenant
         'note',
         'status',
         'status_description',
-        'customer_name'
+        'customer_name',
+        'user_id',
     ];
 
     public function table()
@@ -28,5 +33,10 @@ class RestaurantItemOrderStatus extends ModelTenant
     public function itemModel()
     {
         return $this->belongsTo(Item::class, 'item_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

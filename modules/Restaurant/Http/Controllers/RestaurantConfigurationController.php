@@ -12,12 +12,15 @@ use Modules\Restaurant\Models\RestaurantTableEnv;
 use Modules\Restaurant\Models\RestaurantTableGroup;
 use App\Models\Tenant\User;
 use App\Models\Tenant\Company;
+use App\Models\Tenant\Document;
+use App\Models\Tenant\SaleNote;
 use Modules\Restaurant\Models\RestaurantItemOrderStatus;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Tenant\UserResource;
 use Illuminate\Support\Str;
 use Modules\Restaurant\Services\RestaurantStockService;
+use Modules\Restaurant\Services\RestaurantAuditService;
 
 
 class RestaurantConfigurationController extends Controller
@@ -33,16 +36,31 @@ class RestaurantConfigurationController extends Controller
     /**
      * obtiene configuración para utilizar en mozo
      */
+    /**
+     * Configuración para la app mozo/cajero.
+     * Incluye user con rol de restaurante para que el frontend gestione permisos (menú Caja, POS, etc.).
+     */
     public function record()
     {
         $configurations = RestaurantConfiguration::first();
         $company = Company::query()->first();
         $user = auth()->user();
 
+        $userPayload = $user ? [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'type' => $user->type,
+            'restaurant_role_id' => $user->restaurant_role_id,
+            'restaurant_role_code' => $user->restaurant_role_id ? optional($user->restaurant_role)->code : null,
+            'restaurant_role_name' => $user->restaurant_role_id ? optional($user->restaurant_role)->name : null,
+        ] : null;
+
         return [
             'success' => true,
             'data' => $configurations->getCollectionData(),
-            'info' => ['ruc' => $company->number, 'userEmail' => $user->email, 'socketServer' => config('tenant.socket_server') ?? 'http://localhost:8070'],
+            'user' => $userPayload,
+            'info' => ['ruc' => $company->number, 'userEmail' => $user->email ?? null, 'socketServer' => config('tenant.socket_server') ?? 'http://localhost:8070'],
         ];
     }
 
@@ -79,6 +97,8 @@ class RestaurantConfigurationController extends Controller
                 'order_status' => $row->order_status,
                 'is_paid' => (bool)$row->is_paid,
                 'delivery' => $row->delivery,
+                'sale_note_id' => $row->sale_note_id,
+                'document_id' => $row->document_id,
             ];
         });
 
@@ -128,13 +148,35 @@ class RestaurantConfigurationController extends Controller
     public function setConfiguration(Request $request)
     {
         $configuration = RestaurantConfiguration::first();
-        $configuration->fill($request->all());
+        $tableRelatedKeys = [
+            'enabled_environment_1', 'enabled_environment_2', 'enabled_environment_3', 'enabled_environment_4',
+            'tables_quantity', 'tables_quantity_environment_2', 'tables_quantity_environment_3', 'tables_quantity_environment_4',
+        ];
+        $oldTableValues = $configuration->only($tableRelatedKeys);
+
+        $configuration->fill($request->except(['comanda_removal_pin']));
+        if ($request->has('comanda_removal_pin')) {
+            $pin = $request->comanda_removal_pin;
+            $configuration->comanda_removal_pin = (is_string($pin) && strlen($pin) === 4) ? $pin : null;
+        }
         if (!$configuration->menu_pos && !$configuration->menu_order && !$configuration->menu_tables) {
             $configuration->menu_pos = true;
         }
         $configuration->save();
 
-        $this->generateMesas();
+        $needsRegenerate = false;
+        foreach ($tableRelatedKeys as $key) {
+            if ($request->has($key) && $configuration->getAttribute($key) != ($oldTableValues[$key] ?? null)) {
+                $needsRegenerate = true;
+                break;
+            }
+        }
+        if ($needsRegenerate) {
+            $generateResult = $this->generateMesas();
+            if ($generateResult !== true) {
+                return $generateResult;
+            }
+        }
 
         return [
             'success' => true,
@@ -143,8 +185,25 @@ class RestaurantConfigurationController extends Controller
         ];
     }
 
+    /**
+     * Regenera mesas según ambientes activos.
+     * No permite ejecutar si hay mesas con pedidos pendientes de venta.
+     * @return true|array true si OK, array de respuesta de error si hay pedidos pendientes
+     */
     private function generateMesas()
     {
+        $tablesWithOrders = RestaurantTable::whereNotNull('environment')
+            ->whereHas('itemOrderStatuses')
+            ->get();
+
+        if ($tablesWithOrders->isNotEmpty()) {
+            $labels = $tablesWithOrders->pluck('label')->take(5)->join(', ');
+            return [
+                'success' => false,
+                'message' => 'No se puede regenerar las mesas: hay mesas con pedidos activos (' . $labels . ($tablesWithOrders->count() > 5 ? '...' : '') . '). Cierre o cancele los pedidos primero.',
+            ];
+        }
+
         RestaurantTable::query()->delete();
         RestaurantTableGroup::query()->delete();
         RestaurantItemOrderStatus::query()->delete();
@@ -164,6 +223,9 @@ class RestaurantConfigurationController extends Controller
                 ]);
             }
         }
+
+        RestaurantAuditService::logTableConfigRegenerated();
+        return true;
     }
 
     /**
@@ -264,92 +326,132 @@ class RestaurantConfigurationController extends Controller
     public function saveTable($id, Request $request)
     {
         $table = RestaurantTable::findOrFail($id);
-        //$data = $request->all();
-        $data = $request->except(['group_id', 'is_main_table']); // Proteger campos de grupo
-        $data['status'] = (count($data['products'])<1)?$data['status']:'notavailable';
+        $data = $request->except(['group_id', 'is_main_table']);
+        $data['status'] = (count($data['products'] ?? []) < 1) ? ($data['status'] ?? 'available') : 'notavailable';
+
+        // Aceptar y validar vinculación con venta (para permitir cierre con productos cobrados)
+        if ($request->has('sale_note_id') && $request->sale_note_id) {
+            $saleNote = SaleNote::find($request->sale_note_id);
+            if (!$saleNote) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La nota de venta indicada no existe.',
+                ], 422);
+            }
+            $data['sale_note_id'] = $saleNote->id;
+        }
+        if ($request->has('document_id') && $request->document_id) {
+            $document = Document::find($request->document_id);
+            if (!$document) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El comprobante indicado no existe.',
+                ], 422);
+            }
+            $data['document_id'] = $document->id;
+        }
+        if ($request->has('is_paid')) {
+            $data['is_paid'] = (bool) $request->is_paid;
+        }
 
         $isDeliveryOrTakeaway = ($table->environment === 'Delivery' || $table->environment === 'Para Llevar');
 
-        if($isDeliveryOrTakeaway && $table->order_status === 'delivered' || $isDeliveryOrTakeaway && $data['order_status'] === 'deleted') {
-            $table->delete();
-
-            $itemsToDelete = RestaurantItemOrderStatus::where('table_id', $id);
-            if ($itemsToDelete->exists()) {
-                $itemsToDelete->delete();
-            }
-
-            return [
-                'success' => true,
-                'message' => 'Pedido finalizado, entrega realizada',
-            ];
+        if ($isDeliveryOrTakeaway && ($table->order_status === 'delivered' || $data['order_status'] === 'deleted')) {
+            return $this->deleteDeliveryTakeawayTable($table, $id);
         }
 
-        if(isset($data['open'])&& $data['open']){
+        $closingWithProducts = (count($data['products'] ?? []) < 1);
+        $hasOrders = RestaurantItemOrderStatus::where('table_id', $id)->exists();
+
+        // Protección: no cerrar mesa con comandas sin venta registrada
+        if ($closingWithProducts && $hasOrders) {
+            $hasSaleNote = !empty($data['sale_note_id']) || !empty($table->sale_note_id);
+            $hasDocument = !empty($data['document_id']) || !empty($table->document_id);
+            $isPaid = !empty($data['is_paid']) || $table->is_paid;
+
+            if (!$hasSaleNote && !$hasDocument && !$isPaid) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Para cerrar la mesa con pedidos debe generar la venta primero (Nota de venta o Factura) y enviar sale_note_id o document_id, o marcar is_paid.',
+                    'code' => 'SALE_REQUIRED',
+                ], 422);
+            }
+        }
+
+        if (isset($data['open']) && $data['open']) {
             $data['opening_date'] = Carbon::now();
         }
-
-        if(isset($data['close'])&& $data['close']){
+        if (isset($data['close']) && $data['close']) {
             $data['opening_date'] = null;
         }
 
-        $table->fill($data);
-        $table->save();
+        return DB::connection('tenant')->transaction(function () use ($table, $data, $id, $closingWithProducts) {
+            $table->fill($data);
+            $table->save();
 
-        if ($table->group_id) {
-            \Modules\Restaurant\Models\RestaurantTableGroup::where('id', $table->group_id)
-                ->update(['total' => $table->total]);
+            if ($table->group_id) {
+                \Modules\Restaurant\Models\RestaurantTableGroup::where('id', $table->group_id)
+                    ->update(['total' => $table->total]);
+                RestaurantTable::where('group_id', $table->group_id)
+                    ->update(['status' => $data['status'], 'total' => $table->total]);
+            }
 
-            // Actualizar estado de todas las mesas del grupo
-            RestaurantTable::where('group_id', $table->group_id)
-                ->update([
-                    'status' => $data['status'],
-                    'total' => $table->total
-                ]);
-        }
+            if ($closingWithProducts) {
+                $ordersToRelease = RestaurantItemOrderStatus::where('table_id', $id)->get();
+                $stockService = app(RestaurantStockService::class);
 
-        if(count($data['products']) < 1){
-            // Liberar cantidades reservadas antes de eliminar las órdenes
-            $ordersToRelease = RestaurantItemOrderStatus::where('table_id', $id)->get();
-            $stockService = app(RestaurantStockService::class);
-
-            foreach($ordersToRelease as $order) {
-                $itemData = json_decode($order->item, true); // Decodificar como array
-
-                // Si el item es un set, liberar cada componente
-                if(isset($itemData['has_sets']) && $itemData['has_sets']) {
-                    foreach($itemData['items_sets'] as $itemSet) {
-                        $componentQuantity = $itemSet['pivot']['quantity'] * $order->quantity;
-                        $stockService->releaseQuantity($itemSet['id'], $componentQuantity);
+                foreach ($ordersToRelease as $order) {
+                    $itemData = json_decode($order->item, true);
+                    if (isset($itemData['has_sets']) && $itemData['has_sets']) {
+                        foreach ($itemData['items_sets'] as $itemSet) {
+                            $componentQuantity = ($itemSet['pivot']['quantity'] ?? 1) * $order->quantity;
+                            $stockService->releaseQuantity($itemSet['id'], $componentQuantity);
+                        }
                     }
-                }
-
-                // SIEMPRE liberar el item principal
-                $stockService->releaseQuantity($order->item_id, $order->quantity);
-
-                // Liberar modificadores aplicados desde el mismo order->item
-                if(isset($itemData['modifiersApplied']) && is_array($itemData['modifiersApplied'])) {
-                    foreach($itemData['modifiersApplied'] as $group) {
-                        if(isset($group['items']) && is_array($group['items'])) {
-                            foreach($group['items'] as $modifierItem) {
-                                if(isset($modifierItem['type']) && $modifierItem['type'] === 'item'
-                                    && isset($modifierItem['item_id']) && $modifierItem['item_id']) {
-                                    $stockService->releaseQuantity($modifierItem['item_id'], $order->quantity);
+                    $stockService->releaseQuantity($order->item_id, $order->quantity);
+                    if (isset($itemData['modifiersApplied']) && is_array($itemData['modifiersApplied'])) {
+                        foreach ($itemData['modifiersApplied'] as $group) {
+                            if (isset($group['items']) && is_array($group['items'])) {
+                                foreach ($group['items'] as $modifierItem) {
+                                    if (isset($modifierItem['type'], $modifierItem['item_id'])
+                                        && $modifierItem['type'] === 'item' && $modifierItem['item_id']) {
+                                        $stockService->releaseQuantity($modifierItem['item_id'], $order->quantity);
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+                $orderIds = $ordersToRelease->pluck('id')->toArray();
+                if ($ordersToRelease->isNotEmpty()) {
+                    RestaurantItemOrderStatus::where('table_id', $id)->delete();
+                    RestaurantAuditService::logTableClosed(
+                        (int) $id,
+                        $table->sale_note_id,
+                        $table->document_id,
+                        count($orderIds)
+                    );
+                }
             }
 
-            // Ahora eliminar las órdenes
-            if ($ordersToRelease->isNotEmpty()) {
-                RestaurantItemOrderStatus::where('table_id', $id)->delete();
-            }
+            return [
+                'success' => true,
+                'message' => 'Mesa actualizada.',
+            ];
+        });
+    }
+
+    private function deleteDeliveryTakeawayTable(RestaurantTable $table, int $id): array
+    {
+        $itemsToDelete = RestaurantItemOrderStatus::where('table_id', $id);
+        if ($itemsToDelete->exists()) {
+            $itemsToDelete->delete();
         }
-
+        $table->delete();
         return [
             'success' => true,
-            'message' => 'Mesa actualizada.',
+            'message' => 'Pedido finalizado, entrega realizada',
         ];
     }
 
@@ -385,6 +487,9 @@ class RestaurantConfigurationController extends Controller
             'waiter' => $row->waiter,
             'order_status' => $row->order_status,
             'delivery' => $row->delivery,
+            'sale_note_id' => $row->sale_note_id,
+            'document_id' => $row->document_id,
+            'is_paid' => (bool) $row->is_paid,
         ];
 
         return compact('table');

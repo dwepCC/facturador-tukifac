@@ -3,6 +3,8 @@
 namespace Modules\Restaurant\Models;
 
 use App\Models\Tenant\ModelTenant;
+use App\Models\Tenant\Document;
+use App\Models\Tenant\SaleNote;
 
 class RestaurantTable extends ModelTenant
 {
@@ -26,6 +28,8 @@ class RestaurantTable extends ModelTenant
         'original_environment',
         'is_paid',
         'delivery',
+        'sale_note_id',
+        'document_id',
     ];
 
 
@@ -57,5 +61,20 @@ class RestaurantTable extends ModelTenant
     public function group()
     {
         return $this->belongsTo(RestaurantTableGroup::class, 'group_id');
+    }
+
+    public function saleNote()
+    {
+        return $this->belongsTo(SaleNote::class, 'sale_note_id');
+    }
+
+    public function document()
+    {
+        return $this->belongsTo(Document::class, 'document_id');
+    }
+
+    public function itemOrderStatuses()
+    {
+        return $this->hasMany(RestaurantItemOrderStatus::class, 'table_id');
     }
 }

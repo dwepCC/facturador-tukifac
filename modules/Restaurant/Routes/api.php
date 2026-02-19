@@ -48,6 +48,7 @@ if ($hostname) {
                 Route::post('/label-table/save', 'RestaurantConfigurationController@saveLabelTable');
 
                 Route::post('/command-item/save', 'RestaurantItemOrderStatusController@saveItemOrder');
+                Route::post('/command-item/remove/{id}', 'RestaurantItemOrderStatusController@removeComandaItem');
                 Route::get('/command-status/items/{id}', 'RestaurantItemOrderStatusController@getStatusItems');
                 Route::get('/command-status/served/{tableId}', 'RestaurantItemOrderStatusController@isProductsCommandStatusServer');
                 Route::get('/command-status/set/{id}', 'RestaurantItemOrderStatusController@setStatusItem');
@@ -59,6 +60,8 @@ if ($hostname) {
                     Route::post('disband', 'TableGroupController@disbandGroup');
                     Route::post('recalculate', 'TableGroupController@calculateTotal');
                 });
+
+                Route::get('/audit/cancellations', 'RestaurantItemOrderStatusController@cancellations');
             });
 
             // Print Orders

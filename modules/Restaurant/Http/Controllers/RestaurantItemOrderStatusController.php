@@ -6,10 +6,11 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Exception;
+use Illuminate\Support\Facades\DB;
 use App\Models\Tenant\Item;
 use Modules\Restaurant\Models\RestaurantItemOrderStatus;
 use Modules\Restaurant\Services\RestaurantStockService;
-
+use Modules\Restaurant\Services\RestaurantAuditService;
 
 class RestaurantItemOrderStatusController extends Controller
 {
@@ -18,128 +19,143 @@ class RestaurantItemOrderStatusController extends Controller
     const STATUS_TO_DELIVER = 3;
     const STATUS_DELIVERED = 4;
 
-    public function saveItemOrder(Request $request) {
+    const MAX_QUANTITY_PER_ITEM = 999;
+
+    public function saveItemOrder(Request $request)
+    {
+        $request->validate([
+            'quantity' => 'required|integer|min:1|max:' . self::MAX_QUANTITY_PER_ITEM,
+            'table_id' => 'nullable|integer',
+            'item_id' => 'required|integer',
+            'item' => 'required|array',
+        ], [
+            'quantity.min' => 'La cantidad debe ser al menos 1.',
+            'quantity.max' => 'La cantidad no puede superar ' . self::MAX_QUANTITY_PER_ITEM . '.',
+        ]);
 
         $itemData = $request->item;
         $stockService = app(RestaurantStockService::class);
 
-        // Descontar supplies inmediatamente al crear la orden
         try {
-            // Si el item es un set, descontar supplies de cada componente
-            if (isset($itemData['has_sets']) && $itemData['has_sets']) {
-                foreach ($itemData['items_sets'] as $itemSet) {
-                    $item_model = Item::find($itemSet['id']);
-                    if (!$item_model) continue;
-
-                    $item_supplies = $item_model->restaurantItemSupplies;
-                    foreach ($item_supplies as $item_supply) {
-                        $supply_quantity = $item_supply->quantity;
-                        $order_quantity = $request->quantity * $itemSet['pivot']['quantity'];
-                        $total_to_discount = $supply_quantity * $order_quantity;
-                        $supply = $item_supply->supply;
-                        $supply->stock -= $total_to_discount;
-                        $supply->save();
-                    }
-
-                    // Recalcular stock del componente después de descontar supplies
-                    $stockService->calculateAndUpdateStock($itemSet['id']);
-                }
-            } else if (isset($itemData['has_supplies']) && $itemData['has_supplies']) {
-                // Item con supplies: descontar insumos
-                $item_model = Item::find($request->item_id);
-                if ($item_model) {
-                    $item_supplies = $item_model->restaurantItemSupplies;
-                    foreach ($item_supplies as $item_supply) {
-                        $supply_quantity = $item_supply->quantity;
-                        $order_quantity = $request->quantity;
-                        $total_to_discount = $supply_quantity * $order_quantity;
-                        $supply = $item_supply->supply;
-                        $supply->stock -= $total_to_discount;
-                        $supply->save();
-                    }
-                }
-            }
-
-        } catch (Exception $e) {
-            \Log::error("Error descontando supplies: " . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Error al descontar insumos.'
-            ];
-        }
-
-        // Recalcular stock después de descontar supplies
-        $stockService->calculateAndUpdateStock($request->item_id);
-
-        // Reservar cantidades después de descontar supplies y recalcular stock
-        try {
-            // Si el item es un set, reservar cada componente
-            if (isset($itemData['has_sets']) && $itemData['has_sets']) {
-                foreach ($itemData['items_sets'] as $itemSet) {
-                    $componentQuantity = $itemSet['pivot']['quantity'] * $request->quantity;
-                    $stockService->reserveQuantity($itemSet['id'], $componentQuantity);
-                }
-            } else {
-                // Item simple: reservar cantidad directamente
-                $stockService->reserveQuantity($request->item_id, $request->quantity);
-            }
-
-            // Reservar stock de modificadores aplicados (si tienen type: "item" y item_id)
-            if (isset($itemData['modifiersApplied']) && is_array($itemData['modifiersApplied'])) {
-                foreach ($itemData['modifiersApplied'] as $group) {
-                    if (isset($group['items']) && is_array($group['items'])) {
-                        foreach ($group['items'] as $modifierItem) {
-                            // Solo reservar si es de tipo "item" y tiene item_id
-                            if (isset($modifierItem['type']) && $modifierItem['type'] === 'item'
-                                && isset($modifierItem['item_id']) && $modifierItem['item_id']) {
-                                $stockService->reserveQuantity($modifierItem['item_id'], $request->quantity);
+            return DB::connection('tenant')->transaction(function () use ($request, $itemData, $stockService) {
+                try {
+                    if (isset($itemData['has_sets']) && $itemData['has_sets']) {
+                        foreach ($itemData['items_sets'] as $itemSet) {
+                            $item_model = Item::find($itemSet['id']);
+                            if (!$item_model) continue;
+                            $item_supplies = $item_model->restaurantItemSupplies;
+                            foreach ($item_supplies as $item_supply) {
+                                $supply_quantity = $item_supply->quantity;
+                                $order_quantity = $request->quantity * $itemSet['pivot']['quantity'];
+                                $total_to_discount = $supply_quantity * $order_quantity;
+                                $supply = $item_supply->supply;
+                                $supply->stock -= $total_to_discount;
+                                $supply->save();
+                            }
+                            $stockService->calculateAndUpdateStock($itemSet['id']);
+                        }
+                    } elseif (isset($itemData['has_supplies']) && $itemData['has_supplies']) {
+                        $item_model = Item::find($request->item_id);
+                        if ($item_model) {
+                            foreach ($item_model->restaurantItemSupplies as $item_supply) {
+                                $total_to_discount = $item_supply->quantity * $request->quantity;
+                                $supply = $item_supply->supply;
+                                $supply->stock -= $total_to_discount;
+                                $supply->save();
                             }
                         }
                     }
+                } catch (Exception $e) {
+                    \Log::error("Error descontando supplies: " . $e->getMessage());
+                    throw new \RuntimeException('Error al descontar insumos.');
                 }
-            }
 
-        } catch (Exception $e) {
-            \Log::error("Error reservando stock: " . $e->getMessage());
+                $stockService->calculateAndUpdateStock($request->item_id);
+
+                try {
+                    if (isset($itemData['has_sets']) && $itemData['has_sets']) {
+                        foreach ($itemData['items_sets'] as $itemSet) {
+                            $componentQuantity = $itemSet['pivot']['quantity'] * $request->quantity;
+                            $stockService->reserveQuantity($itemSet['id'], $componentQuantity);
+                        }
+                    } else {
+                        $stockService->reserveQuantity($request->item_id, $request->quantity);
+                    }
+                    if (isset($itemData['modifiersApplied']) && is_array($itemData['modifiersApplied'])) {
+                        foreach ($itemData['modifiersApplied'] as $group) {
+                            if (isset($group['items']) && is_array($group['items'])) {
+                                foreach ($group['items'] as $modifierItem) {
+                                    if (isset($modifierItem['type'], $modifierItem['item_id'])
+                                        && $modifierItem['type'] === 'item' && $modifierItem['item_id']) {
+                                        $stockService->reserveQuantity($modifierItem['item_id'], $request->quantity);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception $e) {
+                    \Log::error("Error reservando stock: " . $e->getMessage());
+                    throw new \RuntimeException('Error al reservar stock.');
+                }
+
+                // Crear la orden
+                $orderStatus = new RestaurantItemOrderStatus();
+                $orderStatus->table_id = $request->table_id;
+                $orderStatus->item_id = $request->item_id;
+                $orderStatus->item = json_encode($itemData);
+                $orderStatus->quantity = $request->quantity;
+                $orderStatus->note = $request->note;
+                $orderStatus->status = $request->status ?? self::STATUS_RECEIVED;
+                $orderStatus->status_description = $request->status_description;
+                $orderStatus->customer_name = $request->customer_name;
+                $orderStatus->user_id = auth()->id();
+                $orderStatus->save();
+
+                RestaurantAuditService::logItemOrderCreated(
+                    $orderStatus->id,
+                    (int) $request->table_id,
+                    (int) $request->item_id,
+                    (int) $request->quantity
+                );
+
+                return [
+                    'success' => true,
+                    'message' => 'Producto agregado con éxito.'
+                ];
+            });
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
-                'message' => 'Error al reservar stock.'
+                'message' => $e->getMessage(),
             ];
         }
-
-        // Crear la orden
-        $orderStatus = new RestaurantItemOrderStatus();
-        $orderStatus->table_id = $request->table_id;
-        $orderStatus->item_id = $request->item_id;
-        $orderStatus->item = json_encode($itemData);
-        $orderStatus->quantity = $request->quantity;
-        $orderStatus->note = $request->note;
-        $orderStatus->status = $request->status;
-        $orderStatus->status_description = $request->status_description;
-        $orderStatus->customer_name = $request->customer_name;
-        $orderStatus->save();
-
-        return [
-            'success' => true,
-            'message' => 'Producto agregado con éxito.'
-        ];
-
     }
 
     public function getStatusItems($id)
     {
+        $productsStatusReceived = $this->getItemsByStatus(self::STATUS_RECEIVED, $id);
+        $productsStatusProcessing = $this->getItemsByStatus(self::STATUS_PROCESSING, $id);
+        $productsStatusToDeliver = $this->getItemsByStatus(self::STATUS_TO_DELIVER, $id);
+        $productsStatusDelivered = $this->getItemsByStatus(self::STATUS_DELIVERED, $id, 20, 'desc');
+
         $data = [
-            'productsStatusReceived' => $this->getItemsByStatus(self::STATUS_RECEIVED,$id),
-            'productsStatusProcessing' => $this->getItemsByStatus(self::STATUS_PROCESSING,$id),
-            'productsStatusToDeliver' => $this->getItemsByStatus(self::STATUS_TO_DELIVER,$id),
-            'productsStatusDelivered' => $this->getItemsByStatus(self::STATUS_DELIVERED,$id, 20,'desc'),
+            'productsStatusReceived' => $productsStatusReceived,
+            'productsStatusProcessing' => $productsStatusProcessing,
+            'productsStatusToDeliver' => $productsStatusToDeliver,
+            'productsStatusDelivered' => $productsStatusDelivered,
+            'items' => $productsStatusReceived
+                ->concat($productsStatusProcessing)
+                ->concat($productsStatusToDeliver)
+                ->concat($productsStatusDelivered)
+                ->values()
+                ->all(),
         ];
 
         return [
             'success' => true,
             'data' => $data,
             'message' => 'Listado de productos por estados.',
-            'id' =>$id
+            'id' => $id,
         ];
     }
 
@@ -184,6 +200,7 @@ class RestaurantItemOrderStatusController extends Controller
 
         return [
             'id' => $order->id,
+            'item_id' => $order->item_id,
             'name' => $itemData->name ?? null,
             'quantity' => $order->quantity,
             'note' => $order->note ?? null,
@@ -267,6 +284,160 @@ class RestaurantItemOrderStatusController extends Controller
         }
 
         $order->delete();
+    }
+
+    /**
+     * Elimina un ítem de la comanda (un registro de RestaurantItemOrderStatus).
+     * Requiere PIN del usuario y razón. Libera stock y registra en auditoría.
+     * POST /restaurant/command-item/remove/{id}
+     * Body: { "pin": "1234", "reason": "Cliente canceló el plato" }
+     */
+    public function removeComandaItem(Request $request, $id)
+    {
+        $request->validate([
+            'pin' => 'required|string|size:4',
+            'reason' => 'required|string|min:3|max:500',
+        ], [
+            'pin.required' => 'Debe ingresar el PIN de anulación de 4 dígitos.',
+            'pin.size' => 'El PIN debe tener 4 dígitos.',
+            'reason.required' => 'Debe indicar el motivo por el que se quita el producto de la comanda.',
+            'reason.min' => 'El motivo debe tener al menos 3 caracteres.',
+        ]);
+
+        $config = \Modules\Restaurant\Models\RestaurantConfiguration::first();
+        $comandaRemovalPin = $config->comanda_removal_pin ?? null;
+
+        if (empty($comandaRemovalPin)) {
+            return [
+                'success' => false,
+                'message' => 'El administrador no ha configurado el PIN para anular comandas. Configurelo en Restaurante > Configuración > Otros permisos.',
+                'code' => 'PIN_NOT_SET',
+            ];
+        }
+        if ($comandaRemovalPin !== $request->pin) {
+            return [
+                'success' => false,
+                'message' => 'PIN de anulación incorrecto.',
+                'code' => 'PIN_INVALID',
+            ];
+        }
+
+        $order = RestaurantItemOrderStatus::where('id', $id)->first();
+        if (!$order) {
+            return [
+                'success' => false,
+                'message' => 'El ítem de la comanda no existe o ya fue eliminado.',
+            ];
+        }
+
+        $tableId = (int) $order->table_id;
+        $itemId = (int) $order->item_id;
+        $quantity = (int) $order->quantity;
+
+        try {
+            \DB::connection('tenant')->transaction(function () use ($order, $id, $tableId, $itemId, $quantity, $request) {
+                $stockService = app(RestaurantStockService::class);
+                $itemData = json_decode($order->item, true);
+
+                if (is_array($itemData)) {
+                    if (isset($itemData['has_sets']) && $itemData['has_sets']) {
+                        foreach ($itemData['items_sets'] as $itemSet) {
+                            $componentQuantity = ($itemSet['pivot']['quantity'] ?? 1) * $order->quantity;
+                            $stockService->releaseQuantity($itemSet['id'], $componentQuantity);
+                        }
+                    }
+                    $stockService->releaseQuantity($order->item_id, $order->quantity);
+                    if (isset($itemData['modifiersApplied']) && is_array($itemData['modifiersApplied'])) {
+                        foreach ($itemData['modifiersApplied'] as $group) {
+                            if (isset($group['items']) && is_array($group['items'])) {
+                                foreach ($group['items'] as $modifierItem) {
+                                    if (isset($modifierItem['type'], $modifierItem['item_id'])
+                                        && $modifierItem['type'] === 'item' && $modifierItem['item_id']) {
+                                        $stockService->releaseQuantity($modifierItem['item_id'], $order->quantity);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                RestaurantAuditService::logComandaItemRemoved(
+                    (int) $order->id,
+                    $tableId,
+                    $itemId,
+                    $quantity,
+                    $request->reason
+                );
+
+                $order->delete();
+            });
+        } catch (\Throwable $e) {
+            \Log::error('Error eliminando ítem de comanda: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'No se pudo eliminar el ítem. Intente de nuevo.',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Producto quitado de la comanda correctamente.',
+        ];
+    }
+
+    public function cancellations(Request $request)
+    {
+        $start = $request->query('start_date');
+        $end = $request->query('end_date');
+        $perPage = (int)($request->query('per_page', 15));
+        $action = $request->query('action');
+        $query = \Modules\Restaurant\Models\RestaurantAuditLog::query()
+            ->with('user')
+            ->orderBy('created_at', 'desc');
+        if ($action) {
+            $query->where('action', $action);
+        } else {
+            $query->where('action', \Modules\Restaurant\Models\RestaurantAuditLog::actions()['comanda_item_removed']);
+        }
+        if ($start && $end) {
+            $startDate = \Carbon\Carbon::parse($start)->startOfDay();
+            $endDate = \Carbon\Carbon::parse($end)->endOfDay();
+            $query->whereBetween('created_at', [$startDate, $endDate]);
+        }
+        $paginator = $query->paginate($perPage);
+        $items = collect($paginator->items())->map(function ($log) {
+            $payload = $log->payload ?? [];
+            $itemName = null;
+            if (isset($payload['item_id'])) {
+                $item = \App\Models\Tenant\Item::find($payload['item_id']);
+                if ($item) {
+                    $itemName = $item->description;
+                }
+            }
+            return [
+                'id' => $log->id,
+                'action' => $log->action,
+                'entity_type' => $log->entity_type,
+                'entity_id' => $log->entity_id,
+                'user_id' => $log->user_id,
+                'user_name' => optional($log->user)->name,
+                'ip' => $log->ip,
+                'payload' => $payload,
+                'item_name' => $itemName,
+                'created_at' => optional($log->created_at)->toISOString(),
+                'updated_at' => optional($log->updated_at)->toISOString(),
+            ];
+        });
+        return [
+            'success' => true,
+            'data' => $items,
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+            ],
+        ];
     }
 
 }
