@@ -138,17 +138,60 @@ class RestaurantItemOrderStatusController extends Controller
         $productsStatusToDeliver = $this->getItemsByStatus(self::STATUS_TO_DELIVER, $id);
         $productsStatusDelivered = $this->getItemsByStatus(self::STATUS_DELIVERED, $id, 20, 'desc');
 
+        $allItemsRaw = $productsStatusReceived
+            ->concat($productsStatusProcessing)
+            ->concat($productsStatusToDeliver)
+            ->concat($productsStatusDelivered);
+
+        $items = $allItemsRaw->map(function (array $row) {
+            $raw = $row['raw_item'] ?? [];
+            unset($row['raw_item']);
+
+            return array_merge(
+                $raw,
+                [
+                    'order_id' => $row['id'],
+                    'item_id' => $row['item_id'],
+                    'quantity' => $row['quantity'],
+                    'note' => $row['note'],
+                    'status' => $row['status'],
+                    'status_description' => $row['status_description'],
+                    'customer_name' => $row['customer_name'],
+                    'mesa_id' => $row['mesa_id'],
+                    'mesa' => $row['mesa'],
+                    'environment_id' => $row['environment_id'],
+                    'environment' => $row['environment'],
+                    'preparation_area_id' => $row['preparation_area_id'],
+                    'preparation_area_name' => $row['preparation_area_name'],
+                    'created_at' => $row['created_at'],
+                    'updated_at' => $row['updated_at'],
+                ]
+            );
+        });
+
+        $productsStatusReceived = $productsStatusReceived->map(function (array $row) {
+            unset($row['raw_item']);
+            return $row;
+        });
+        $productsStatusProcessing = $productsStatusProcessing->map(function (array $row) {
+            unset($row['raw_item']);
+            return $row;
+        });
+        $productsStatusToDeliver = $productsStatusToDeliver->map(function (array $row) {
+            unset($row['raw_item']);
+            return $row;
+        });
+        $productsStatusDelivered = $productsStatusDelivered->map(function (array $row) {
+            unset($row['raw_item']);
+            return $row;
+        });
+
         $data = [
-            'productsStatusReceived' => $productsStatusReceived,
-            'productsStatusProcessing' => $productsStatusProcessing,
-            'productsStatusToDeliver' => $productsStatusToDeliver,
-            'productsStatusDelivered' => $productsStatusDelivered,
-            'items' => $productsStatusReceived
-                ->concat($productsStatusProcessing)
-                ->concat($productsStatusToDeliver)
-                ->concat($productsStatusDelivered)
-                ->values()
-                ->all(),
+            'productsStatusReceived' => $productsStatusReceived->values()->all(),
+            'productsStatusProcessing' => $productsStatusProcessing->values()->all(),
+            'productsStatusToDeliver' => $productsStatusToDeliver->values()->all(),
+            'productsStatusDelivered' => $productsStatusDelivered->values()->all(),
+            'items' => $items->values()->all(),
         ];
 
         return [
@@ -195,16 +238,16 @@ class RestaurantItemOrderStatusController extends Controller
 
     private function transformOrderData($order)
     {
-        $itemData = json_decode($order->item);
+        $itemData = json_decode($order->item, true) ?: [];
         $table = $order->table;
 
         return [
             'id' => $order->id,
             'item_id' => $order->item_id,
-            'name' => $itemData->name ?? null,
+            'name' => $itemData['name'] ?? null,
             'quantity' => $order->quantity,
             'note' => $order->note ?? null,
-            'modifiers_applied' => $itemData->modifiersApplied ?? [],
+            'modifiers_applied' => $itemData['modifiersApplied'] ?? [],
             'status' => $order->status,
             'status_description' => $order->status_description,
             'customer_name' => $order->customer_name,
@@ -216,6 +259,7 @@ class RestaurantItemOrderStatusController extends Controller
             'preparation_area_name' => $order->itemModel?->preparationArea?->name ?? null,
             'created_at' => $order->created_at?->toISOString(),
             'updated_at' => $order->updated_at?->toISOString(),
+            'raw_item' => $itemData,
         ];
     }
 

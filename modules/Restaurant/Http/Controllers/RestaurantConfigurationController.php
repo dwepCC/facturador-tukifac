@@ -327,7 +327,13 @@ class RestaurantConfigurationController extends Controller
     {
         $table = RestaurantTable::findOrFail($id);
         $data = $request->except(['group_id', 'is_main_table']);
-        $data['status'] = (count($data['products'] ?? []) < 1) ? ($data['status'] ?? 'available') : 'notavailable';
+        // Ignorar completamente el campo products (fuente de verdad: restaurant_item_order_statuses)
+        if (array_key_exists('products', $data)) {
+            unset($data['products']);
+        }
+        // Determinar estado de la mesa según existencia de comandas
+        $hasOrdersSnapshot = RestaurantItemOrderStatus::where('table_id', $id)->exists();
+        $data['status'] = $hasOrdersSnapshot ? 'notavailable' : ($data['status'] ?? 'available');
 
         // Aceptar y validar vinculación con venta (para permitir cierre con productos cobrados)
         if ($request->has('sale_note_id') && $request->sale_note_id) {
@@ -360,11 +366,14 @@ class RestaurantConfigurationController extends Controller
             return $this->deleteDeliveryTakeawayTable($table, $id);
         }
 
-        $closingWithProducts = (count($data['products'] ?? []) < 1);
-        $hasOrders = RestaurantItemOrderStatus::where('table_id', $id)->exists();
+        // Decidir cierre en base a flags y estado deseado, no por products
+        $hasOrders = $hasOrdersSnapshot;
+        $requestClose = (bool)($data['close'] ?? false);
+        $requestSetAvailable = isset($data['status']) && $data['status'] === 'available';
+        $closingRequested = $requestClose || ($requestSetAvailable && $hasOrders);
 
         // Protección: no cerrar mesa con comandas sin venta registrada
-        if ($closingWithProducts && $hasOrders) {
+        if ($closingRequested && $hasOrders) {
             $hasSaleNote = !empty($data['sale_note_id']) || !empty($table->sale_note_id);
             $hasDocument = !empty($data['document_id']) || !empty($table->document_id);
             $isPaid = !empty($data['is_paid']) || $table->is_paid;
@@ -385,7 +394,7 @@ class RestaurantConfigurationController extends Controller
             $data['opening_date'] = null;
         }
 
-        return DB::connection('tenant')->transaction(function () use ($table, $data, $id, $closingWithProducts) {
+        return DB::connection('tenant')->transaction(function () use ($table, $data, $id, $closingRequested) {
             $table->fill($data);
             $table->save();
 
@@ -396,7 +405,7 @@ class RestaurantConfigurationController extends Controller
                     ->update(['status' => $data['status'], 'total' => $table->total]);
             }
 
-            if ($closingWithProducts) {
+            if ($closingRequested) {
                 $ordersToRelease = RestaurantItemOrderStatus::where('table_id', $id)->get();
                 $stockService = app(RestaurantStockService::class);
 
@@ -433,6 +442,20 @@ class RestaurantConfigurationController extends Controller
                         count($orderIds)
                     );
                 }
+                // Asegurar estado disponible y limpiar campos de sesión tras el cierre
+                $table->status = 'available';
+                $table->opening_date = null;
+                $table->products = [];        // limpiar listado de productos (compatibilidad)
+                $table->total = 0.0;          // reiniciar total
+                $table->personas = 0;
+                $table->cliente = null;
+                $table->comentarios = null;
+                $table->waiter = null;
+                $table->order_status = 'pending';
+                $table->is_paid = false;
+                $table->sale_note_id = null;
+                $table->document_id = null;
+                $table->save();
             }
 
             return [

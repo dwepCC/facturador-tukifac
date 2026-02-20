@@ -362,7 +362,6 @@ class RestaurantController extends Controller
 
                 $table_destination->update([
                     'status' => $table_origin->status,
-                    'products' => $table_origin->products,
                     'total' => $table_origin->total,
                     'personas' => $table_origin->personas,
                     'cliente' => $table_origin->cliente,
@@ -375,7 +374,10 @@ class RestaurantController extends Controller
                 RestaurantItemOrderStatus::where('table_id', $tableid_origin)
                     ->update(['table_id' => $tableid_destination]);
 
-                $table_origin->update($defaultTableValues);
+                // No copiar ni mantener products en la mesa de origen (fuente de verdad: comandas)
+                $originReset = $defaultTableValues;
+                unset($originReset['products']);
+                $table_origin->update($originReset);
 
             });
 
