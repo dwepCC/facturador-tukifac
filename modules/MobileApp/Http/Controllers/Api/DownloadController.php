@@ -236,6 +236,9 @@ class DownloadController extends Controller
 
         $documentType = $document->document_type ? $document->document_type->description : '';
 
+        $currencyCode = $document->currency_type_id ?? '';
+        $currencySymbol = $document->currency_type ? $document->currency_type->symbol : '';
+
         $items = $document->items->map(function ($item) {
             $itemName = '';
             $itemCode = '';
@@ -387,14 +390,36 @@ class DownloadController extends Controller
             'due_date' => $dueDate,
             'customer' => $customer,
             'items' => $items,
+            'currency_type_id' => $currencyCode,
+            'currency_code' => $currencyCode,
+            'currency_symbol' => $currencySymbol,
             'subtotal' => (float) ($document->total_value ?? 0),
             'total_value' => (float) ($document->total_value ?? 0),
-            'taxable_operations' => (float) ($document->total_taxed ?? 0),
-            'tax' => (float) ($document->total_igv ?? 0),
-            'total_igv' => (float) ($document->total_igv ?? 0),
-            'total_taxes' => (float) ($document->total_igv ?? 0),
             'total' => (float) ($document->total ?? 0),
             'total_venta' => (float) ($document->total ?? 0),
+            'total_taxed' => (float) ($document->total_taxed ?? 0),
+            'total_exonerated' => (float) ($document->total_exonerated ?? 0),
+            'total_unaffected' => (float) ($document->total_unaffected ?? 0),
+            'total_free' => (float) ($document->total_free ?? 0),
+            'total_exportation' => (float) ($document->total_exportation ?? 0),
+            'taxable_operations' => (float) ($document->total_taxed ?? 0),
+            'exonerated_operations' => (float) ($document->total_exonerated ?? 0),
+            'unaffected_operations' => (float) ($document->total_unaffected ?? 0),
+            'free_operations' => (float) ($document->total_free ?? 0),
+            'exportation_operations' => (float) ($document->total_exportation ?? 0),
+            'tax' => (float) ($document->total_igv ?? 0),
+            'total_igv' => (float) ($document->total_igv ?? 0),
+            'total_igv_free' => (float) ($document->total_igv_free ?? 0),
+            'total_base_isc' => (float) ($document->total_base_isc ?? 0),
+            'total_isc' => (float) ($document->total_isc ?? 0),
+            'total_base_other_taxes' => (float) ($document->total_base_other_taxes ?? 0),
+            'total_other_taxes' => (float) ($document->total_other_taxes ?? 0),
+            'total_taxes' => (float) ($document->total_taxes ?? $document->total_igv ?? 0),
+            'total_plastic_bag_taxes' => (float) ($document->total_plastic_bag_taxes ?? 0),
+            'total_discount' => (float) ($document->total_discount ?? 0),
+            'total_charge' => (float) ($document->total_charge ?? 0),
+            'total_prepayment' => (float) ($document->total_prepayment ?? 0),
+            'subtotal_document' => (float) ($document->subtotal ?? 0),
             'total_in_words' => $totalInWords,
             'payment_method' => $paymentMethod,
             'paymentMethod' => $paymentMethod,
@@ -476,6 +501,9 @@ class DownloadController extends Controller
         }
 
         $documentType = 'NOTA DE VENTA';
+
+        $currencyCode = $saleNote->currency_type_id ?? '';
+        $currencySymbol = $saleNote->currency_type ? $saleNote->currency_type->symbol : '';
 
         $items = $saleNote->items->map(function ($item) {
             $itemName = '';
@@ -628,14 +656,36 @@ class DownloadController extends Controller
             'due_date' => $dueDate,
             'customer' => $customer,
             'items' => $items,
+            'currency_type_id' => $currencyCode,
+            'currency_code' => $currencyCode,
+            'currency_symbol' => $currencySymbol,
             'subtotal' => (float) ($saleNote->total_value ?? 0),
             'total_value' => (float) ($saleNote->total_value ?? 0),
-            'taxable_operations' => (float) ($saleNote->total_taxed ?? 0),
-            'tax' => (float) ($saleNote->total_igv ?? 0),
-            'total_igv' => (float) ($saleNote->total_igv ?? 0),
-            'total_taxes' => (float) ($saleNote->total_igv ?? 0),
             'total' => (float) ($saleNote->total ?? 0),
             'total_venta' => (float) ($saleNote->total ?? 0),
+            'total_taxed' => (float) ($saleNote->total_taxed ?? 0),
+            'total_exonerated' => (float) ($saleNote->total_exonerated ?? 0),
+            'total_unaffected' => (float) ($saleNote->total_unaffected ?? 0),
+            'total_free' => (float) ($saleNote->total_free ?? 0),
+            'total_exportation' => (float) ($saleNote->total_exportation ?? 0),
+            'taxable_operations' => (float) ($saleNote->total_taxed ?? 0),
+            'exonerated_operations' => (float) ($saleNote->total_exonerated ?? 0),
+            'unaffected_operations' => (float) ($saleNote->total_unaffected ?? 0),
+            'free_operations' => (float) ($saleNote->total_free ?? 0),
+            'exportation_operations' => (float) ($saleNote->total_exportation ?? 0),
+            'tax' => (float) ($saleNote->total_igv ?? 0),
+            'total_igv' => (float) ($saleNote->total_igv ?? 0),
+            'total_igv_free' => (float) ($saleNote->total_igv_free ?? 0),
+            'total_base_isc' => (float) ($saleNote->total_base_isc ?? 0),
+            'total_isc' => (float) ($saleNote->total_isc ?? 0),
+            'total_base_other_taxes' => (float) ($saleNote->total_base_other_taxes ?? 0),
+            'total_other_taxes' => (float) ($saleNote->total_other_taxes ?? 0),
+            'total_taxes' => (float) ($saleNote->total_taxes ?? $saleNote->total_igv ?? 0),
+            'total_plastic_bag_taxes' => (float) ($saleNote->total_plastic_bag_taxes ?? 0),
+            'total_discount' => (float) ($saleNote->total_discount ?? 0),
+            'total_charge' => (float) ($saleNote->total_charge ?? 0),
+            'total_prepayment' => (float) ($saleNote->total_prepayment ?? 0),
+            'subtotal_document' => (float) ($saleNote->subtotal ?? 0),
             'total_in_words' => $totalInWords,
             'payment_method' => $paymentMethod,
             'paymentMethod' => $paymentMethod,
