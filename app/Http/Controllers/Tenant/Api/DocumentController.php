@@ -15,6 +15,11 @@ use Facades\App\Http\Controllers\Tenant\DocumentController as DocumentController
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
+use App\Jobs\ProcessDocumentPdf;
+use App\Jobs\ProcessDocumentEmail;
+use Hyn\Tenancy\Environment;
+
+use App\Models\Tenant\Cash;
 
 class DocumentController extends Controller
 {
@@ -27,6 +32,14 @@ class DocumentController extends Controller
 
     public function store(Request $request)
     {
+        // Validación de caja
+        if (!$this->validationOpenCash($request)) {
+            return [
+                'success' => false,
+                'message' => 'Ocurrió un error: Caja seleccionada en métodos de pago se encuentra cerrada o no tiene una caja aperturada.'
+            ];
+        }
+
         // dd($request->all());
         $fact = DB::connection('tenant')->transaction(function () use ($request) {
             $facturalo = new Facturalo();
@@ -36,15 +49,21 @@ class DocumentController extends Controller
             $facturalo->signXmlUnsigned($service_pse_xml['xml_signed']);
             $facturalo->updateHash($service_pse_xml['hash']);
             $facturalo->updateQr();
-            $facturalo->createPdf();
+            // $facturalo->createPdf();
             $facturalo->senderXmlSignedBill($service_pse_xml['code']);
-            $facturalo->sendEmail();
+            // $facturalo->sendEmail();
 
             return $facturalo;
         });
 
         $document = $fact->getDocument();
         $response = $fact->getResponse();
+
+        // Dispatch jobs
+        $website_id = app(Environment::class)->tenant()->id;
+        ProcessDocumentPdf::withChain([
+            new ProcessDocumentEmail($document->id, $website_id)
+        ])->dispatch($document->id, $website_id);
 
         // Construir print_data según la estructura documentada
         $printData = $this->buildPrintData($document);
@@ -110,6 +129,23 @@ class DocumentController extends Controller
                 'response' => Arr::except($response, 'sent'),
             ];
         }
+    }
+
+    public function validationOpenCash($request)
+    {
+        // busca una caja chica en el array de pagos
+        if ($request->has('payments')) {
+            $find_cash = array_search('cash', array_column($request->payments, 'payment_destination_id'));
+            // si ha seleccionado una caja chica
+            if ($find_cash !== false) {
+                // no hay id de la caja seleccionada por lo que si es abierta una nueva será seleccionada como destino
+                $cash = Cash::where([['user_id', auth()->user()->id], ['state', true]])->first();
+                if (!$cash) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     public function storeServer(Request $request)
@@ -179,9 +215,9 @@ class DocumentController extends Controller
     {
         // Asegurar que las relaciones necesarias estén cargadas
         $document->load([
-            'items', 
-            'payments.payment_method_type', 
-            'person', 
+            'items',
+            'payments.payment_method_type',
+            'person',
             'document_type',
             'relation_establishment.district',
             'relation_establishment.province',
@@ -197,28 +233,7 @@ class DocumentController extends Controller
             // En Document, establishment es un atributo JSON, no una relación
             $establishment = $document->establishment; // Objeto JSON decodificado
             $establishmentModel = $document->relation_establishment; // Modelo real para datos adicionales
-            
-            // Obtener logo (igual que en el PDF)
-            $logoBase64 = null;
-            $logo = null;
-            if ($company->logo) {
-                $logo = "storage/uploads/logos/{$company->logo}";
-            }
-            // Si el establishment tiene logo, se usa ese (igual que en el PDF)
-            if ($establishment && isset($establishment->logo) && $establishment->logo) {
-                $logo = $establishment->logo;
-            }
-            
-            // Convertir logo a base64 (igual que en el PDF)
-            if ($logo && file_exists(public_path($logo))) {
-                try {
-                    $logoBase64 = base64_encode(file_get_contents(public_path($logo)));
-                } catch (\Exception $e) {
-                    // Si falla la lectura, dejar null
-                    $logoBase64 = null;
-                }
-            }
-            
+
             // Construir dirección completa como en el PDF
             $address = '';
             if ($establishment && isset($establishment->address) && $establishment->address !== '-') {
@@ -233,7 +248,7 @@ class DocumentController extends Controller
                     $address .= ' - ' . $establishmentModel->department->description;
                 }
             }
-            
+
             $companyData = [
                 'name' => $company->name ?? '',
                 'trade_name' => $company->trade_name ?? '',
@@ -244,7 +259,7 @@ class DocumentController extends Controller
                 'email' => ($establishment && isset($establishment->email) && $establishment->email !== '-') ? $establishment->email : '',
                 'web' => ($establishment && isset($establishment->web_address) && $establishment->web_address !== '-') ? $establishment->web_address : '',
                 'slogan' => ($establishment && isset($establishment->aditional_information) && $establishment->aditional_information !== '-') ? $establishment->aditional_information : '',
-                'logo' => null,//$logoBase64,
+                'logo' => null, // Ya no se devuelve el logo en base64
             ];
         }
 

@@ -39,7 +39,11 @@ use App\CoreFacturalo\Requests\Inputs\Common\PersonInput;
 use App\CoreFacturalo\Requests\Inputs\Common\EstablishmentInput;
 use App\Models\Tenant\BankAccount;
 use Illuminate\Support\Arr;
+use App\Jobs\ProcessSaleNotePdf;
+use Hyn\Tenancy\Environment;
 
+
+use App\Models\Tenant\Cash;
 
 class SaleNoteController extends Controller
 {
@@ -67,6 +71,14 @@ class SaleNoteController extends Controller
 
     public function store(Request $request)
     {
+        // Validación de caja
+        if (!$this->validationOpenCash($request)) {
+            return [
+                'success' => false,
+                'message' => 'Ocurrió un error: Caja seleccionada en métodos de pago se encuentra cerrada o no tiene una caja aperturada.'
+            ];
+        }
+
         $request['establishment_id'] = $request['establishment_id'] ? $request['establishment_id'] : auth()->user()->establishment_id;
         $force_create_if_not_exist = isset($request['force_create_if_not_exist']) ? (bool)$request['force_create_if_not_exist'] : false;
         $request['force_create_if_not_exist'] = $force_create_if_not_exist;
@@ -74,7 +86,7 @@ class SaleNoteController extends Controller
         $data = [];
         if ($request['force_create_if_not_exist']) {
             // Se saca de tenant, para que pueda guardar el item correctamente.
-            self::ExtraLog(__FILE__ . "::" . __LINE__ . "   " . __FUNCTION__ . "  \n Entra por crear " . __FUNCTION__ . " \n" . var_export($request->all(), true) . "\n\n\n\n");
+            // self::ExtraLog(__FILE__ . "::" . __LINE__ . "   " . __FUNCTION__ . "  \n Entra por crear " . __FUNCTION__ . " \n" . var_export($request->all(), true) . "\n\n\n\n");
             $data = $this->mergeData($request);
         }
 
@@ -120,8 +132,12 @@ class SaleNoteController extends Controller
             }
 
             $this->setFilename();
-            $this->createPdf($this->sale_note, 'a4', $this->sale_note->filename);
+            // $this->createPdf($this->sale_note, 'a4', $this->sale_note->filename);
         });
+
+        // Dispatch Job
+        $website_id = app(Environment::class)->tenant()->id;
+        ProcessSaleNotePdf::dispatch($this->sale_note->id, $website_id, 'a4');
 
         // Construir print_data según la estructura documentada
         $printData = $this->buildPrintData($this->sale_note);
@@ -146,6 +162,23 @@ class SaleNoteController extends Controller
             ],
             'print_data' => $printData,
         ];
+    }
+
+    public function validationOpenCash($request)
+    {
+        // busca una caja chica en el array de pagos
+        if ($request->has('payments')) {
+            $find_cash = array_search('cash', array_column($request->payments, 'payment_destination_id'));
+            // si ha seleccionado una caja chica
+            if ($find_cash !== false) {
+                // no hay id de la caja seleccionada por lo que si es abierta una nueva será seleccionada como destino
+                $cash = Cash::where([['user_id', auth()->user()->id], ['state', true]])->first();
+                if (!$cash) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     public function mergeData($inputs)
@@ -746,8 +779,8 @@ class SaleNoteController extends Controller
     {
         // Asegurar que las relaciones necesarias estén cargadas
         $saleNote->load([
-            'items', 
-            'payments.payment_method_type', 
+            'items',
+            'payments.payment_method_type',
             'person',
             'establishment.district',
             'establishment.province',
@@ -762,28 +795,7 @@ class SaleNoteController extends Controller
         if ($company) {
             // En SaleNote, establishment es una relación real
             $establishment = $saleNote->establishment;
-            
-            // Obtener logo (igual que en el PDF)
-            $logoBase64 = null;
-            $logo = null;
-            if ($company->logo) {
-                $logo = "storage/uploads/logos/{$company->logo}";
-            }
-            // Si el establishment tiene logo, se usa ese (igual que en el PDF)
-            if ($establishment && $establishment->logo) {
-                $logo = $establishment->logo;
-            }
-            
-            // Convertir logo a base64 (igual que en el PDF)
-            if ($logo && file_exists(public_path($logo))) {
-                try {
-                    $logoBase64 = base64_encode(file_get_contents(public_path($logo)));
-                } catch (\Exception $e) {
-                    // Si falla la lectura, dejar null
-                    $logoBase64 = null;
-                }
-            }
-            
+
             // Construir dirección completa como en el PDF
             $address = '';
             if ($establishment && $establishment->address && $establishment->address !== '-') {
@@ -798,7 +810,7 @@ class SaleNoteController extends Controller
                     $address .= ' - ' . $establishment->department->description;
                 }
             }
-            
+
             $companyData = [
                 'name' => $company->name ?? '',
                 'trade_name' => $company->trade_name ?? '',
@@ -809,7 +821,7 @@ class SaleNoteController extends Controller
                 'email' => ($establishment && $establishment->email && $establishment->email !== '-') ? $establishment->email : '',
                 'web' => ($establishment && $establishment->web_address && $establishment->web_address !== '-') ? $establishment->web_address : '',
                 'slogan' => ($establishment && $establishment->aditional_information && $establishment->aditional_information !== '-') ? $establishment->aditional_information : '',
-                'logo' => $logoBase64,
+                'logo' => null, // Ya no se devuelve el logo en base64
             ];
         }
 
