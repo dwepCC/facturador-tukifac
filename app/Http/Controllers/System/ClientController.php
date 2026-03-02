@@ -34,7 +34,8 @@ use App\Models\System\PlanPeriod;
     {
         public function index()
         {
-            return view('system.clients.index');
+            $plans = Plan::all();
+            return view('system.clients.index', compact('plans'));
         }
 
         public function create()
@@ -162,16 +163,67 @@ use App\Models\System\PlanPeriod;
         }
 
 public function records(Request $request)
-{
-    $records = Client::latest()->get();
-    
-    // Obtener rango de fechas exclusivo para documentos y sale_notes desde la petición
-    $documents_date_start = $request->input('documents_date_start');
-    $documents_date_end = $request->input('documents_date_end');
-    
-    foreach ($records as &$row) {
-        $tenancy = app(Environment::class);
-        $tenancy->tenant($row->hostname->website);
+    {
+        $records = Client::query();
+        
+        if ($request->filled('column')) {
+            $column = $request->column;
+            $order = $request->input('order', 'asc');
+            
+            switch ($column) {
+                case 'nombre':
+                    $records->orderBy('name', $order);
+                    break;
+                case 'ruc':
+                    $records->orderBy('number', $order);
+                    break;
+                case 'correo':
+                    $records->orderBy('email', $order);
+                    break;
+                case 'fecha_creacion':
+                    $records->orderBy('created_at', $order);
+                    break;
+                // Add more mappings if needed
+                default:
+                    // If column is not mapped, fallback to default sort
+                    $records->latest();
+                    break;
+            }
+        } else {
+            $records->latest();
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $records->where(function($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('number', 'like', "%{$search}%")
+                      ->orWhereHas('hostname', function($h) use ($search) {
+                          $h->where('fqdn', 'like', "%{$search}%");
+                      });
+            });
+        }
+
+        if ($request->filled('plan_id')) {
+            $records->where('plan_id', $request->input('plan_id'));
+        }
+
+        if ($request->filled('locked_tenant')) {
+            $records->where('locked_tenant', (bool)$request->input('locked_tenant'));
+        }
+        
+        // Obtener rango de fechas exclusivo para documentos y sale_notes desde la petición
+        $documents_date_start = $request->input('documents_date_start');
+        $documents_date_end = $request->input('documents_date_end');
+
+        // Paginación
+        $limit = $request->input('limit', 20);
+        $records = $records->paginate($limit);
+        
+        foreach ($records as &$row) {
+            $tenancy = app(Environment::class);
+            $tenancy->tenant($row->hostname->website);
 
         // Contador mensual actual (calendario)
         $current_day = Carbon::now();
@@ -216,6 +268,8 @@ public function records(Request $request)
         $row->document_regularize_shipping = $quantity_pending_documents['document_regularize_shipping'];
         $row->document_not_sent = $quantity_pending_documents['document_not_sent'];
         $row->document_to_be_canceled = $quantity_pending_documents['document_to_be_canceled'];
+        $row->document_rejected = $quantity_pending_documents['document_rejected'];
+        $row->document_observed = $quantity_pending_documents['document_observed'];
         $row->monthly_sales_total = 0;
 
         // Si tiene ciclo de facturación personalizado
@@ -315,15 +369,17 @@ public function records(Request $request)
 
 
         private function getQuantityPendingDocuments()
-        {
+    {
 
-            return [
-                'document_regularize_shipping' => DB::connection('tenant')->table('documents')->where('state_type_id', '01')->where('regularize_shipping', true)->count(),
-                'document_not_sent' => DB::connection('tenant')->table('documents')->whereIn('state_type_id', ['01', '03'])->where('date_of_issue', '<=', date('Y-m-d'))->count(),
-                'document_to_be_canceled' => DB::connection('tenant')->table('documents')->where('state_type_id', '13')->count(),
-            ];
+        return [
+            'document_regularize_shipping' => DB::connection('tenant')->table('documents')->where('state_type_id', '01')->where('regularize_shipping', true)->count(),
+            'document_not_sent' => DB::connection('tenant')->table('documents')->whereIn('state_type_id', ['01', '03'])->where('date_of_issue', '<=', date('Y-m-d'))->count(),
+            'document_to_be_canceled' => DB::connection('tenant')->table('documents')->where('state_type_id', '13')->count(),
+            'document_rejected' => DB::connection('tenant')->table('documents')->where('state_type_id', '09')->count(),
+            'document_observed' => DB::connection('tenant')->table('documents')->where('state_type_id', '07')->count(),
+        ];
 
-        }
+    }
 
 
         public function record($id)
