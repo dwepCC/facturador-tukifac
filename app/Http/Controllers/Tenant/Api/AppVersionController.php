@@ -13,7 +13,7 @@ class AppVersionController extends Controller
             "android" => [
                 "min_version" => "1.0.8",
                 "latest_version" => "1.1.0",
-                "store_url" => "https://play.google.com/store/apps/details?id=com.tukifac.app",
+                "store_url" => "https://play.google.com/store/apps/details?id=com.tukifacapp",
                 "release_notes" => "Mejoras de seguridad y nuevas funciones. Es necesario actualizar."
             ],
             "windows" => [
