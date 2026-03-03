@@ -7,6 +7,9 @@ Route::get('generate_token', 'Tenant\Api\MobileController@getSeries');
 $hostname = app(Hyn\Tenancy\Contracts\CurrentHostname::class);
 if ($hostname) {
     Route::domain($hostname->fqdn)->group(function () {
+        Route::get('version/tukifac', 'Tenant\Api\AppVersionController@tukifac');
+        Route::get('version/tukichef', 'Tenant\Api\AppVersionController@tukichef');
+
         Route::post('configurations/default-image', [ConfigurationImageController::class, 'upload']);
         Route::post('login', 'Tenant\Api\MobileController@login');
 

@@ -52,7 +52,16 @@ class ProcessDocumentPdf implements ShouldQueue
         try {
             $facturalo = new Facturalo();
             $facturalo->setDocument($document);
-            $facturalo->createPdf();
+
+            $type = 'invoice';
+            if ($document->document_type_id === '07') {
+                $type = 'credit';
+            }
+            if ($document->document_type_id === '08') {
+                $type = 'debit';
+            }
+
+            $facturalo->createPdf($document, $type, 'a4');
         } catch (\Exception $e) {
             Log::error("Error generating PDF for document {$this->document_id}: " . $e->getMessage());
         }

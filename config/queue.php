@@ -39,6 +39,8 @@ return [
             'table' => 'jobs',
             'queue' => 'default',
             'retry_after' => 90,
+            'after_commit' => false, // Nuevo
+            'delete_when_expired' => true, // Nuevo
         ],
 
         'beanstalkd' => [
