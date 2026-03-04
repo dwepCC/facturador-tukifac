@@ -2,6 +2,6 @@
 
 @section('content')
 
-    <system-clients-index :plans='@json($plans)'></system-clients-index>
+    <system-clients-index></system-clients-index>
 
 @endsection

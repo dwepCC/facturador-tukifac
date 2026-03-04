@@ -34,8 +34,7 @@ use App\Models\System\PlanPeriod;
     {
         public function index()
         {
-            $plans = Plan::all();
-            return view('system.clients.index', compact('plans'));
+            return view('system.clients.index');
         }
 
         public function create()
@@ -163,67 +162,16 @@ use App\Models\System\PlanPeriod;
         }
 
 public function records(Request $request)
-    {
-        $records = Client::query();
-        
-        if ($request->filled('column')) {
-            $column = $request->column;
-            $order = $request->input('order', 'asc');
-            
-            switch ($column) {
-                case 'nombre':
-                    $records->orderBy('name', $order);
-                    break;
-                case 'ruc':
-                    $records->orderBy('number', $order);
-                    break;
-                case 'correo':
-                    $records->orderBy('email', $order);
-                    break;
-                case 'fecha_creacion':
-                    $records->orderBy('created_at', $order);
-                    break;
-                // Add more mappings if needed
-                default:
-                    // If column is not mapped, fallback to default sort
-                    $records->latest();
-                    break;
-            }
-        } else {
-            $records->latest();
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $records->where(function($query) use ($search) {
-                $query->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('number', 'like', "%{$search}%")
-                      ->orWhereHas('hostname', function($h) use ($search) {
-                          $h->where('fqdn', 'like', "%{$search}%");
-                      });
-            });
-        }
-
-        if ($request->filled('plan_id')) {
-            $records->where('plan_id', $request->input('plan_id'));
-        }
-
-        if ($request->filled('locked_tenant')) {
-            $records->where('locked_tenant', (bool)$request->input('locked_tenant'));
-        }
-        
-        // Obtener rango de fechas exclusivo para documentos y sale_notes desde la petición
-        $documents_date_start = $request->input('documents_date_start');
-        $documents_date_end = $request->input('documents_date_end');
-
-        // Paginación
-        $limit = $request->input('limit', 20);
-        $records = $records->paginate($limit);
-        
-        foreach ($records as &$row) {
-            $tenancy = app(Environment::class);
-            $tenancy->tenant($row->hostname->website);
+{
+    $records = Client::latest()->get();
+    
+    // Obtener rango de fechas exclusivo para documentos y sale_notes desde la petición
+    $documents_date_start = $request->input('documents_date_start');
+    $documents_date_end = $request->input('documents_date_end');
+    
+    foreach ($records as &$row) {
+        $tenancy = app(Environment::class);
+        $tenancy->tenant($row->hostname->website);
 
         // Contador mensual actual (calendario)
         $current_day = Carbon::now();
@@ -369,7 +317,7 @@ public function records(Request $request)
 
 
         private function getQuantityPendingDocuments()
-    {
+        {
 
         return [
             'document_regularize_shipping' => DB::connection('tenant')->table('documents')->where('state_type_id', '01')->where('regularize_shipping', true)->count(),
@@ -379,7 +327,7 @@ public function records(Request $request)
             'document_observed' => DB::connection('tenant')->table('documents')->where('state_type_id', '07')->count(),
         ];
 
-    }
+        }
 
 
         public function record($id)

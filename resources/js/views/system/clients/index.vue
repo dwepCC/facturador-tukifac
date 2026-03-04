@@ -310,10 +310,10 @@
                                 @change="applyFilters">
                                 <el-option label="Todos" value=""></el-option>
                                 <el-option 
-                                    v-for="plan in plans" 
-                                    :key="plan.id" 
-                                    :label="plan.name" 
-                                    :value="plan.id">
+                                    v-for="plan in availablePlans" 
+                                    :key="plan" 
+                                    :label="plan" 
+                                    :value="plan">
                                 </el-option>
                             </el-select>
                         </div>
@@ -441,9 +441,6 @@
                                     <i class="fas fa-sort-down" v-if="sorting.column === 'notificaciones' && sorting.direction === 'desc'"></i>
                                 </span>
                             </th>
-                            <th v-if="columns.otras_notificaciones.visible" class="text-center">
-                                Otras Notificaciones
-                            </th>
                             <th v-if="columns.inicio_ciclo.visible" class="text-end">Inicio <br>Ciclo Facturacion</th>
                             <th v-if="columns.comprobantes_ciclo.visible" class="text-center sortable-header" @click="sortBy('comprobantes_ciclo')">
                                 Comprobantes<br>Ciclo Facturacion
@@ -509,7 +506,6 @@
                                 <td v-if="columns.entorno.visible"><div class="shimmer-wrapper"></div></td>
                                 <td v-if="columns.total_comprobantes.visible"><div class="shimmer-wrapper"></div></td>
                                 <td v-if="columns.notificaciones.visible"><div class="shimmer-wrapper"></div></td>
-                                <td v-if="columns.otras_notificaciones.visible"><div class="shimmer-wrapper"></div></td>
                                 <td v-if="columns.inicio_ciclo.visible"><div class="shimmer-wrapper"></div></td>
                                 <td v-if="columns.comprobantes_ciclo.visible"><div class="shimmer-wrapper"></div></td>
                                 <td v-if="columns.usuarios.visible"><div class="shimmer-wrapper"></div></td>
@@ -565,7 +561,7 @@
                             </td>
 
                             <td v-if="columns.notificaciones.visible" class="d-flex justify-content-center">
-                                <template v-if="row.document_not_sent > 0 || row.document_regularize_shipping > 0 || row.document_to_be_canceled > 0">
+                                <template v-if="row.document_not_sent > 0 || row.document_to_be_regularized > 0 || row.document_to_be_canceled > 0">
                                     <el-tooltip
                                         class="item"
                                         content="Comprobantes enviados / por enviar"
@@ -586,7 +582,7 @@
                                         effect="dark"
                                         placement="top-start">
                                         <el-badge
-                                            v-if="row.document_regularize_shipping > 0"
+                                            v-if="row.document_to_be_regularized > 0"
                                             :value="row.document_regularize_shipping"
                                             class="item mx-2"
                                             :type="row.document_regularize_shipping == 0 ? 'primary' : 'danger'">
@@ -614,43 +610,6 @@
                                     <span class="text-muted small d-flex align-items-center">
                                         Todo OK
                                         <svg  xmlns="http://www.w3.org/2000/svg"  width="18"  height="18"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-circle-check ms-1 text-success"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
-                                    </span>
-                                </template>
-                            </td>
-
-                            <td v-if="columns.otras_notificaciones.visible" class="text-center">
-                                <template v-if="row.document_rejected > 0 || row.document_observed > 0">
-                                    <el-tooltip
-                                        class="item"
-                                        content="Comprobantes rechazados"
-                                        effect="dark"
-                                        placement="top-start">
-                                        <el-badge
-                                            v-if="row.document_rejected > 0"
-                                            :value="row.document_rejected"
-                                            class="item mx-2"
-                                            type="danger">
-                                            <i class="fas fa-ban text-secondary"></i>
-                                        </el-badge>
-                                    </el-tooltip>
-
-                                    <el-tooltip
-                                        class="item"
-                                        content="Comprobantes observados"
-                                        effect="dark"
-                                        placement="top-start">
-                                        <el-badge
-                                            v-if="row.document_observed > 0"
-                                            :value="row.document_observed"
-                                            class="item mx-2"
-                                            type="warning">
-                                            <i class="fas fa-eye text-secondary"></i>
-                                        </el-badge>
-                                    </el-tooltip>
-                                </template>
-                                <template v-else>
-                                    <span class="text-muted small">
-                                        -
                                     </span>
                                 </template>
                             </td>
@@ -877,7 +836,7 @@
                         </tr>
                         
                         <!-- Fila cuando no hay resultados -->
-                        <tr v-if="!loading && records.length === 0">
+                        <tr v-if="filteredRecords.length === 0 && records.length > 0">
                             <td colspan="20" class="text-center py-4">
                                 <div class="text-muted">
                                     <svg  xmlns="http://www.w3.org/2000/svg"  width="30"  height="30" style="opacity: 0.5;"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-search"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
@@ -938,7 +897,7 @@
                                     @current-change="changePage"
                                     :current-page="pagination.currentPage"
                                     :page-size="pagination.itemsPerPage"
-                                    :total="totalRecords"
+                                    :total="filteredRecords.length"
                                     layout="prev, pager, next"
                                     :hide-on-single-page="false"
                                     small>
@@ -1101,7 +1060,6 @@ export default {
         changeable
     ],
     props: [
-        'plans',
         'deletePermission',
         'discUsed',
         'iUsed',
@@ -1135,7 +1093,6 @@ export default {
             chartDataLoaded: false,
             year: moment().format('YYYY'),
             total_documents: 0,
-            totalRecords: 0,
             filters: {
                 entorno: "",
                 plan: "",
@@ -1209,10 +1166,6 @@ export default {
                 },
                 notificaciones: {
                     title: 'Notificaciones',
-                    visible: true
-                },
-                otras_notificaciones: {
-                    title: 'Otras Notificaciones',
                     visible: true
                 },
                 inicio_ciclo: {
@@ -1328,25 +1281,79 @@ export default {
     },
     computed: {
         filteredRecords() {
-            return this.records;
+            let filtered = this.records;
+
+            // Filtro por búsqueda de texto
+            if (this.searchQuery) {
+                const query = this.searchQuery.toLowerCase();
+                filtered = filtered.filter((row) => {
+                    return (
+                        (row.name && row.name.toLowerCase().includes(query)) ||
+                        (row.hostname && row.hostname.toLowerCase().includes(query)) ||
+                        (row.email && row.email.toLowerCase().includes(query)) ||
+                        (row.number && row.number.toLowerCase().includes(query))
+                    );
+                });
+            }
+
+            // Filtro por entorno
+            if (this.filters.entorno) {
+                filtered = filtered.filter((row) => {
+                    return row.soap_type === this.filters.entorno;
+                });
+            }
+
+            // Filtro por plan
+            if (this.filters.plan) {
+                filtered = filtered.filter((row) => {
+                    return row.plan === this.filters.plan;
+                });
+            }
+
+            // Filtro por estado de bloqueo
+            if (this.filters.bloqueo !== "") {
+                filtered = filtered.filter((row) => {
+                    const isBlocked = Boolean(row.locked_tenant);
+                    
+                    if (this.filters.bloqueo === "1") {
+                        return isBlocked; // Bloqueados
+                    } else if (this.filters.bloqueo === "0") {
+                        return !isBlocked; // Activos
+                    }
+                    return true;
+                });
+            }
+
+            // Aplicar ordenamiento si hay una columna seleccionada
+            if (this.sorting.column) {
+                filtered = this.sortRecords(filtered, this.sorting.column, this.sorting.direction);
+            }
+
+            return filtered;
         },
         // Registros paginados para mostrar en la tabla
         paginatedRecords() {
-            return this.records;
+            const start = (this.pagination.currentPage - 1) * this.pagination.itemsPerPage;
+            const end = start + this.pagination.itemsPerPage;
+            return this.filteredRecords.slice(start, end);
         },
         // Total de páginas
         totalPages() {
-            return Math.ceil(this.totalRecords / this.pagination.itemsPerPage);
+            return Math.ceil(this.filteredRecords.length / this.pagination.itemsPerPage);
         },
         // Información de paginación
         paginationInfo() {
             const start = (this.pagination.currentPage - 1) * this.pagination.itemsPerPage + 1;
-            const end = Math.min(start + this.records.length - 1, this.totalRecords);
+            const end = Math.min(start + this.pagination.itemsPerPage - 1, this.filteredRecords.length);
             return {
-                start: this.totalRecords > 0 ? start : 0,
+                start: this.filteredRecords.length > 0 ? start : 0,
                 end: end,
-                total: this.totalRecords
+                total: this.filteredRecords.length
             };
+        },
+        availablePlans() {
+            const plans = [...new Set(this.records.map(record => record.plan).filter(plan => plan))];
+            return plans.sort();
         },
         columnsComputed: function () {
             return this.columns;
@@ -1391,27 +1398,32 @@ export default {
         loadColumnVisibility() {
             const savedColumns = localStorage.getItem('columnVisibilityClients');
             if (savedColumns) {
-                const parsed = JSON.parse(savedColumns);
-                Object.keys(parsed).forEach(key => {
-                    if (this.columns[key]) {
-                        this.columns[key].visible = parsed[key].visible;
-                    }
-                });
+                this.columns = JSON.parse(savedColumns);
             }
         },
         applyFilters() {
+            console.log('Filtros aplicados:', this.filters);
+            
+            // Resetear a la primera página cuando se aplican filtros
             this.pagination.currentPage = 1;
-            this.getData();
+            
+            this.$nextTick(() => {
+                const totalRecords = this.records.length;
+                const filteredCount = this.filteredRecords.length;
+                
+                if (this.filters.bloqueo !== "" && filteredCount === 0) {
+                    const filterType = this.filters.bloqueo === "1" ? "bloqueados" : "activos";
+                    console.log(`No se encontraron clientes ${filterType} de un total de ${totalRecords} registros`);
+                }
+            });
         },
         // Métodos para paginación
         changePage(page) {
             this.pagination.currentPage = page;
-            this.getData();
         },
         changeItemsPerPage() {
             // Resetear a la primera página cuando se cambia el número de elementos por página
             this.pagination.currentPage = 1;
-            this.getData();
         },
         // Métodos para ordenamiento
         sortBy(column) {
@@ -1423,7 +1435,8 @@ export default {
                 this.sorting.column = column;
                 this.sorting.direction = 'asc';
             }
-            this.getData();
+            // Resetear a la primera página cuando se ordena
+            this.pagination.currentPage = 1;
         },
         sortRecords(records, column, direction) {
             return [...records].sort((a, b) => {
@@ -1436,10 +1449,10 @@ export default {
                         break;
                     case 'notificaciones':
                         valueA = (parseInt(a.document_not_sent) || 0) + 
-                                (parseInt(a.document_regularize_shipping) || 0) + 
+                                (parseInt(a.document_to_be_regularized) || 0) + 
                                 (parseInt(a.document_to_be_canceled) || 0);
                         valueB = (parseInt(b.document_not_sent) || 0) + 
-                                (parseInt(b.document_regularize_shipping) || 0) + 
+                                (parseInt(b.document_to_be_regularized) || 0) + 
                                 (parseInt(b.document_to_be_canceled) || 0);
                         break;
                     case 'comprobantes_ciclo':
@@ -1474,8 +1487,8 @@ export default {
             this.filters.plan = "";
             this.filters.bloqueo = "";
             this.searchQuery = "";
+            // Resetear paginación al limpiar filtros
             this.pagination.currentPage = 1;
-            this.getData();
         },
         // Métodos para filtro de fechas (legacy - no se usa actualmente)
         onDateFilterChange() {
@@ -1748,15 +1761,7 @@ export default {
         getData() {
             this.loading = true;
             // Construir parámetros para la petición
-            let params = {
-                page: this.pagination.currentPage,
-                limit: this.pagination.itemsPerPage,
-                search: this.searchQuery,
-                plan_id: this.filters.plan,
-                locked_tenant: this.filters.bloqueo,
-                column: this.sorting.column,
-                order: this.sorting.direction === 'asc' ? 'asc' : 'desc'
-            };
+            let params = {};
             
             // Agregar parámetros de fecha para documentos y notas de venta si están aplicados
             if (this.documentsDateFilters.appliedStartDate && this.documentsDateFilters.appliedEndDate) {
@@ -1766,10 +1771,8 @@ export default {
             
             this.$http.get(`/${this.resource}/records`, { params }).then(response => {
                 this.records = response.data.data;
-                this.totalRecords = response.data.meta.total;
-                // Actualizar paginación con datos del backend
-                this.pagination.currentPage = response.data.meta.current_page;
-                this.pagination.itemsPerPage = parseInt(response.data.meta.per_page);
+                console.log('Datos recibidos:', this.records);
+                console.log('Parámetros enviados:', params);
             }).catch(error => {
                 console.error('Error al obtener datos:', error);
                 this.$message.error('Error al cargar los datos');
