@@ -441,6 +441,9 @@
                                     <i class="fas fa-sort-down" v-if="sorting.column === 'notificaciones' && sorting.direction === 'desc'"></i>
                                 </span>
                             </th>
+                            <th v-if="columns.otras_notificaciones.visible" class="text-center">
+                                Otras Notificaciones
+                            </th>
                             <th v-if="columns.inicio_ciclo.visible" class="text-end">Inicio <br>Ciclo Facturacion</th>
                             <th v-if="columns.comprobantes_ciclo.visible" class="text-center sortable-header" @click="sortBy('comprobantes_ciclo')">
                                 Comprobantes<br>Ciclo Facturacion
@@ -611,6 +614,38 @@
                                         Todo OK
                                         <svg  xmlns="http://www.w3.org/2000/svg"  width="18"  height="18"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-circle-check ms-1 text-success"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
                                     </span>
+                                </template>
+                            </td>
+
+                            <td v-if="columns.otras_notificaciones.visible" class="text-center">
+                                <template v-if="row.document_rejected > 0 || row.document_observed > 0">
+                                    <el-tooltip
+                                        class="item"
+                                        content="Comprobantes rechazados"
+                                        effect="dark"
+                                        placement="top-start">
+                                        <el-badge
+                                            v-if="row.document_rejected > 0"
+                                            :value="row.document_rejected"
+                                            class="item mx-2"
+                                            :type="row.document_rejected == 0 ? 'primary' : 'danger'">
+                                            <i class="fas fa-ban text-secondary"></i>
+                                        </el-badge>
+                                    </el-tooltip>
+                                    
+                                    <el-tooltip
+                                        class="item"
+                                        content="Comprobantes observados"
+                                        effect="dark"
+                                        placement="top-start">
+                                        <el-badge
+                                            v-if="row.document_observed > 0"
+                                            :value="row.document_observed"
+                                            class="item mx-2"
+                                            :type="row.document_observed == 0 ? 'primary' : 'warning'">
+                                            <i class="fas fa-search text-secondary"></i>
+                                        </el-badge>
+                                    </el-tooltip>
                                 </template>
                             </td>
 
@@ -1168,9 +1203,13 @@ export default {
                     title: 'Notificaciones',
                     visible: true
                 },
+                otras_notificaciones: {
+                    title: 'Otras Notificaciones',
+                    visible: true
+                },
                 inicio_ciclo: {
-                    title: 'Inicio Ciclo Facturación',
-                    visible: false
+                    title: 'Inicio Ciclo Facturacion',
+                    visible: true
                 },
                 comprobantes_ciclo: {
                     title: 'Comprobantes Ciclo Facturación',
@@ -1398,7 +1437,31 @@ export default {
         loadColumnVisibility() {
             const savedColumns = localStorage.getItem('columnVisibilityClients');
             if (savedColumns) {
-                this.columns = JSON.parse(savedColumns);
+                try {
+                    const parsedColumns = JSON.parse(savedColumns);
+                    // Merge saved columns with default columns to ensure new columns exist
+                    
+                    // Get default columns from the component's data option
+                    const defaultColumns = this.$options.data().columns;
+                    
+                    // Iterate over default columns to ensure they exist and have valid properties
+                    Object.keys(defaultColumns).forEach(key => {
+                        if (!parsedColumns[key]) {
+                            // If the column is new (not in saved localStorage), use default
+                            this.columns[key] = defaultColumns[key];
+                        } else {
+                            // If it exists in saved, we still need to ensure structure is correct
+                            // We start with default to get new properties, then overwrite with saved visibility
+                            this.columns[key] = {
+                                ...defaultColumns[key],
+                                visible: parsedColumns[key].visible !== undefined ? parsedColumns[key].visible : defaultColumns[key].visible
+                            };
+                        }
+                    });
+                } catch (e) {
+                    console.error('Error loading column visibility:', e);
+                    // If error, reset to defaults (which are already set in data())
+                }
             }
         },
         applyFilters() {
@@ -1470,6 +1533,14 @@ export default {
                     case 'ventas_mes':
                         valueA = parseFloat(a.monthly_sales_total) || 0;
                         valueB = parseFloat(b.monthly_sales_total) || 0;
+                        break;
+                    case 'notas_venta':
+                        valueA = parseInt(a.count_sales_notes) || 0;
+                        valueB = parseInt(b.count_sales_notes) || 0;
+                        break;
+                    case 'otras_notificaciones':
+                        valueA = (parseInt(a.document_rejected) || 0) + (parseInt(a.document_observed) || 0);
+                        valueB = (parseInt(b.document_rejected) || 0) + (parseInt(b.document_observed) || 0);
                         break;
                     default:
                         return 0;
@@ -1883,6 +1954,7 @@ export default {
                     { key: 'entorno', title: 'Entorno', visible: this.columns.entorno.visible },
                     { key: 'total_comprobantes', title: 'Total de Comprobantes', visible: this.columns.total_comprobantes.visible },
                     { key: 'notificaciones', title: 'Notificaciones', visible: this.columns.notificaciones.visible },
+                    { key: 'otras_notificaciones', title: 'Otras Notificaciones', visible: this.columns.otras_notificaciones.visible },
                     { key: 'inicio_ciclo', title: 'Inicio Ciclo Facturación', visible: this.columns.inicio_ciclo.visible },
                     { key: 'comprobantes_ciclo', title: 'Comprobantes Ciclo Facturación', visible: this.columns.comprobantes_ciclo.visible },
                     { key: 'usuarios', title: 'Usuarios', visible: this.columns.usuarios.visible },
@@ -1948,6 +2020,11 @@ export default {
                                 const toCancel = parseInt(row.document_to_be_canceled) || 0;
                                 const total = notSent + toRegularize + toCancel;
                                 value = total > 0 ? `Por enviar: ${notSent}, Rectificar: ${toRegularize}, Anular: ${toCancel}` : 'Todo OK';
+                                break;
+                            case 'otras_notificaciones':
+                                const rejected = parseInt(row.document_rejected) || 0;
+                                const observed = parseInt(row.document_observed) || 0;
+                                value = (rejected > 0 || observed > 0) ? `Rechazados: ${rejected}, Observados: ${observed}` : 'Todo OK';
                                 break;
                             case 'inicio_ciclo':
                                 value = row.start_billing_cycle || '';

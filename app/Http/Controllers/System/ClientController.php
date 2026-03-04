@@ -193,10 +193,17 @@ public function records(Request $request)
             ->where('send_to_pse', true)
             ->count();
 
-        $row->count_doc = DB::connection('tenant')
-            ->table('configurations')
-            ->first()
-            ->quantity_documents;
+        if ($documents_date_start && $documents_date_end) {
+            $row->count_doc = DB::connection('tenant')
+                ->table('documents')
+                ->whereBetween('date_of_issue', [$documents_date_start, $documents_date_end])
+                ->count();
+        } else {
+            $row->count_doc = DB::connection('tenant')
+                ->table('configurations')
+                ->first()
+                ->quantity_documents;
+        }
         
         $row->soap_type = DB::connection('tenant')
             ->table('companies')
@@ -207,12 +214,19 @@ public function records(Request $request)
             ->table('users')
             ->count();
         
-        $row->count_sales_notes = DB::connection('tenant')
-            ->table('configurations')
-            ->first()
-            ->quantity_sales_notes;
+        if ($documents_date_start && $documents_date_end) {
+            $row->count_sales_notes = DB::connection('tenant')
+                ->table('sale_notes')
+                ->whereBetween('date_of_issue', [$documents_date_start, $documents_date_end])
+                ->count();
+        } else {
+            $row->count_sales_notes = DB::connection('tenant')
+                ->table('configurations')
+                ->first()
+                ->quantity_sales_notes;
+        }
         
-        $quantity_pending_documents = $this->getQuantityPendingDocuments();
+        $quantity_pending_documents = $this->getQuantityPendingDocuments($documents_date_start, $documents_date_end);
         $row->document_regularize_shipping = $quantity_pending_documents['document_regularize_shipping'];
         $row->document_not_sent = $quantity_pending_documents['document_not_sent'];
         $row->document_to_be_canceled = $quantity_pending_documents['document_to_be_canceled'];
@@ -316,17 +330,29 @@ public function records(Request $request)
         }
 
 
-        private function getQuantityPendingDocuments()
+        private function getQuantityPendingDocuments($start = null, $end = null)
         {
+            $regularize = DB::connection('tenant')->table('documents')->where('state_type_id', '01')->where('regularize_shipping', true);
+            $not_sent = DB::connection('tenant')->table('documents')->whereIn('state_type_id', ['01', '03'])->where('date_of_issue', '<=', date('Y-m-d'));
+            $to_be_canceled = DB::connection('tenant')->table('documents')->where('state_type_id', '13');
+            $rejected = DB::connection('tenant')->table('documents')->where('state_type_id', '09');
+            $observed = DB::connection('tenant')->table('documents')->where('state_type_id', '07');
 
-        return [
-            'document_regularize_shipping' => DB::connection('tenant')->table('documents')->where('state_type_id', '01')->where('regularize_shipping', true)->count(),
-            'document_not_sent' => DB::connection('tenant')->table('documents')->whereIn('state_type_id', ['01', '03'])->where('date_of_issue', '<=', date('Y-m-d'))->count(),
-            'document_to_be_canceled' => DB::connection('tenant')->table('documents')->where('state_type_id', '13')->count(),
-            'document_rejected' => DB::connection('tenant')->table('documents')->where('state_type_id', '09')->count(),
-            'document_observed' => DB::connection('tenant')->table('documents')->where('state_type_id', '07')->count(),
-        ];
+            if ($start && $end) {
+                $regularize->whereBetween('date_of_issue', [$start, $end]);
+                $not_sent->whereBetween('date_of_issue', [$start, $end]);
+                $to_be_canceled->whereBetween('date_of_issue', [$start, $end]);
+                $rejected->whereBetween('date_of_issue', [$start, $end]);
+                $observed->whereBetween('date_of_issue', [$start, $end]);
+            }
 
+            return [
+                'document_regularize_shipping' => $regularize->count(),
+                'document_not_sent' => $not_sent->count(),
+                'document_to_be_canceled' => $to_be_canceled->count(),
+                'document_rejected' => $rejected->count(),
+                'document_observed' => $observed->count(),
+            ];
         }
 
 
