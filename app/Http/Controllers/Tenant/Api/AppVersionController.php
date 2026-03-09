@@ -18,7 +18,7 @@ class AppVersionController extends Controller
             "windows" => [
                 "min_version" => "1.1.2",
                 "latest_version" => "1.1.2",
-                "download_url" => "https://drive.google.com/file/d/15oqLet6uBPrvxz0jHE81fzVdxGlSCUUW/view?usp=drive_link",
+                "download_url" => "https://drive.google.com/file/d/1uETRND-lGQ-LbV3CK490-foewd2pSw7f/view?usp=drive_link",
                 "release_notes" => "Correcciones críticas para Windows y nuevas funciones de impresión."
             ]
         ]);
