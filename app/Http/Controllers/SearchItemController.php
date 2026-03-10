@@ -254,32 +254,30 @@
 
             if (!empty($input)) {
 
-                $whereItem[] = ['description', 'like', '%' . str_replace(' ','%',$input) . '%'];
-                $whereItem[] = ['internal_id', 'like', '%' . $input . '%'];
-                $whereItem[] = ['barcode', '=', $input];
-                $whereExtra[] = ['name', 'like', '%' .  str_replace(' ','%',$input) . '%'];
+                $input_value = trim((string)$input);
+                $search_values = preg_split('/\s+/', $input_value, -1, PREG_SPLIT_NO_EMPTY);
+                $input_lower = mb_strtolower($input_value, 'UTF-8');
 
-                if($search_factory_code_items) $whereItem[] = ['factory_code', 'like', '%' . $input . '%'];
+                $item->where(function($q) use ($search_values, $input_value, $input_lower, $search_factory_code_items) {
+                    $q->where(function($qq) use ($search_values) {
+                        foreach ($search_values as $search_value) {
+                            $search_value = mb_strtolower($search_value, 'UTF-8');
+                            $qq->where(function($qqq) use ($search_value) {
+                                $qqq->whereRaw('LOWER(description) LIKE ?', ["%{$search_value}%"])
+                                    ->orWhereRaw('LOWER(name) LIKE ?', ["%{$search_value}%"]);
+                            });
+                        }
+                    });
 
-                foreach ($whereItem as $index => $wItem) {
-                    if ($index < 1) {
-                        $item->Where([$wItem]);
-                    } else {
-                        $item->orWhere([$wItem]);
+                    $q->orWhereRaw('LOWER(internal_id) LIKE ?', ["%{$input_lower}%"])
+                        ->orWhere('barcode', $input_value);
+
+                    if ($search_factory_code_items) {
+                        $q->orWhereRaw('LOWER(factory_code) LIKE ?', ["%{$input_lower}%"]);
                     }
-                }
 
-                // if (!empty($whereExtra)) {
-                //     $item
-                //         ->orWhereHas('brand', function ($query) use ($whereExtra) {
-                //             $query->where($whereExtra);
-                //         })
-                //         ->orWhereHas('category', function ($query) use ($whereExtra) {
-                //             $query->where($whereExtra);
-                //         });
-                // }
-
-                $item->OrWhereJsonContains('attributes', ['value' => $input]);
+                    $q->orWhereJsonContains('attributes', ['value' => $input_value]);
+                });
                 //  Limita los resultados de busqueda, inicial 250, puede modificarse en el .env con NUMBER_SEARCH_ITEMS
                 $item->take(\Config('extra.number_items_in_search'));
 

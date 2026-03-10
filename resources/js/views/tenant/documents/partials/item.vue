@@ -106,11 +106,10 @@
                                             v-model="form.item_id"
                                             :disabled="recordItem != null"
                                             :loading="loading_search"
-                                            :remote-method="searchRemoteItems"
+                                            :filter-method="searchRemoteItems"
                                             filterable
                                             placeholder="Buscar"
                                             popper-class="el-select-items"
-                                            remote
                                             :tabindex="'1'"
                                             @change="changeItem"
                                             @focus="focusSelectItem"
@@ -167,11 +166,10 @@
                                             v-model="form.item_id"
                                             :disabled="recordItem != null"
                                             :loading="loading_search"
-                                            :remote-method="searchRemoteItems"
+                                            :filter-method="searchRemoteItems"
                                             filterable
                                             placeholder="Buscar"
                                             popper-class="el-select-items"
-                                            remote
                                             value-key="id"
                                             @change="changeItem"
                                         >

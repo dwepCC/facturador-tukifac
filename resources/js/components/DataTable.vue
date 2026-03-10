@@ -69,7 +69,7 @@
                                 v-model="search.value"
                                 style="width: 100%;"
                                 prefix-icon="el-icon-search"
-                                @input="getRecords"
+                                @input="handleSearchInput"
                             >
                             </el-input>
                         </template>
@@ -283,6 +283,11 @@ export default {
             type: Object,
             required: false,
             default: null
+        },
+        minSearchLength: {
+            type: Number,
+            required: false,
+            default: 1
         }
     },
     data() {
@@ -380,6 +385,23 @@ export default {
         });
     },
     methods: {
+        handleSearchInput() {
+            const rawValue = this.search && this.search.value !== null && this.search.value !== undefined
+                ? String(this.search.value)
+                : '';
+            const value = rawValue.trim();
+
+            if (value.length === 0) {
+                this.getRecords();
+                return;
+            }
+
+            if (value.length < this.minSearchLength) {
+                return;
+            }
+
+            this.getRecords();
+        },
                 handleListValueChange() {
                         localStorage.setItem(this.getListValueStorageKey(), this.search.list_value);
                         this.getRecords();

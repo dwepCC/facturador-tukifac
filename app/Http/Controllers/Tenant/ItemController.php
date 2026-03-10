@@ -160,11 +160,39 @@ class ItemController extends Controller
                 {
                     if($this->applyAdvancedRecordsSearch() && $request->column === 'description')
                     {
-                        if($request->value) $records->whereAdvancedRecordsSearch($request->column, $request->value);
+                        if($request->value) {
+                            $search_values = preg_split('/\s+/', trim($request->value), -1, PREG_SPLIT_NO_EMPTY);
+
+                            $records->where(function($q) use($search_values){
+                                foreach ($search_values as $search_value) {
+                                    $search_value = mb_strtolower($search_value, 'UTF-8');
+                                    $q->where(function($qq) use ($search_value) {
+                                        $qq->whereRaw('LOWER(description) LIKE ?', ["%{$search_value}%"])
+                                            ->orWhereRaw('LOWER(name) LIKE ?', ["%{$search_value}%"]);
+                                    });
+                                }
+                            });
+                        }
                     }
                     else
                     {
-                        $records->where($request->column, 'like', "%{$request->value}%");
+                        if($request->column === 'description') {
+                            if($request->value) {
+                                $search_values = preg_split('/\s+/', trim($request->value), -1, PREG_SPLIT_NO_EMPTY);
+
+                                $records->where(function($q) use($search_values){
+                                    foreach ($search_values as $search_value) {
+                                        $search_value = mb_strtolower($search_value, 'UTF-8');
+                                        $q->where(function($qq) use ($search_value) {
+                                            $qq->whereRaw('LOWER(description) LIKE ?', ["%{$search_value}%"])
+                                                ->orWhereRaw('LOWER(name) LIKE ?', ["%{$search_value}%"]);
+                                        });
+                                    }
+                                });
+                            }
+                        } else {
+                            $records->where($request->column, 'like', "%{$request->value}%");
+                        }
                     }
                 }
                 break;
