@@ -298,6 +298,7 @@
 
 @php
     $waLink = 'https://wa.link/4d7rjm';
+    $appLink = 'https://drive.google.com/file/d/1uETRND-lGQ-LbV3CK490-foewd2pSw7f/view?usp=drive_link';
 @endphp
 
 <div class="tukifac-dashboard">
@@ -354,7 +355,7 @@
                             </a>
                         </div>
                         <div class="carousel-item">
-                            <a class="tukifac-ads-slide-link" href="{{ $waLink }}" target="_blank" rel="noopener">
+                            <a class="tukifac-ads-slide-link" href="{{ $appLink }}" target="_blank" rel="noopener">
                                 <div class="tukifac-ads-media">
                                     <img src="{{ asset('storage/slider3.png') }}" alt="Publicidad 3" loading="lazy" decoding="async">
                                     <div class="tukifac-ads-slide-overlay">

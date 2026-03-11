@@ -897,7 +897,9 @@ public function records(Request $request)
                 'address' => '-',
                 'email' => $request->input('email'),
                 'telephone' => '-',
-                'code' => '0000'
+                'code' => '0000',
+                'template_pdf' => 'default_exito',
+                'template_ticket_pdf' => 'default_exito',
             ]);
             \Log::info('Establishment insertado', ['establishment_id' => $establishment_id]);
 

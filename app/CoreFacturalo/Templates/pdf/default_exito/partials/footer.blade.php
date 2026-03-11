@@ -11,12 +11,12 @@
     </tr>
     <tr>
         <td class="text-center" style="font-size: 13px;">
-            <strong class="text-center">TuÉxito!</strong>
+            <strong class="text-center">Tukifac!</strong>
         </td>
     </tr>
     <tr>
         <td class="text-center" style=" font-size:11px">
-           Comprobante emitido a través de <span class="font-bold" style="font-size:15px; text-decoration:underline; color:blue">www.tuexito.pe</span>
+           Comprobante emitido a través de <span class="font-bold" style="font-size:15px; text-decoration:underline; color:rgb(103, 201, 127)">www.tukifac.pe</span>
         </td>
     </tr>
     <tr>
