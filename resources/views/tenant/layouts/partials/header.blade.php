@@ -75,32 +75,37 @@
             <i class="fas fa-bars"></i>
         </div>
 
-        <!--tukifac-->
-        <div class="payment-status-card" id="paymentStatusCard">
-            <div class="payment-status-header">
-                <div class="">
-                <span class="days-count" id="plan_name">Plan: Cargando...</span><span id="days_indicator" class="info-row"></span>
-                </div>
-                <span class="payment-status" id="status_plan">Cargando...</span>
-            </div>
-            <div class="payment-due-date">
-                Fecha de pago: <span class="date" id="payment_date">Cargando...</span>
-            </div>
-
-            <div class="card-content" id="cardContent">
-                {{--<div class="info-row" id="days_info_row" style="display: none;">
-                    <strong>Estado del pago:</strong>
-                    <span id="days_info" class="days-status">Cargando...</span>
-                </div>--}}
-                
-                {{--<div class="pending-payment-section" style="display: none;">
-                    <div class="alert alert-warning">
-                        <strong>Tienes un pago pendiente</strong>
+        <div class="plan-status" id="planStatus">
+            <button type="button" class="plan-status-toggle" id="planStatusToggle" aria-haspopup="true" aria-expanded="false">
+                <i class="fas fa-crown" aria-hidden="true"></i>
+            </button>
+            <div class="plan-status-dropdown" id="planStatusDropdown">
+                <div class="payment-status-card" id="paymentStatusCard">
+                    <div class="payment-status-header">
+                        <div class="">
+                        <span class="days-count" id="plan_name">Plan: Cargando...</span><span id="days_indicator" class="info-row"></span>
+                        </div>
+                        <span class="payment-status" id="status_plan">Cargando...</span>
                     </div>
-                </div>--}}
+                    <div class="payment-due-date">
+                        Fecha de pago: <span class="date" id="payment_date">Cargando...</span>
+                    </div>
+
+                    <div class="card-content" id="cardContent">
+                        {{--<div class="info-row" id="days_info_row" style="display: none;">
+                            <strong>Estado del pago:</strong>
+                            <span id="days_info" class="days-status">Cargando...</span>
+                        </div>--}}
+                        
+                        {{--<div class="pending-payment-section" style="display: none;">
+                            <div class="alert alert-warning">
+                                <strong>Tienes un pago pendiente</strong>
+                            </div>
+                        </div>--}}
+                    </div>
+                </div>
             </div>
         </div>
-        <!--end tukifac-->
         
     </div>
     <div class="header-right">

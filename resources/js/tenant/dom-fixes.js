@@ -174,6 +174,39 @@ export function setupHeaderDomEvents() {
                 }
             });
         }
+
+        const planStatus = document.getElementById('planStatus');
+        const planToggle = document.getElementById('planStatusToggle');
+        const closePlanDropdown = () => {
+            if (!planStatus || !planToggle) {
+                return;
+            }
+            planStatus.classList.remove('open');
+            planToggle.setAttribute('aria-expanded', 'false');
+        };
+        if (planStatus && planToggle) {
+            planToggle.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const isOpen = planStatus.classList.toggle('open');
+                planToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+            document.addEventListener('click', function (event) {
+                if (!planStatus.contains(event.target)) {
+                    closePlanDropdown();
+                }
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    closePlanDropdown();
+                }
+            });
+            window.addEventListener('resize', function () {
+                if (window.innerWidth >= 1400) {
+                    closePlanDropdown();
+                }
+            });
+        }
     });
 }
 

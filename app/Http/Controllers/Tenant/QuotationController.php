@@ -611,8 +611,9 @@ class QuotationController extends Controller
         $pdf = new Mpdf();
 
         $document = ($quotation != null) ? $quotation : $this->quotation;
+        $this->quotation = $document;
         $company = ($this->company != null) ? $this->company : Company::active();
-        $filename = ($filename != null) ? $filename : $this->quotation->filename;
+        $filename = ($filename != null) ? $filename : $document->filename;
 
         $configuration = Configuration::first();
 
@@ -815,12 +816,12 @@ class QuotationController extends Controller
         if ($format_pdf != 'ticket') {
             if (config('tenant.pdf_template_footer')) {
 
-                $html_footer = $template->pdfFooter($base_template, $this->quotation);
+                $html_footer = $template->pdfFooter($base_template, $document);
                 $html_footer_term_condition = ($document->terms_condition) ? $template->pdfFooterTermCondition($base_template, $document) : "";
 
                 $html_footer_legend = "";
                 if ($configuration->legend_footer) {
-                    $html_footer_legend = $template->pdfFooterLegend($base_template, $this->quotation);
+                    $html_footer_legend = $template->pdfFooterLegend($base_template, $document);
                 }
 
                 $html_footer_images = "";
