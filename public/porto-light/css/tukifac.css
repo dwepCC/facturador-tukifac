@@ -447,7 +447,7 @@ a:active {
 @media only screen and (min-width: 1200px) {
     /* Layout Boxed - Body Tag */
     html.boxed body {
-        background: url(../img/patterns/gray_jean.png) repeat;
+        background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO6n4uUAAAAASUVORK5CYII=") repeat;
         padding-bottom: 5px;
     }
 
@@ -9016,7 +9016,7 @@ html .card-dark .card-title {
 }
 /* Carousel Areas */
 .carousel-areas {
-    background: transparent url(../img/patterns/stripes.png) repeat 0 0;
+    background: transparent url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO6n4uUAAAAASUVORK5CYII=") repeat 0 0;
     margin-bottom: -10px;
     padding: 10px 10px 0 10px;
     border-radius: 6px 6px 0 0;
@@ -12617,7 +12617,7 @@ html[xmlns] .clearfix {
 }
 
 .arrow.arrow-light {
-    background-image: url(../img/arrows-dark.png);
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO6n4uUAAAAASUVORK5CYII=");
 }
 
 .arrow.vtl {
@@ -16571,7 +16571,7 @@ html.dark .inner-toolbar > ul > li {
 
 /* Treeview */
 .jstree-default .jstree-checkbox {
-    background-image: url(../img/jstree.png);
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO6n4uUAAAAASUVORK5CYII=");
 }
 
 .jstree-default .jstree-icon {
@@ -16609,7 +16609,7 @@ html.dark .inner-toolbar > ul > li {
 
 /* dark */
 html.dark body .jstree-default .jstree-checkbox {
-    background-image: url(../img/jstree-dark.png);
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO6n4uUAAAAASUVORK5CYII=");
 }
 
 html.dark body .jstree-default .jstree-hovered {
@@ -20480,7 +20480,7 @@ html.dark .search-content .search-results-list a:hover {
 
 /* Lock Screen */
 .body-locked {
-    background: url(../img/patterns/noisy_net.png) repeat;
+    background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO6n4uUAAAAASUVORK5CYII=") repeat;
     max-width: none;
     min-height: 400px;
 }
@@ -20565,7 +20565,7 @@ html.dark .search-content .search-results-list a:hover {
 }
 /* Lock Screen - Modal */
 .mfp-lock-screen.mfp-bg {
-    background: #000 url(../img/patterns/noisy_net.png) repeat;
+    background: #000 url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO6n4uUAAAAASUVORK5CYII=") repeat;
     opacity: 0.99;
     z-index: 9998;
 }
