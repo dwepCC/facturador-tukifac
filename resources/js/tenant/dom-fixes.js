@@ -134,7 +134,7 @@ export function applyThemeAndShowContent(savedTheme, savedBlackTheme) {
 
 // 2. Scripts de header (de header.blade.php)
 export function setupHeaderDomEvents() {
-    document.addEventListener('DOMContentLoaded', function () {
+    const init = () => {
         const optionsUserMobile = document.querySelector('.options-user-mobile');
         const headerRight = document.querySelector('.header-right');
         const closeContainerUser = document.querySelector('.close-container-user');
@@ -207,7 +207,15 @@ export function setupHeaderDomEvents() {
                 }
             });
         }
-    });
+    };
+
+    // Ejecutar inmediatamente si ya estamos en un estado listo
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(init, 100);
+    } else {
+        document.addEventListener('DOMContentLoaded', init, { once: true });
+        window.addEventListener('load', init, { once: true }); // Fallback
+    }
 }
 
 // 3. Scripts de autenticación del eCommerce (desde footer.blade.php)
