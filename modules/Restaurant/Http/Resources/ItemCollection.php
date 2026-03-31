@@ -57,7 +57,7 @@ class ItemCollection extends ResourceCollection
                 'image_url_medium' => $row->image && ($row->image_medium === 'imagen-no-disponible.jpg') ? $defaultImagePath : asset('storage'.DIRECTORY_SEPARATOR.'uploads'.DIRECTORY_SEPARATOR.'items'.DIRECTORY_SEPARATOR.$row->image_medium),
                 'image_url_small' => $row->image && ($row->image_small === 'imagen-no-disponible.jpg') ?  $defaultImagePath : asset('storage'.DIRECTORY_SEPARATOR.'uploads'.DIRECTORY_SEPARATOR.'items'.DIRECTORY_SEPARATOR.$row->image_small),
                 'favorite' => (bool)$row->favorite,
-                'area_print' => $row->preparationArea->printer ?? null,
+                'area_print' => $row->preparationArea->name ?? null,
                 'has_supplies' => $row->restaurantSupplies()->exists(),
                 'is_dish' => (bool)$row->is_dish,
                 'has_sets' => $row->sets()->exists(),

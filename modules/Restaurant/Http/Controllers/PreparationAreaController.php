@@ -26,6 +26,23 @@ class PreparationAreaController extends Controller
         }
     }
 
+    public function show($id)
+    {
+        try {
+            $preparationArea = RestaurantPreparationArea::findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => $preparationArea
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         $request->validate([

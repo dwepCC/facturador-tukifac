@@ -62,6 +62,14 @@ if ($hostname) {
                 });
 
                 Route::get('/audit/cancellations', 'RestaurantItemOrderStatusController@cancellations');
+
+                Route::prefix('preparation-areas')->group(function () {
+                    Route::get('/', 'PreparationAreaController@index');
+                    Route::post('/', 'PreparationAreaController@store');
+                    Route::get('/{id}', 'PreparationAreaController@show');
+                    Route::put('/{id}', 'PreparationAreaController@update');
+                    Route::delete('/{id}', 'PreparationAreaController@destroy');
+                });
             });
 
             // Print Orders

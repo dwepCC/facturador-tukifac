@@ -10,15 +10,15 @@ class AppVersionController extends Controller
     {
         return response()->json([
             "android" => [
-                "min_version" => "1.1.2",
-                "latest_version" => "1.1.3",
+                "min_version" => "1.1.5",
+                "latest_version" => "1.1.6",
                 "store_url" => "https://play.google.com/store/apps/details?id=com.tukifacapp",
                 "release_notes" => "Mejoras de seguridad y nuevas funciones. Es necesario actualizar."
             ],
             "windows" => [
-                "min_version" => "1.1.2",
-                "latest_version" => "1.1.3",
-                "download_url" => "https://drive.google.com/file/d/1Pk7QNDL0lMiuyh9seu6bYacva-R6p5YN/view?usp=drive_link",
+                "min_version" => "1.1.5",
+                "latest_version" => "1.1.6",
+                "download_url" => "https://drive.google.com/file/d/1xf12P9JjAFYl1BswPeQFWBSxSeKbrQEs/view?usp=drive_link",
                 "release_notes" => "Correcciones críticas para Windows y nuevas funciones de impresión."
             ]
         ]);
@@ -28,14 +28,14 @@ class AppVersionController extends Controller
     {
         return response()->json([
             "android" => [
-                "min_version" => "1.4.6",
-                "latest_version" => "1.4.7",
+                "min_version" => "1.5.1",
+                "latest_version" => "1.5.1",
                 "store_url" => "https://play.google.com/store/apps/details?id=com.tukichef",
                 "release_notes" => "Mejoras de seguridad y nuevas funciones. Es necesario actualizar."
             ],
             "windows" => [
-                "min_version" => "1.4.6",
-                "latest_version" => "1.4.7",
+                "min_version" => "1.5.1",
+                "latest_version" => "1.5.1",
                 "download_url" => "https://tukichef.com/descargas/windows/latest.exe",
                 "release_notes" => "Correcciones críticas para Windows y nuevas funciones de impresión."
             ]
