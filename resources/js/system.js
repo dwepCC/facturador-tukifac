@@ -42,6 +42,7 @@ import SystemPlansIndex from './views/system/plans/index.vue';
 import SystemPlansForm from './views/system/plans/form.vue';
 import SystemConfigurationCronOrderPayments from './views/system/configuration/cronOrderPayments.vue';
 import SystemPaymentsIndex from './views/system/payments/index.vue';
+import SystemDocumentPackagesIndex from './views/system/document_packages/index.vue';
 
 import InputService from '../../modules/ApiPeruDev/Resources/assets/js/components/InputService.vue'// apiperu - porque cambiar el input si tiene el mismo contenido?
 
@@ -104,6 +105,7 @@ Vue.component('x-input-service', InputService);
 //system payments
 Vue.component('system-payments-index', SystemPaymentsIndex);
 Vue.component('system-cron-order-configuration', SystemConfigurationCronOrderPayments);
+Vue.component('system-document-packages-index', SystemDocumentPackagesIndex);
 
 import VueClipboard from 'vue-clipboard2'
 Vue.use(VueClipboard)

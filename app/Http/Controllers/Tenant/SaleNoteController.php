@@ -49,6 +49,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Modules\Document\Helpers\DocumentHelper;
 use Modules\Document\Traits\SearchTrait;
 use Modules\Finance\Traits\FinanceTrait;
 use Modules\Inventory\Models\Warehouse;
@@ -67,7 +68,7 @@ use Modules\Finance\Traits\FilePaymentTrait;
 // use App\Http\Resources\Tenant\SaleNoteGenerateDocumentResource;
 // use App\Models\Tenant\Warehouse;
 use App\CoreFacturalo\HelperFacturalo;
-
+use Illuminate\Support\Facades\Auth;
 
 class SaleNoteController extends Controller
 {
@@ -248,7 +249,7 @@ class SaleNoteController extends Controller
                                     $dataSend['extra'] = $response->message;
                                 }
                             }
-                            \Log::channel('facturalo')->error(__FILE__ . "::" . __LINE__ . " \n $err_gen: No se ha podido determinar el fallo. La respuesta es \n" .
+                            Log::channel('facturalo')->error(__FILE__ . "::" . __LINE__ . " \n $err_gen: No se ha podido determinar el fallo. La respuesta es \n" .
                                 var_export($response->message, true));
                             return $dataSend;
 
@@ -259,11 +260,11 @@ class SaleNoteController extends Controller
                     $dataSend['success'] = true;
                 }
             }catch (ErrorException $er){
-                \Log::channel('facturalo')->error(__FILE__."::".__LINE__." \n NV-M-501: No se ha podido determinar el fallo. La respuesta es \n".
+                Log::channel('facturalo')->error(__FILE__."::".__LINE__." \n NV-M-501: No se ha podido determinar el fallo. La respuesta es \n".
                     $responseBodyAsString."\n");
             }
 
-            \Log::channel('facturalo')->error(__FILE__."::".__LINE__." \n NV-M-500: No se ha podido determinar el fallo. La respuesta es \n".
+            Log::channel('facturalo')->error(__FILE__."::".__LINE__." \n NV-M-500: No se ha podido determinar el fallo. La respuesta es \n".
                 var_export($response,true));
             $dataSend['message'] = 'Error desconocido. Codigo : NV-M-500';
             return $dataSend;
@@ -272,7 +273,7 @@ class SaleNoteController extends Controller
         self::ExtraLog(__FILE__."::".__LINE__."  \n Datos de RESPUESTA ".__FUNCTION__." \n". var_export($response,true) ."\n\n\n\n");
 
         if($response == false){
-            \Log::channel('facturalo')->error(__FILE__."::".__LINE__." \n NV-M-404: La respuesta ha sido falsa, posiblemente no se encuentre la web $web_Url \n".
+            Log::channel('facturalo')->error(__FILE__."::".__LINE__." \n NV-M-404: La respuesta ha sido falsa, posiblemente no se encuentre la web $web_Url \n".
                 var_export($response,true));
             $dataSend['message'] = 'Problemas de conexion con el servidor. Revise la configuracion. Codigo : NV-M-404';
 
@@ -312,7 +313,7 @@ class SaleNoteController extends Controller
                         $dataSend['message'] = "Error desconocido. Codigo $err_gen";
                         $dataSend['extra'] = $response->message;
                     }
-                    \Log::channel('facturalo')->error(__FILE__."::".__LINE__." \n $err_gen: No se ha podido determinar el fallo. La respuesta es \n".
+                    Log::channel('facturalo')->error(__FILE__."::".__LINE__." \n $err_gen: No se ha podido determinar el fallo. La respuesta es \n".
                         var_export($response->message,true));
                     return $dataSend;
 
@@ -322,7 +323,7 @@ class SaleNoteController extends Controller
             $dataSend['message']='Se ha generado correctamente bajo el numero '.$alreadySendit->getNumber();
             $dataSend['success'] = true;
         }else{
-            \Log::channel('facturalo')->error(__FILE__."::".__LINE__." \n NV-M-500: No se ha podido determinar el fallo. La respuesta es \n".
+            Log::channel('facturalo')->error(__FILE__."::".__LINE__." \n NV-M-500: No se ha podido determinar el fallo. La respuesta es \n".
                 var_export($response,true));
             $dataSend['message'] = 'Error desconocido. Codigo : NV-M-500';
             return $dataSend;
@@ -561,8 +562,8 @@ class SaleNoteController extends Controller
     public function tables()
     {
         $user = new User();
-        if(\Auth::user()){
-            $user = \Auth::user();
+        if(Auth::user()){
+            $user = Auth::user();
         }
         $establishment_id =  $user->establishment_id;
         $userId =  $user->id;
@@ -645,7 +646,34 @@ class SaleNoteController extends Controller
 
     public function store(SaleNoteRequest $request)
     {
-        return $this->storeWithData($request->all());
+        $exceed_limit = (new DocumentHelper())->checkLimitWithPackages('sale-note');
+
+        if ($exceed_limit['success']) {
+            return [
+                'success' => false,
+                'message' => $exceed_limit['message'],
+            ];
+        }
+
+        $res = $this->storeWithData($request->all());
+
+        if (!empty($res['success'])) {
+            $configuration = Configuration::first();
+            if (!$configuration || !$configuration->locked_emission) {
+                $documentHelper = new DocumentHelper();
+                $context = $documentHelper->getPackageConsumptionContextAfterCreate('sale-note');
+                if (!empty($context['should_consume'])) {
+                    $documentHelper->consumeOnePackageUnit(
+                        $context['client_id'],
+                        $context['cycle_start_at'],
+                        $context['cycle_end_at'],
+                        $context['type']
+                    );
+                }
+            }
+        }
+
+        return $res;
     }
 
 

@@ -605,7 +605,7 @@ class DocumentController extends Controller
         try
         {
             // Validar restricciones de plan ANTES de crear el documento
-            $exceed_limit = (new DocumentHelper)->exceedLimitDocuments();
+            $exceed_limit = (new DocumentHelper)->checkLimitWithPackages();
             if($exceed_limit['success']) {
                 return [
                     'success' => false,
@@ -623,6 +623,20 @@ class DocumentController extends Controller
             $document_id = $res['data']['id'];
             $this->associateDispatchesToDocument($request, $document_id);
             $this->associateSaleNoteToDocument($request, $document_id);
+
+            $configuration = Configuration::first();
+            if (!$configuration || !$configuration->locked_emission) {
+                $documentHelper = new DocumentHelper();
+                $context = $documentHelper->getPackageConsumptionContextAfterCreate('document');
+                if (!empty($context['should_consume'])) {
+                    $documentHelper->consumeOnePackageUnit(
+                        $context['client_id'],
+                        $context['cycle_start_at'],
+                        $context['cycle_end_at'],
+                        $context['type']
+                    );
+                }
+            }
 
             return $res;
         }
@@ -1209,7 +1223,7 @@ class DocumentController extends Controller
     public function messageLockedEmission()
     {
 
-        $exceed_limit = (new DocumentHelper)->exceedLimitDocuments();
+        $exceed_limit = (new DocumentHelper)->checkLimitWithPackages();
 
         if ($exceed_limit['success']) {
             return [

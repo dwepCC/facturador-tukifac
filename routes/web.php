@@ -871,6 +871,7 @@ if ($hostname) {
 
             //Clients
             Route::get('clients', 'System\ClientController@index')->name('system.clients.index');
+            Route::get('document-packages', 'System\ClientDocumentPackageController@index')->name('system.document-packages.index');
             Route::get('clients/records', 'System\ClientController@records');
             Route::get('clients/record/{client}', 'System\ClientController@record');
             Route::get('clients/records/list', 'System\ClientController@recordsListPending');//tukifac
@@ -896,6 +897,10 @@ if ($hostname) {
             Route::post('clients/renew_plan', 'System\ClientController@renewPlan');
 
             Route::post('clients/set_billing_cycle', 'System\ClientController@startBillingCycle');
+
+            Route::get('clients/document-packages/summary/{client}', 'System\ClientDocumentPackageController@summary');
+            Route::post('clients/document-packages', 'System\ClientDocumentPackageController@store');
+            Route::post('clients/document-packages/cancel/{package}', 'System\ClientDocumentPackageController@cancel');
 
             Route::post('clients/locked-by-column', 'System\ClientController@lockedByColumn');
             Route::post('secret-login', 'System\SecretLoginController@secretLogin');

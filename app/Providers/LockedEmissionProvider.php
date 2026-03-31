@@ -10,6 +10,7 @@ use App\Models\Tenant\Configuration;
 use Exception;
 use Modules\Document\Helpers\DocumentHelper;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 use App\Models\Tenant\SaleNote;
 use App\Models\Tenant\{
@@ -78,8 +79,23 @@ class LockedEmissionProvider extends ServiceProvider
 
             if($configuration->locked_emission)
             {
-                $exceed_limit = (new DocumentHelper)->exceedLimitDocuments();
-                if($exceed_limit['success']) throw new Exception($exceed_limit['message']);
+                $documentHelper = new DocumentHelper();
+                $context = $documentHelper->getPackageConsumptionContextAfterCreate('document');
+
+                if (isset($context['exceed']) && $context['exceed']) {
+                    throw new Exception($context['message']);
+                }
+
+                if (!empty($context['should_consume'])) {
+                    DB::connection('tenant')->afterCommit(function () use ($documentHelper, $context) {
+                        $documentHelper->consumeOnePackageUnit(
+                            $context['client_id'],
+                            $context['cycle_start_at'],
+                            $context['cycle_end_at'],
+                            $context['type']
+                        );
+                    });
+                }
             }
 
 
@@ -117,8 +133,23 @@ class LockedEmissionProvider extends ServiceProvider
             
             if($this->getConfigurationColumn('locked_emission'))
             {
-                $exceed_limit = (new DocumentHelper)->exceedLimitDocuments('sale-note');
-                if($exceed_limit['success']) $this->throwException($exceed_limit['message']);
+                $documentHelper = new DocumentHelper();
+                $context = $documentHelper->getPackageConsumptionContextAfterCreate('sale-note');
+
+                if (isset($context['exceed']) && $context['exceed']) {
+                    $this->throwException($context['message']);
+                }
+
+                if (!empty($context['should_consume'])) {
+                    DB::connection('tenant')->afterCommit(function () use ($documentHelper, $context) {
+                        $documentHelper->consumeOnePackageUnit(
+                            $context['client_id'],
+                            $context['cycle_start_at'],
+                            $context['cycle_end_at'],
+                            $context['type']
+                        );
+                    });
+                }
             }
 
             if($this->getConfigurationColumn('restrict_sales_limit'))

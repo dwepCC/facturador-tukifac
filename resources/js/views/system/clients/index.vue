@@ -820,6 +820,11 @@
                                             Pagos
                                         </el-dropdown-item>
 
+                                        <el-dropdown-item :command="{action: 'documentPackages', id: row.id}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-package me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3l8 4.5v9l-8 4.5l-8 -4.5v-9l8 -4.5" /><path d="M12 12l8 -4.5" /><path d="M12 12v9" /><path d="M12 12l-8 -4.5" /><path d="M16 5.25l-8 4.5" /></svg>
+                                            Paquetes de comprobantes
+                                        </el-dropdown-item>
+
                                         <el-dropdown-item :command="{action: 'accountStatus', id: row.id}">
                                             <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-chart-line me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 19l16 0" /><path d="M4 15l4 -6l4 2l4 -5l4 4" /></svg>
                                             Estado de cuenta
@@ -1679,6 +1684,9 @@ export default {
                 case 'payments':
                     this.clickPayments(command.id);
                     break;
+                case 'documentPackages':
+                    this.clickDocumentPackages(command.id);
+                    break;
                 case 'accountStatus':
                     this.clickAccountStatus(command.id);
                     break;
@@ -1858,6 +1866,9 @@ export default {
         clickPayments(recordId = null) {
             this.recordId = recordId;
             this.showDialogPayments = true;
+        },
+        async clickDocumentPackages(clientId) {
+            window.location.href = `/document-packages?client_id=${clientId}`;
         },
         clickAccountStatus(recordId = null) {
             this.recordId = recordId;

@@ -11,7 +11,9 @@ use App\Models\Tenant\{
 };
 use Hyn\Tenancy\Environment;
 use App\Models\System\Client;
+use App\Models\System\ClientDocumentPackage;
 use App\Traits\LockedEmissionTrait;
+use Illuminate\Support\Facades\DB;
 
 
 class DocumentHelper
@@ -155,6 +157,215 @@ class DocumentHelper
             'success' => false,
             'message' => ''
         ];
+    }
+
+    public function checkLimitWithPackages($type = 'document')
+    {
+        $plan = $this->getClientPlan(['id', 'name', 'limit_documents', 'include_sale_notes_limit_documents']);
+        $limitDocuments = (int) $plan->limit_documents;
+
+        if ($limitDocuments === 0) {
+            return [
+                'success' => false,
+                'message' => '',
+            ];
+        }
+
+        if ($type === 'sale-note' && !$plan->includeSaleNotesLimitDocuments()) {
+            return [
+                'success' => false,
+                'message' => '',
+            ];
+        }
+
+        $cycle = $this->getCurrentCycleForTenant();
+        $quantityDocuments = $this->getQuantityDocumentsByCycle(
+            $cycle['start_date'],
+            $cycle['end_date'],
+            $plan->includeSaleNotesLimitDocuments()
+        );
+
+        if ($quantityDocuments < $limitDocuments) {
+            return [
+                'success' => false,
+                'message' => '',
+            ];
+        }
+
+        $clientId = $this->getClientIdFromSystem();
+        $remaining = $this->getRemainingPackageUnits(
+            $clientId,
+            $cycle['cycle_start_at'],
+            $cycle['cycle_end_at'],
+            $type
+        );
+
+        if ($remaining > 0) {
+            return [
+                'success' => false,
+                'message' => '',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => "Ha alcanzado el límite de {$limitDocuments} comprobantes permitidos en su plan para este ciclo. Adquiera un paquete de comprobantes o espere la renovación del ciclo.",
+        ];
+    }
+
+    public function getPackageConsumptionContextAfterCreate($type = 'document')
+    {
+        $plan = $this->getClientPlan(['id', 'name', 'limit_documents', 'include_sale_notes_limit_documents']);
+        $limitDocuments = (int) $plan->limit_documents;
+
+        if ($limitDocuments === 0) {
+            return [
+                'should_consume' => false,
+            ];
+        }
+
+        if ($type === 'sale-note' && !$plan->includeSaleNotesLimitDocuments()) {
+            return [
+                'should_consume' => false,
+            ];
+        }
+
+        $cycle = $this->getCurrentCycleForTenant();
+        $quantityDocuments = $this->getQuantityDocumentsByCycle(
+            $cycle['start_date'],
+            $cycle['end_date'],
+            $plan->includeSaleNotesLimitDocuments()
+        );
+
+        if ($quantityDocuments <= $limitDocuments) {
+            return [
+                'should_consume' => false,
+            ];
+        }
+
+        $clientId = $this->getClientIdFromSystem();
+        $remaining = $this->getRemainingPackageUnits(
+            $clientId,
+            $cycle['cycle_start_at'],
+            $cycle['cycle_end_at'],
+            $type
+        );
+
+        if ($remaining <= 0) {
+            return [
+                'should_consume' => false,
+                'exceed' => true,
+                'message' => "Ha alcanzado el límite de {$limitDocuments} comprobantes permitidos en su plan para este ciclo.",
+            ];
+        }
+
+        return [
+            'should_consume' => true,
+            'client_id' => $clientId,
+            'cycle_start_at' => $cycle['cycle_start_at'],
+            'cycle_end_at' => $cycle['cycle_end_at'],
+            'type' => $type,
+        ];
+    }
+
+    public function consumeOnePackageUnit($clientId, $cycleStartAt, $cycleEndAt, $type = 'document')
+    {
+        $clientId = (int) $clientId;
+
+        return DB::connection('system')->transaction(function () use ($clientId, $cycleStartAt, $cycleEndAt, $type) {
+            $query = ClientDocumentPackage::query()
+                ->activeForCycle($clientId, $cycleStartAt, $cycleEndAt)
+                ->whereColumn('units_consumed', '<', 'units_total');
+
+            if ($type === 'sale-note') {
+                $query->where('include_sale_notes', true);
+            }
+
+            for ($attempt = 0; $attempt < 3; $attempt++) {
+                $package = (clone $query)->orderBy('created_at')->lockForUpdate()->first();
+
+                if (!$package) {
+                    return false;
+                }
+
+                $updated = ClientDocumentPackage::query()
+                    ->where('id', $package->id)
+                    ->whereColumn('units_consumed', '<', 'units_total')
+                    ->update([
+                        'units_consumed' => DB::raw('units_consumed + 1'),
+                    ]);
+
+                if ($updated === 1) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+    }
+
+    private function getClientIdFromSystem()
+    {
+        $tenancy = app(Environment::class);
+        $hostname = $tenancy->hostname();
+        $client = Client::select('id')->where('hostname_id', $hostname->id)->firstOrFail();
+
+        return (int) $client->id;
+    }
+
+    private function getCurrentCycleForTenant()
+    {
+        $startBillingCycle = self::getStartBillingCycleFromSystem();
+
+        if ($startBillingCycle) {
+            $startEnd = self::getStartEndDateForFilterDocument($startBillingCycle);
+            $cycleStart = $startEnd['start_date']->copy()->startOfDay();
+            $cycleEnd = $cycleStart->copy()->addMonthNoOverflow()->subDay()->endOfDay();
+
+            return [
+                'start_date' => $startEnd['start_date'],
+                'end_date' => $startEnd['end_date'],
+                'cycle_start_at' => $cycleStart->format('Y-m-d'),
+                'cycle_end_at' => $cycleEnd->format('Y-m-d'),
+            ];
+        }
+
+        $startDate = Carbon::now()->startOfMonth();
+        $endDate = Carbon::now()->endOfMonth();
+
+        return [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'cycle_start_at' => $startDate->format('Y-m-d'),
+            'cycle_end_at' => $endDate->format('Y-m-d'),
+        ];
+    }
+
+    private function getQuantityDocumentsByCycle($startDate, $endDate, $includeSaleNotes)
+    {
+        $quantity = Document::whereBetween('date_of_issue', [$startDate, $endDate])->count();
+
+        if ($includeSaleNotes) {
+            $quantity += $this->getQuantitySaleNotesByDates(
+                Carbon::parse($startDate)->format('Y-m-d'),
+                Carbon::parse($endDate)->format('Y-m-d')
+            );
+        }
+
+        return (int) $quantity;
+    }
+
+    private function getRemainingPackageUnits($clientId, $cycleStartAt, $cycleEndAt, $type = 'document')
+    {
+        $query = ClientDocumentPackage::query()
+            ->activeForCycle((int) $clientId, $cycleStartAt, $cycleEndAt)
+            ->selectRaw('COALESCE(SUM(units_total - units_consumed), 0) as remaining');
+
+        if ($type === 'sale-note') {
+            $query->where('include_sale_notes', true);
+        }
+
+        return (int) $query->value('remaining');
     }
 
 
