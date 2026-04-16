@@ -36,3 +36,16 @@ Solo se reconstruyen altas de usuarios/sucursales que existen hoy en el tenant, 
 Bajas históricas (usuarios borrados hace tiempo) no se pueden inferir sin otra fuente (auditoría, soft deletes, etc.).
 Al reconstruir se eliminan las filas de historial users/establishments de ese cliente (incluidas las live acumuladas desde el despliegue); por eso el comando está pensado para una migración / normalización, no para ejecutarlo en bucle en horario pico.
 Con esto el historial queda alineado con el estado actual de cada tenant y las métricas centrales se refrescan al final de cada cliente.
+
+
+
+aplicar permisos a las carpetas de los tenant
+Revisar sin tocar permisos:
+php artisan tenants:fix-storage-permissions --dry-run
+
+Aplicar chmod en Unix/Linux a todas las carpetas de tenant enlazadas a un cliente:
+php artisan tenants:fix-storage-permissions
+
+Solo un cliente (por id en la base system):
+php artisan tenants:fix-storage-permissions --client_id=123
+

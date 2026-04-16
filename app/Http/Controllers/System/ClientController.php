@@ -30,6 +30,8 @@
 use App\Models\System\ClientPayment;
 use App\Models\System\PlanPeriod;
 use App\Services\System\CentralClientMetricsQueryService;
+use App\Services\System\TenantStoragePermissionService;
+use Illuminate\Support\Facades\File;
 
     class ClientController extends Controller
     {
@@ -561,10 +563,7 @@ public function records(Request $request)
                         $pfx = file_get_contents($temp_path);
                         $pem = GenerateCertificate::typePEM($pfx, $password);
                         $name = 'certificate_' . $request->input('number') . '.pem';
-                        if (!file_exists(storage_path('app' . DIRECTORY_SEPARATOR . 'certificates'))) {
-                            mkdir(storage_path('app' . DIRECTORY_SEPARATOR . 'certificates'));
-                        }
-                        file_put_contents(storage_path('app' . DIRECTORY_SEPARATOR . 'certificates' . DIRECTORY_SEPARATOR . $name), $pem);
+                        $this->persistSystemCertificatePem($pem, $name);
                         $name_certificate = $name;
 
                     } catch (Exception $e) {
@@ -734,6 +733,23 @@ public function records(Request $request)
 
         }
 
+        /**
+         * Guarda PEM del certificado en storage/app/certificates con directorio y modo seguros.
+         */
+        private function persistSystemCertificatePem(string $pem, string $filename): void
+        {
+            $certDir = storage_path('app' . DIRECTORY_SEPARATOR . 'certificates');
+            File::ensureDirectoryExists($certDir, 0755, true);
+            if (PHP_OS_FAMILY !== 'Windows') {
+                @chmod($certDir, 0755);
+            }
+            $fullPath = $certDir . DIRECTORY_SEPARATOR . $filename;
+            File::put($fullPath, $pem);
+            if (PHP_OS_FAMILY !== 'Windows') {
+                @chmod($fullPath, 0644);
+            }
+        }
+
         public function store(ClientRequest $request)
         {
             // Establecer tiempo de ejecución manual para evitar timeout
@@ -759,10 +775,7 @@ public function records(Request $request)
                         $pfx = file_get_contents($temp_path);
                         $pem = GenerateCertificate::typePEM($pfx, $password);
                         $name = 'certificate_' . 'admin_tenant'. "_$number" . '.pem';
-                        if (!file_exists(storage_path('app' . DIRECTORY_SEPARATOR . 'certificates'))) {
-                            mkdir(storage_path('app' . DIRECTORY_SEPARATOR . 'certificates'));
-                        }
-                        file_put_contents(storage_path('app' . DIRECTORY_SEPARATOR . 'certificates' . DIRECTORY_SEPARATOR . $name), $pem);
+                        $this->persistSystemCertificatePem($pem, $name);
                         $name_certificate = $name;
                         \Log::info('Certificado procesado exitosamente', ['name' => $name]);
 
@@ -991,6 +1004,9 @@ public function records(Request $request)
             }
 
             \Log::info('=== CLIENTE REGISTRADO EXITOSAMENTE ===', ['timestamp' => now()]);
+
+            TenantStoragePermissionService::applyToTenantUuid($website->uuid);
+
             return [
                 'success' => true,
                 'message' => 'Cliente Registrado satisfactoriamente'

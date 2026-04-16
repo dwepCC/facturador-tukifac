@@ -865,7 +865,7 @@ if ($hostname) {
         Route::middleware('auth:admin')->group(function () {
             Route::get('logs', '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index');
             Route::get('/', function () {
-                return redirect()->route('system.dashboard');
+                return redirect()->route('system.clients.central-metrics.index');
             });
             Route::get('dashboard', 'System\HomeController@index')->name('system.dashboard');
 

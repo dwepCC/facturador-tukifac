@@ -168,11 +168,17 @@
     </div>
 </div>
 
-<div class="modal fade" id="login_register_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div id="tony" class="modal-body-restaurant">
+<div class="modal fade tuki_login_register_modal" id="login_register_modal" tabindex="-1" role="dialog"
+    aria-labelledby="loginRegisterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered tuki_login_register_modal__dialog" role="document">
+        <div class="modal-content tuki_login_register_modal__content">
+            <div class="modal-header tuki_login_register_modal__bar align-items-center">
+                <h5 class="modal-title mb-0" id="loginRegisterModalLabel">Iniciar sesión o registrarse</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div id="tony" class="modal-body modal-body-restaurant tuki_login_register_modal__body p-0">
                     <div class="contenedor-form" id="contenedor-form">
                         <!-- contenedor de login -->
                          <!-- <div class="contenedor-column-form"> -->

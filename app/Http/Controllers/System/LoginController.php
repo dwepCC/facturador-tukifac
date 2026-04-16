@@ -23,11 +23,11 @@ class LoginController extends Controller
     // Implementación manual de autenticación para compatibilidad con Laravel 9
 
     /**
-     * Where to redirect users after login.
+     * Where to redirect users after login (plataforma central).
      *
      * @var string
      */
-    protected $redirectTo = '/dashboard';
+    protected $redirectTo = '/clientes-metricas-central';
 
     /**
      * Create a new controller instance.
@@ -47,7 +47,7 @@ class LoginController extends Controller
     public function showLoginForm()
     {
         if (Auth::check() || Auth::guard('admin')->check()) {
-            return redirect('/dashboard');
+            return redirect()->route('system.clients.central-metrics.index');
         }
         return view('system.auth.login');
     }

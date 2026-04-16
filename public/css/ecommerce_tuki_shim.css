@@ -5577,3 +5577,150 @@ body.mmenu-active .tuki_storefront_header .tuki_ecom_search_backdrop {
     padding-right: max(0.85rem, env(safe-area-inset-right, 0px)) !important;
   }
 }
+
+/* =============================================================================
+   Modal login / registro (ecommerce público): z-index y móvil
+   Debe quedar por encima de .header (z-index ~1100) y del panel de búsqueda
+   (.tuki_ecom_search ~12070). Bootstrap 4 usa ~1040–1055 por defecto.
+   ============================================================================= */
+body.tuki_body .modal-backdrop {
+  z-index: 12100 !important;
+}
+
+body.tuki_body .modal {
+  z-index: 12110 !important;
+}
+
+body.tuki_body .tuki_login_register_modal__bar {
+  padding: 0.65rem 1rem 0.5rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+body.tuki_body .tuki_login_register_modal__bar .modal-title {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  padding-right: 0.5rem;
+}
+
+body.tuki_body .tuki_login_register_modal__content {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+@media (max-width: 767.98px) {
+  body.tuki_body .tuki_login_register_modal .modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100vw - 1rem);
+    width: calc(100vw - 1rem);
+  }
+
+  body.tuki_body .tuki_login_register_modal__content {
+    max-height: calc(100vh - 1rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    border-radius: 0.75rem;
+  }
+
+  body.tuki_body .tuki_login_register_modal__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: calc(100vh - 5.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  body.tuki_body .tuki_login_register_modal .modal-body-restaurant .contenedor-form {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  body.tuki_body .tuki_login_register_modal .modal-body-restaurant .contenedor-form .first-column,
+  body.tuki_body .tuki_login_register_modal .modal-body-restaurant .contenedor-form .second-column {
+    width: 100% !important;
+    max-width: 100% !important;
+    transform: none !important;
+  }
+
+  body.tuki_body .tuki_login_register_modal .iniciar-sesion,
+  body.tuki_body .tuki_login_register_modal .registrarse {
+    transform: none !important;
+    transition: none;
+  }
+
+  body.tuki_body .tuki_login_register_modal .contenedor-form:not(.active) .second-column {
+    display: none !important;
+  }
+
+  body.tuki_body .tuki_login_register_modal .contenedor-form.active .first-column {
+    display: none !important;
+  }
+
+  body.tuki_body .tuki_login_register_modal .terceary-column {
+    position: relative !important;
+    transform: none !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    border-radius: 0 !important;
+    order: -1;
+    padding: 0.75rem 1rem;
+    flex-shrink: 0;
+  }
+
+  body.tuki_body .tuki_login_register_modal .terceary-column .contenedor-iniciar-sesion,
+  body.tuki_body .tuki_login_register_modal .terceary-column .contenedor-registro {
+    position: relative !important;
+    transform: none !important;
+    height: auto !important;
+    gap: 0.65rem;
+    padding: 0.25rem 0 !important;
+  }
+
+  body.tuki_body .tuki_login_register_modal .contenedor-form:not(.active) .contenedor-iniciar-sesion {
+    display: none !important;
+  }
+
+  body.tuki_body .tuki_login_register_modal .contenedor-form.active .contenedor-registro {
+    display: none !important;
+  }
+
+  body.tuki_body .tuki_login_register_modal .terceary-column .contenedor-iniciar-sesion h3,
+  body.tuki_body .tuki_login_register_modal .terceary-column .contenedor-registro h3 {
+    font-size: 1.15rem;
+  }
+
+  body.tuki_body .tuki_login_register_modal .terceary-column .contenedor-iniciar-sesion p,
+  body.tuki_body .tuki_login_register_modal .terceary-column .contenedor-registro p {
+    font-size: 0.9rem;
+    text-align: center;
+    margin-bottom: 0;
+  }
+
+  body.tuki_body .tuki_login_register_modal .modal-body-restaurant .contenedor-form .first-column form,
+  body.tuki_body .tuki_login_register_modal .modal-body-restaurant .contenedor-form .second-column form {
+    padding: 1rem 1rem 1.25rem;
+  }
+
+  body.tuki_body .tuki_login_register_modal .form-control,
+  body.tuki_body .tuki_login_register_modal .form-select {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  body.tuki_body .tuki_login_register_modal .btn-primary {
+    width: 100%;
+    min-height: 46px;
+    font-size: 1rem;
+  }
+
+  body.tuki_body .tuki_login_register_modal .modal-body-restaurant .terceary-column .contenedor-iniciar-sesion .btn-iniciar-sesion,
+  body.tuki_body .tuki_login_register_modal .modal-body-restaurant .terceary-column .contenedor-registro .btn-registrarse {
+    width: 100%;
+    max-width: 100%;
+    min-height: 46px;
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+}
