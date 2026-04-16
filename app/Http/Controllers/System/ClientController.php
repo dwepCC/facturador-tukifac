@@ -29,6 +29,7 @@
     use App\Helpers\GuestRegisterHelper;
 use App\Models\System\ClientPayment;
 use App\Models\System\PlanPeriod;
+use App\Services\System\CentralClientMetricsQueryService;
 
     class ClientController extends Controller
     {
@@ -1491,5 +1492,69 @@ public function records(Request $request)
             ]);
         }
     }
-    /*end tukifac*/ 
+    /*end tukifac*/
+
+        /**
+         * Vista paralela: listado de clientes leyendo solo métricas en base central (sin N+1 tenant).
+         */
+        public function indexCentralMetrics()
+        {
+            $delete_permission = config('tenant.admin_delete_client');
+            $plans = Plan::all();
+
+            return view('system.clients.index_central_metrics', compact('delete_permission', 'plans'));
+        }
+
+        /**
+         * API JSON paginada para la vista de métricas centrales.
+         */
+        public function recordsCentralMetrics(Request $request)
+        {
+            $service = app(CentralClientMetricsQueryService::class);
+            $paginator = $service->paginateClients($request);
+
+            return response()->json($service->buildPayload($paginator, $request));
+        }
+
+        /**
+         * Detalle de comprobantes en índice central por tipo de notificación (misma lógica que métricas pending_*).
+         */
+        public function centralDocumentEvents(Request $request)
+        {
+            $request->validate([
+                'client_id' => 'required|integer|exists:clients,id',
+                'kind' => 'required|string|in:not_sent,regularize_shipping,to_be_canceled,rejected,observed',
+                'page' => 'nullable|integer|min:1',
+                'per_page' => 'nullable|integer|min:5|max:100',
+                'documents_date_start' => 'nullable|date',
+                'documents_date_end' => 'nullable|date',
+            ]);
+
+            $perPage = min(max((int) $request->input('per_page', 25), 5), 100);
+            $service = app(CentralClientMetricsQueryService::class);
+            $docStart = $request->input('documents_date_start');
+            $docEnd = $request->input('documents_date_end');
+
+            try {
+                $paginator = $service->paginateDocumentEvents(
+                    (int) $request->input('client_id'),
+                    (string) $request->input('kind'),
+                    $perPage,
+                    $docStart ?: null,
+                    $docEnd ?: null
+                );
+            } catch (\InvalidArgumentException $e) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+
+            return response()->json([
+                'data' => $paginator->items(),
+                'meta' => [
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'per_page' => $paginator->perPage(),
+                    'total' => $paginator->total(),
+                ],
+            ]);
+        }
     }

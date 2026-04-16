@@ -69,7 +69,7 @@ class EcommerceController extends Controller
         
         $dataPaginate = $query->orderBy('created_at', 'DESC')
             ->category($category ? $category->id : null)
-            ->paginate(8);
+            ->paginate(12);
             
         $configuration = InventoryConfiguration::first();
         $categories = Category::get();
@@ -99,6 +99,28 @@ class EcommerceController extends Controller
     //     $configuration = InventoryConfiguration::first();
     //   return view('ecommerce::index', ['dataPaginate' => $dataPaginate, 'configuration' => $configuration->stock_control]);
     // }
+
+    /**
+     * Listado por categoría: acepta id numérico (menús) o slug de nombre (migas / chips).
+     * Reutiliza la misma lógica que index($name).
+     */
+    public function category($category)
+    {
+        $segment = $category !== null && $category !== '' ? (string) $category : null;
+        if ($segment === null) {
+            return redirect()->route('tenant.ecommerce.index');
+        }
+        if (ctype_digit($segment)) {
+            $row = Category::find((int) $segment);
+            if ($row && $row->name) {
+                return $this->index(Str::slug($row->name, '-'));
+            }
+
+            return redirect()->route('tenant.ecommerce.index');
+        }
+
+        return $this->index($segment);
+    }
 
     public function getDescriptionWithPromotion($item, $promotion_id)
     {
@@ -160,7 +182,14 @@ class EcommerceController extends Controller
 
     public function partialItem($id)
     {
-        $record = Item::find($id);
+        $record = Item::with(['images', 'category', 'currency_type'])
+            ->where('apply_store', 1)
+            ->find($id);
+
+        if (! $record) {
+            abort(404);
+        }
+
         return view('ecommerce::items.partial', compact('record'));
     }
 

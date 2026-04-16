@@ -5,6 +5,8 @@ namespace App\Observers;
 use App\CoreFacturalo\Requests\Inputs\Functions;
 use App\Models\Tenant\Company;
 use App\Models\Tenant\Document;
+use App\Services\System\TenantCentralMetricsSyncService;
+use Illuminate\Support\Facades\DB;
 
 class DocumentObserver
 {
@@ -36,7 +38,9 @@ class DocumentObserver
      */
     public function updated(Document $document)
     {
-        //
+        DB::connection($document->getConnectionName())->afterCommit(function () use ($document) {
+            app(TenantCentralMetricsSyncService::class)->syncDocument($document);
+        });
     }
 
     /**
@@ -47,7 +51,16 @@ class DocumentObserver
      */
     public function deleted(Document $document)
     {
-        //
+        DB::connection($document->getConnectionName())->afterCommit(function () use ($document) {
+            app(TenantCentralMetricsSyncService::class)->removeDocument($document);
+        });
+    }
+
+    public function created(Document $document)
+    {
+        DB::connection($document->getConnectionName())->afterCommit(function () use ($document) {
+            app(TenantCentralMetricsSyncService::class)->syncDocument($document);
+        });
     }
 
     /**
@@ -69,6 +82,8 @@ class DocumentObserver
      */
     public function forceDeleted(Document $document)
     {
-        //
+        DB::connection($document->getConnectionName())->afterCommit(function () use ($document) {
+            app(TenantCentralMetricsSyncService::class)->removeDocument($document);
+        });
     }
 }

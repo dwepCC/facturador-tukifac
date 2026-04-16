@@ -33,7 +33,7 @@
                         <td>@{{ row.sub_total }}</td>
                         <td>
                             <button type="button" @click="deleteItem(row.id, index)"
-                                class="btn btn-outline-danger btn-sm"><i class="icon-cancel"></i></button>
+                                class="btn btn-outline-danger btn-sm"><i class="fas fa-times"></i></button>
                         </td>
                     </tr>
 
@@ -177,10 +177,10 @@
                                         class="btn btn-outline-secondary" type="button" id="button-addon2">
 
                                         <template v-if="formIdentity.identity_document_type_id === '6'">
-                                            <i class="icon-search"></i> <span>SUNAT</span>
+                                            <i class="fas fa-search"></i> <span>SUNAT</span>
                                         </template>
                                         <template v-if="formIdentity.identity_document_type_id === '1'">
-                                            <i class="icon-search"></i> <span>RENIEC</span>
+                                            <i class="fas fa-search"></i> <span>RENIEC</span>
                                         </template>
                                     </button>
                                 </div>

@@ -1,4 +1,7 @@
 @extends('ecommerce::layouts.layout_ecommerce_cart.index')
+
+@section('title', 'Carrito de compras')
+
 @section('content')
 
 @php
@@ -10,189 +13,241 @@
     $itemsBasePath = asset('storage/uploads/items');
 @endphp
 
-<div class="row" id="app" style="margin-top: 55px">
-    <div class="col-lg-8">
-        <div class="cart-table-container">
+<div class="tuki_cart ecom-cart-page" id="app">
 
-            <table class="table table-cart">
-                <thead>
-                    <tr>
-                        <th class="product-col">Producto</th>
-                        <th class="price-col">Precio</th>
-                        <th class="qty-col">Cantidad</th>
-                        <th>Subtotal</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="(row, index) in records" class="product-row">
-                        <td class="product-col">
-                            <figure class="product-image-container">
-                                <a href="#" class="product-image">
-                                    <img class="image-product" :src="(row.image && row.image !== 'imagen-no-disponible.jpg') ? '{{ $itemsBasePath }}' + '/' + row.image : '{{ $defaultImagePath }}'" :alt="row.description || 'Producto sin imagen'">
+    <div class="row tuki_cart__grid">
+        <div class="col-lg-8 tuki_cart__col-main">
+            <div class="tuki_cart__card cart-table-container tuki_cart__card--lines-only">
+
+                <div v-if="!records.length" class="tuki_cart__empty">
+                    <div class="tuki_cart__empty-icon" aria-hidden="true">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <h3 class="tuki_cart__empty-title">Tu carrito está vacío</h3>
+                    <p class="tuki_cart__empty-text">Explora la tienda y agrega productos para verlos aquí.</p>
+                    <a href="{{ route('tenant.ecommerce.index') }}" class="btn tuki_cart__btn tuki_cart__btn--primary-solid">
+                        <i class="fas fa-store" aria-hidden="true"></i>
+                        Ir a la tienda
+                    </a>
+                </div>
+
+                <div v-else class="tuki_cart__lines-wrap">
+                    <div class="tuki_cart__list-head" aria-hidden="true">
+                        <span class="tuki_cart__list-head-thumb"></span>
+                        <span class="tuki_cart__list-head-product">Producto</span>
+                        <span class="tuki_cart__list-head-unit">Precio</span>
+                        <span class="tuki_cart__list-head-qty">Cantidad</span>
+                        <span class="tuki_cart__list-head-sub">Subtotal</span>
+                        <span class="tuki_cart__list-head-action"></span>
+                    </div>
+
+                    <ul class="tuki_cart__list list-unstyled">
+                        <li v-for="(row, index) in records" :key="'cart-line-' + index + '-' + row.id" class="tuki_cart__line">
+                            <div class="tuki_cart__line-media">
+                                <a :href="'/ecommerce/item/' + row.id" class="tuki_cart__line-img-wrap">
+                                    <img class="tuki_cart__line-img"
+                                        :src="(row.image && row.image !== 'imagen-no-disponible.jpg') ? '{{ $itemsBasePath }}' + '/' + row.image : '{{ $defaultImagePath }}'"
+                                        :alt="row.description || 'Producto'" loading="lazy" decoding="async" width="96" height="96">
                                 </a>
-                            </figure>
-                            <h2 class="product-title">
-                                <a href="#">@{{ row.description }}</a>
-                            </h2>
-                        </td>
-                        <td>@{{ row.currency_type_symbol }} @{{ row.sale_unit_price }}</td>
-                        <td>
-                            <input class="vertical-quantity form-control input_quantity" :data-product="row.id"
-                                type="text">
-                        </td>
-                        <td>S/ @{{ row.sub_total }}</td>
-                        <td>
-                            <button type="button" @click="deleteItem(row.id, index)"
-                                class="btn btn-outline-danger btn-sm"><i class="icon-cancel"></i></button>
-                        </td>
-                    </tr>
+                            </div>
+                            <div class="tuki_cart__line-body">
+                                <a :href="'/ecommerce/item/' + row.id" class="tuki_cart__line-title">@{{ row.description }}</a>
+                                <div class="tuki_cart__line-unit tuki_cart__line-unit--mob">
+                                    <span class="tuki_cart__line-label">Precio</span>
+                                    <span class="tuki_cart__line-value">@{{ row.currency_type_symbol }} @{{ row.sale_unit_price }}</span>
+                                </div>
+                            </div>
+                            <div class="tuki_cart__line-unit tuki_cart__line-unit--desk">
+                                <span class="tuki_cart__line-value">@{{ row.currency_type_symbol }} @{{ row.sale_unit_price }}</span>
+                            </div>
+                            <div class="tuki_cart__line-qty">
+                                <span class="tuki_cart__line-label tuki_cart__line-label--qty">Cantidad</span>
+                                <div class="tuki_cart__qty-stepper">
+                                    <button type="button" class="tuki_cart__qty-btn" @click.prevent="bumpQty(row, -1)"
+                                        :aria-label="'Disminuir cantidad de ' + (row.description || 'producto')">
+                                        <i class="fas fa-minus" aria-hidden="true"></i>
+                                    </button>
+                                    <input class="form-control input_quantity tuki_cart__qty-input" :data-product="row.id"
+                                        type="text" inputmode="decimal" autocomplete="off"
+                                        :aria-label="'Cantidad de ' + (row.description || 'producto')">
+                                    <button type="button" class="tuki_cart__qty-btn" @click.prevent="bumpQty(row, 1)"
+                                        :aria-label="'Aumentar cantidad de ' + (row.description || 'producto')">
+                                        <i class="fas fa-plus" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="tuki_cart__line-sub">
+                                <span class="tuki_cart__line-label">Subtotal</span>
+                                <span class="tuki_cart__line-subtotal">S/ @{{ row.sub_total }}</span>
+                            </div>
+                            <div class="tuki_cart__line-remove">
+                                <button type="button" @click="deleteItem(row.id, index)" class="tuki_cart__remove"
+                                    :title="'Quitar ' + (row.description || '')"
+                                    :aria-label="'Quitar ' + (row.description || 'producto') + ' del carrito'">
+                                    <i class="fas fa-times" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </li>
+                    </ul>
 
-                </tbody>
-
-                <tfoot>
-                    <tr>
-                        <td colspan="4" class="clearfix">
-                            <div class="float-left">
-                                <a href="/ecommerce" class="btn btn-outline-secondary">Continuar Comprando</a>
-                            </div><!-- End .float-left -->
-
-                            <div class="float-right">
-                                <a href="#" @click="clearShoppingCart"
-                                    class="btn btn-outline-secondary btn-clear-cart">Limpiar Carrito</a>
-                                <!--<a href="#" class="btn btn-outline-secondary btn-update-cart">Update Shopping Cart</a> -->
-                            </div><!-- End .float-right -->
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div><!-- End .cart-table-container -->        
-    </div><!-- End .col-lg-8 -->
-
-    <div class="col-lg-4">
-    <div class="cart-summary">
-            <h3>Datos de contacto y envío</h3>
-
-            <form autocomplete="off" action="#">
-                <div class="form-group" :class="{'text-danger': errors.telefono}">
-                    <label for="email">Teléfono:</label>
-                    <input v-model="form_contact.telephone" type="text" autocomplete="off" class="form-control" placeholder="Ingrese número de teléfono" name="teléfono">
-                    <small class="form-control-feedback" v-if="errors.telefono" v-text="errors.telefono[0]"></small>
+                    <div class="tuki_cart__list-foot">
+                        <a href="{{ route('tenant.ecommerce.index') }}" class="btn tuki_cart__btn tuki_cart__btn--outline">
+                            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                            Seguir comprando
+                        </a>
+                        <a href="#" @click.prevent="clearShoppingCart"
+                            class="btn tuki_cart__btn tuki_cart__btn--outline tuki_cart__btn--danger-outline btn-clear-cart">
+                            <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                            Vaciar carrito
+                        </a>
+                    </div>
                 </div>
-                <div class="form-group" :class="{'text-danger': errors.address}">
-                    <label for="email">Dirección:</label>
-                    <textarea v-model="form_contact.address" class="form-control" placeholder="Ingrese dirección de envío" rows="2" cols="10"></textarea>
-                    <small class="form-control-feedback" v-if="errors.address" v-text="errors.address[0]"></small>
-                </div>
-            </form>
+            </div>
         </div>
 
-        <div class="cart-summary">
-            <h3>Tipo de comprobante</h3>
+        <div class="col-lg-4 tuki_cart__col-aside">
+            <div class="cart-summary tuki_cart__card">
+                <h3 class="tuki_cart__card-title tuki_cart__card-title--sm">
+                    <i class="fas fa-phone" aria-hidden="true"></i>
+                    Datos de contacto y envío
+                </h3>
 
-            <div class="form-group" :class="{'text-danger': errors.codigo_tipo_documento}">
-                <label>Comprobante:</label>
-                {{-- <select v-model="formIdentity.identity_document_type_id" class="form-control" @change="optionDocument">
-                    <option value="" disabled>Tipo de comprobante</option>
-                    <option value="1">Boleta</option>
-                    <option value="6">Factura</option>
-                    <option value="80">Nota de venta</option>
-                </select> --}}
-                
-                <select v-model="form_document.codigo_tipo_documento" class="form-control" @change="optionDocument">
+                <form autocomplete="off" action="#" class="tuki_cart__form">
+                    <div class="form-group tuki_cart__field-group" :class="{'text-danger': errors.telefono}">
+                        <label class="tuki_cart__label" for="cart_phone">Teléfono</label>
+                        <div class="tuki_cart__input-wrap">
+                            <span class="tuki_cart__input-icon" aria-hidden="true"><i class="fas fa-phone"></i></span>
+                            <input id="cart_phone" v-model="form_contact.telephone" type="text" autocomplete="off" class="form-control tuki_cart__field" placeholder="Ej. 999 999 999" name="teléfono">
+                        </div>
+                        <small class="form-control-feedback" v-if="errors.telefono" v-text="errors.telefono[0]"></small>
+                    </div>
+                    <div class="form-group tuki_cart__field-group" :class="{'text-danger': errors.address}">
+                        <label class="tuki_cart__label" for="cart_address">Dirección de envío</label>
+                        <div class="tuki_cart__input-wrap tuki_cart__input-wrap--textarea">
+                            <span class="tuki_cart__input-icon" aria-hidden="true"><i class="fas fa-map-marker-alt"></i></span>
+                            <textarea id="cart_address" v-model="form_contact.address" class="form-control tuki_cart__field" placeholder="Calle, distrito, referencias…" rows="2" cols="10"></textarea>
+                        </div>
+                        <small class="form-control-feedback" v-if="errors.address" v-text="errors.address[0]"></small>
+                    </div>
+                </form>
+            </div>
+
+            <div class="cart-summary tuki_cart__card">
+                <h3 class="tuki_cart__card-title tuki_cart__card-title--sm">
+                    <i class="fas fa-file-invoice" aria-hidden="true"></i>
+                    Tipo de comprobante
+                </h3>
+
+            <div class="form-group tuki_cart__field-group" :class="{'text-danger': errors.codigo_tipo_documento}">
+                <label class="tuki_cart__label" for="cart_doc_type">Comprobante</label>
+                <select id="cart_doc_type" v-model="form_document.codigo_tipo_documento" class="form-control tuki_cart__field tuki_cart__select" @change="optionDocument">
                     <option value="" disabled>Tipo de comprobante</option>
                     <option value="01">Factura</option>
                     <option value="03">Boleta</option>
                     <option value="80">Nota de venta</option>
                 </select>
-
                 <small class="form-control-feedback" v-if="errors.codigo_tipo_documento">El campo Comprobante es obligatorio.</small>
             </div>
-            <div class="form-group" :class="{'text-danger': errors.codigo_tipo_documento_identidad}">
-                <label>Tipo de documento:</label>
-                <select v-model="typeDocuments" class="form-control">
-                    <option value="" disabled>Tipo de documento</option>
+            <div class="form-group tuki_cart__field-group" :class="{'text-danger': errors.codigo_tipo_documento_identidad}">
+                <label class="tuki_cart__label" for="cart_id_type">Tipo de documento de identidad</label>
+                <select id="cart_id_type" v-model="typeDocuments" class="form-control tuki_cart__field tuki_cart__select">
+                    <option value="" disabled>Seleccionar</option>
                     <option v-for="item in typeDocumentList" :value="item.id" :label="item.name">@{{ item.name }}</option>
                 </select>
                 <small class="form-control-feedback" v-if="errors.codigo_tipo_documento_identidad" v-text="errors.codigo_tipo_documento_identidad[0]"></small>
             </div>
-            <div class="form-group" :class="{'text-danger': errors.numero_documento}">
-                <label>Número de documento:</label>
-                <input v-model="numberDocument" :maxlength="maxLength" type="text" class="form-control">
+            <div class="form-group tuki_cart__field-group" :class="{'text-danger': errors.numero_documento}">
+                <label class="tuki_cart__label" for="cart_id_number">Número de documento</label>
+                <div class="tuki_cart__input-wrap">
+                    <span class="tuki_cart__input-icon" aria-hidden="true"><i class="fas fa-id-card"></i></span>
+                    <input id="cart_id_number" v-model="numberDocument" :maxlength="maxLength" type="text" class="form-control tuki_cart__field" placeholder="Según tipo elegido" autocomplete="off">
+                </div>
                 <small class="form-control-feedback" v-if="errors.numero_documento" v-text="errors.numero_documento[0]"></small>
             </div>
 
-        </div><!-- End .col-lg-4 -->
+            </div>
 
-        <div class="cart-summary">
-            <h3>Resumen</h3>
-            <table class="table table-totals">
-                <tbody>
+            <div class="cart-summary tuki_cart__card">
+                <h3 class="tuki_cart__card-title tuki_cart__card-title--sm">
+                    <i class="fas fa-clipboard-list" aria-hidden="true"></i>
+                    Resumen
+                </h3>
+            <div class="tuki_cart__summary">
+                <div v-if="summary.total_exonerated > 0" class="tuki_cart__summary-row">
+                    <span class="tuki_cart__summary-key">Operaciones exoneradas</span>
+                    <span class="tuki_cart__summary-val">S/ @{{ summary.total_exonerated }}</span>
+                </div>
+                <div v-if="summary.total_taxed > 0" class="tuki_cart__summary-row">
+                    <span class="tuki_cart__summary-key">Operación gravada</span>
+                    <span class="tuki_cart__summary-val">S/ @{{ summary.total_taxed }}</span>
+                </div>
+                <div v-if="summary.total_igv > 0" class="tuki_cart__summary-row">
+                    <span class="tuki_cart__summary-key">IGV (18%)</span>
+                    <span class="tuki_cart__summary-val">S/ @{{ summary.total_igv }}</span>
+                </div>
+                <div class="tuki_cart__summary-row tuki_cart__summary-row--total">
+                    <span class="tuki_cart__summary-key">Total a pagar</span>
+                    <span class="tuki_cart__summary-total">S/ @{{ summary.total }}</span>
+                </div>
+            </div>
 
-                    <tr v-if="summary.total_exonerated > 0">
-                        <td>OP.EXONERADAS</td>
-                        <td>S/ @{{ summary.total_exonerated }}</td>
-                    </tr>
-                    <tr v-if="summary.total_taxed > 0">
-                        <td>OP.GRAVADA</td>
-                        <td>S/ @{{ summary.total_taxed }}</td>
-                    </tr>
-                    <tr v-if="summary.total_igv > 0">
-                        <td>IGV</td>
-                        <td>S/ @{{ summary.total_igv }}</td>
-                    </tr>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td>Orden Total</td>
-                        <td>S/ @{{summary.total}}</td>
-                    </tr>
-                </tfoot>
-            </table>
-
-            <div class="checkout-methods text-center">
+            <div class="checkout-methods text-center tuki_cart__checkout">
 
                 @guest('ecommerce')
-                <a href="{{route('tenant_ecommerce_login')}}" class="btn btn-block btn-sm btn-primary login-link culqi">Pagar
-                    con VISA</a>
-                <a href="{{route('tenant_ecommerce_login')}}" class="btn btn-block btn-sm btn-primary login-link">Pagar
-                    con EFECTIVO</a>
-                <a style="margin-left:15%" href="{{route('tenant_ecommerce_login')}}"
-                    class="btn btn-block btn-sm login-link">
-                    <img src="{{ asset('porto-ecommerce/assets/images/btn_buynowCC_LG.gif') }}" alt="">
+                <a href="{{ route('tenant_ecommerce_login') }}" class="btn btn-block btn-sm btn-primary login-link culqi tuki_cart__pay-btn">
+                    <i class="fas fa-credit-card" aria-hidden="true"></i>
+                    Pagar con tarjeta (Visa)
+                </a>
+                <a href="{{ route('tenant_ecommerce_login') }}" class="btn btn-block btn-sm btn-primary login-link tuki_cart__pay-btn">
+                    <i class="fas fa-money-bill-wave" aria-hidden="true"></i>
+                    Pagar en efectivo
+                </a>
+                <a href="{{ route('tenant_ecommerce_login') }}" class="btn btn-block btn-sm login-link tuki_cart__paypal-wrap">
+                    <img src="{{ asset('porto-ecommerce/assets/images/btn_buynowCC_LG.gif') }}" alt="Pagar con PayPal" class="tuki_cart__paypal-img" width="145" height="47" loading="lazy">
                 </a>
 
                 @elseauth('ecommerce')
-                <button class="btn btn-block btn-sm btn-primary login-link culqi" onclick="execCulqi()"> Pagar con VISA </button>
+                <button type="button" class="btn btn-block btn-sm btn-primary login-link culqi tuki_cart__pay-btn" onclick="execCulqi()">
+                    <i class="fas fa-credit-card" aria-hidden="true"></i>
+                    Pagar con tarjeta (Visa)
+                </button>
 
-                <button @click="payment_cash.clicked = !payment_cash.clicked" class="btn btn-block btn-sm btn-primary login-link-pay">
-                    Pagar con EFECTIVO</button>
-                <div v-show="payment_cash.clicked" style="margin: 3%" class="form-group">
-                    <div class="input-group mb-3">
+                <button type="button" @click="payment_cash.clicked = !payment_cash.clicked" class="btn btn-block btn-sm btn-primary login-link-pay tuki_cart__pay-btn">
+                    <i class="fas fa-money-bill-wave" aria-hidden="true"></i>
+                    Pagar en efectivo
+                </button>
+                <div v-show="payment_cash.clicked" class="form-group tuki_cart__cash-panel">
+                    <div class="input-group mb-0">
                         <div class="input-group-prepend">
                             <span class="input-group-text">S/</span>
                         </div>
                         <input readonly placeholder="0.0" v-model="payment_cash.amount" type="text"
                             onkeypress="return isNumberKey(event)" maxlength="14" class="form-control"
-                            aria-label="Amount">
-                        <button @click="paymentCash" class="btn btn-success">OK!</button>
+                            aria-label="Monto a pagar en efectivo">
+                        <div class="input-group-append">
+                            <button type="button" @click="paymentCash" class="btn btn-success tuki_cart__cash-ok">
+                                <i class="fas fa-check" aria-hidden="true"></i>
+                                Confirmar
+                            </button>
+                        </div>
                     </div>
                 </div>
 
 
-                @if($information->script_paypal)
+                @if (! empty($configuration->script_paypal))
 
-                    {!!html_entity_decode($information->script_paypal)!!}
+                    {!! html_entity_decode($configuration->script_paypal) !!}
 
                 @endif
 
 
                 @endauth
 
-            </div><!-- End .checkout-methods -->
-        </div><!-- End .cart-summary -->
-    </div><!-- End .col-lg-4 -->
-</div><!-- End .row -->
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
 
 <input type="hidden" id="total_amount" data-total="0.0">
 
@@ -270,10 +325,15 @@
           let exchange_rate_sale = this.exchange_rate_sale
           let contex = this
 
-          $(".input_quantity").change(function (e) {
+          $(document).off('change.tukiCartQty').on('change.tukiCartQty', '.input_quantity', function (e) {
             let value = parseFloat($(this).val())
+            if (isNaN(value) || value < 1) {
+              value = 1
+              $(this).val(value)
+            }
             let id = $(this).data('product')
             let row = contex.records.find(x => x.id == id)
+            if (!row) return
 
             if(row.currency_type_id === 'USD') {
               row.sub_total = ((parseFloat(row.sale_unit_price) * value) * exchange_rate_sale).toFixed(2)
@@ -283,6 +343,10 @@
 
             row.cantidad = value
             contex.calculateSummary()
+            contex.persistCartLocalStorage()
+            if (typeof jQuery !== 'undefined') {
+              jQuery(document).trigger('tukiProductsCartChanged')
+            }
           })
 
           this.records.forEach(function (item) {
@@ -294,24 +358,65 @@
           })
 
           this.calculateSummary()
+          this.$nextTick(function () {
+            contex.syncQuantityInputs()
+          })
         },
         created() {
-            let array = localStorage.getItem('products_cart');
-            array = JSON.parse(array)
-            if (array) {
-                this.records = array.map(function (item) {
-                    let obj = item
-                    obj.cantidad = 1
-                    obj.sub_total = parseFloat(item.sale_unit_price).toFixed(2)
-                    obj.exchange_rate_sale = ''
-                    return obj
-                })
+            let array = []
+            try {
+                const raw = localStorage.getItem('products_cart')
+                const parsed = raw ? JSON.parse(raw) : []
+                array = Array.isArray(parsed) ? parsed : []
+            } catch (e) {
+                array = []
+                try {
+                    localStorage.setItem('products_cart', JSON.stringify([]))
+                } catch (e2) {}
             }
-            // console.log(this.records)
+            this.records = array.map(function (item) {
+                let obj = Object.assign({}, item)
+                if (obj.cantidad == null || obj.cantidad === '' || isNaN(parseFloat(obj.cantidad))) {
+                    obj.cantidad = 1
+                } else {
+                    obj.cantidad = parseFloat(obj.cantidad)
+                }
+                if (obj.sub_total != null && obj.sub_total !== '' && !isNaN(parseFloat(obj.sub_total))) {
+                    obj.sub_total = parseFloat(obj.sub_total).toFixed(2)
+                } else {
+                    obj.sub_total = (parseFloat(obj.sale_unit_price) * obj.cantidad).toFixed(2)
+                }
+                obj.exchange_rate_sale = ''
+                return obj
+            })
             this.initForm();
 
         },
         methods: {
+            persistCartLocalStorage: function () {
+                try {
+                    localStorage.setItem('products_cart', JSON.stringify(this.records))
+                } catch (e) {}
+            },
+            syncQuantityInputs: function () {
+                this.records.forEach(function (item) {
+                    var $el = $('.input_quantity[data-product="' + item.id + '"]')
+                    if ($el.length) {
+                        $el.val(item.cantidad != null ? item.cantidad : 1)
+                    }
+                })
+            },
+            bumpQty: function (row, delta) {
+                var $inp = $('.input_quantity[data-product="' + row.id + '"]')
+                if (!$inp.length) return
+                var v = parseFloat($inp.val())
+                if (isNaN(v) || v < 1) {
+                    v = parseFloat(row.cantidad) || 1
+                }
+                v = Math.max(1, v + delta)
+                $inp.val(String(v))
+                $inp.trigger('change')
+            },
             async changeExchangeRate(exchange_rate_date){
                 var response = await axios.get(`/exchange_rate/ecommence/${exchange_rate_date}`)
                 this.exchange_rate_sale = parseFloat(response.data.sale)
@@ -400,7 +505,14 @@
                 }
 
                 // verifica si tiene productos seleccionado
-                let product = JSON.parse(localStorage.getItem('products_cart'));
+                let product = []
+                try {
+                    const raw = localStorage.getItem('products_cart')
+                    const parsed = raw ? JSON.parse(raw) : []
+                    product = Array.isArray(parsed) ? parsed : []
+                } catch (e) {
+                    product = []
+                }
 
                 if (product.length < 1){
                     swal({
@@ -634,18 +746,24 @@
                 this.optionDocument()
             },
             deleteItem(id, index) {
-                //remove en fronted
                 this.records.splice(index, 1)
-                //set remove en localstorage
-                let array = localStorage.getItem('products_cart');
-                array = JSON.parse(array);
+                let array = []
+                try {
+                    const raw = localStorage.getItem('products_cart')
+                    const parsed = raw ? JSON.parse(raw) : []
+                    array = Array.isArray(parsed) ? parsed : []
+                } catch (e) {
+                    array = []
+                }
                 let indexFound = array.findIndex(x => x.id == id)
-                array.splice(indexFound, 1);
-                localStorage.setItem('products_cart', JSON.stringify(array));
-
+                if (indexFound >= 0) {
+                    array.splice(indexFound, 1)
+                }
+                localStorage.setItem('products_cart', JSON.stringify(array))
                 this.calculateSummary()
-
-
+                if (typeof jQuery !== 'undefined') {
+                    jQuery(document).trigger('tukiProductsCartChanged')
+                }
             },
             clearShoppingCart() {
               this.errors = {}

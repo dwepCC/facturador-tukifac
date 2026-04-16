@@ -1,0 +1,38 @@
+Pasos recomendados para ti
+Ejecutar backfill (al menos una vez):
+php artisan tenant-metrics:central-backfill
+o por cliente:
+php artisan tenant-metrics:central-backfill --client_id=ID
+
+Entrar al panel admin → menú “Clientes (métricas)” o URL:
+/clientes-metricas-central
+
+Notas técnicas
+Los pendientes (document_not_sent, etc.) en la nueva vista salen del snapshot recalculado en cada sync; si usas filtro por rango de fechas, los totales por rango de docs/NV sí cambian; los pendientes siguen siendo los del índice global (se puede afinar después con consultas por rango).
+monthly_sales_total en central es aproximación respecto a ClientHelper/DashboardData (no suma pagos por línea).
+Si algo falla al escribir en system, revisa storage/logs/laravel.log (warnings registrados en el servicio de sync).
+
+
+
+
+
+
+2. Eventos en vivo (source: "live")
+appendTenantMetricHistoryEvent fuerza metadata.source = 'live' para lo que venga de los observers (no se puede pisar con el payload).
+3. Comandos Artisan
+Comando	Uso
+php artisan tenant-metrics:rebuild-entity-history	Todos los clientes con website
+php artisan tenant-metrics:rebuild-entity-history --client_id=123	Un solo cliente
+php artisan tenant-metrics:rebuild-entity-history --dry-run	Ver cuántos usuarios/sucursales habría sin escribir
+php artisan tenant-metrics:rebuild-entity-history --continue-on-error	Si un tenant falla, sigue con los demás
+php artisan tenant-metrics:central-backfill --with-entity-history	Tras sincronizar documentos/NV, reconstruye historial de entidades en el mismo recorrido
+4. Recomendación en producción
+Ventana de mantenimiento o baja carga.
+php artisan tenant-metrics:rebuild-entity-history --dry-run (revisar números).
+php artisan tenant-metrics:rebuild-entity-history (o por --client_id en lotes).
+Opcional: php artisan tenant-metrics:central-backfill --with-entity-history si quieres documentos + NV + historial en una sola pasada por cliente.
+5. Limitaciones (honestas)
+Solo se reconstruyen altas de usuarios/sucursales que existen hoy en el tenant, usando created_at.
+Bajas históricas (usuarios borrados hace tiempo) no se pueden inferir sin otra fuente (auditoría, soft deletes, etc.).
+Al reconstruir se eliminan las filas de historial users/establishments de ese cliente (incluidas las live acumuladas desde el despliegue); por eso el comando está pensado para una migración / normalización, no para ejecutarlo en bucle en horario pico.
+Con esto el historial queda alineado con el estado actual de cada tenant y las métricas centrales se refrescan al final de cada cliente.

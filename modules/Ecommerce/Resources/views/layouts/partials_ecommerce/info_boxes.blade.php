@@ -1,7 +1,7 @@
  <div class="info-boxes-container">
                 <div class="container">
                     <div class="info-box">
-                        <i class="icon-shipping"></i>
+                        <i class="fas fa-truck"></i>
 
                         <div class="info-box-content">
                             <h4>FREE SHIPPING & RETURN</h4>
@@ -10,7 +10,7 @@
                     </div><!-- End .info-box -->
 
                     <div class="info-box">
-                        <i class="icon-us-dollar"></i>
+                        <i class="fas fa-dollar-sign"></i>
 
                         <div class="info-box-content">
                             <h4>MONEY BACK GUARANTEE</h4>
@@ -19,7 +19,7 @@
                     </div><!-- End .info-box -->
 
                     <div class="info-box">
-                        <i class="icon-support"></i>
+                        <i class="fas fa-headset"></i>
 
                         <div class="info-box-content">
                             <h4>ONLINE SUPPORT 24/7</h4>

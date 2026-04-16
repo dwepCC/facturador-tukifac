@@ -31,7 +31,7 @@
                     <span>Add to Wishlist</span>
                 </a>
 
-                <a href="#" data-product="{{ json_encode( $item ) }}" class="paction add-cart" title="Add to Cart">
+                <a href="#" data-product='@json($item)' class="paction add-cart tuki_add_cart_btn" title="Agregar al carrito">
                     <span>Add to Cart</span>
                 </a>
 

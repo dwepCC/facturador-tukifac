@@ -2,9 +2,12 @@
     // $tagid = request()->query('tagid');
     $tagid = Request::segment(3);
     $catetgory_segment = strtolower(Request::segment(2));
+    $__tuki_mm_phone = isset($information) ? trim((string) ($information->information_contact_phone ?? '')) : '';
+    $__tuki_mm_tel_href = $__tuki_mm_phone !== '' ? preg_replace('/\s+/', '', $__tuki_mm_phone) : '';
+    $__tuki_mm_wa = isset($information) ? trim((string) ($information->phone_whatsapp ?? '')) : '';
 @endphp
 <div class="mobile-menu-wrapper">
-    <span class="mobile-menu-close"><i class="icon-cancel"></i></span>
+    <span class="mobile-menu-close" role="button" aria-label="Cerrar menú"><i class="fas fa-times"></i></span>
     <nav class="mobile-nav">
         <ul class="mobile-menu">
             <li class="{{ (!$tagid) ? 'active':'' }}"><a href="{{ route("tenant.ecommerce.index") }}">Home</a></li>
@@ -84,13 +87,31 @@
         </ul>
     </nav><!-- End .mobile-nav -->
 
+    @if ($__tuki_mm_phone !== '' || $__tuki_mm_wa !== '')
+        <section class="tuki_mobile_menu__contact" aria-label="Atención al cliente">
+            <div class="tuki_mobile_menu__contact-title">Atención al cliente</div>
+            @if ($__tuki_mm_phone !== '')
+                <a class="tuki_mobile_menu__contact-row tuki_mobile_menu__contact-row--tel" href="tel:{{ $__tuki_mm_tel_href }}" rel="nofollow">
+                    <span class="tuki_mobile_menu__contact-icon" aria-hidden="true"><i class="fas fa-phone" aria-hidden="true"></i></span>
+                    <span class="tuki_mobile_menu__contact-text">{{ $__tuki_mm_phone }}</span>
+                </a>
+            @endif
+            @if ($__tuki_mm_wa !== '')
+                <a class="tuki_mobile_menu__contact-row tuki_mobile_menu__contact-row--wa" href="https://wa.me/{{ $__tuki_mm_wa }}" target="_blank" rel="noopener noreferrer">
+                    <span class="tuki_mobile_menu__contact-icon" aria-hidden="true"><i class="fab fa-whatsapp" aria-hidden="true"></i></span>
+                    <span class="tuki_mobile_menu__contact-text">WhatsApp</span>
+                </a>
+            @endif
+        </section>
+    @endif
+
     <div class="social-icons">
         @if($information->link_facebook)
-            <a href="{{$information->link_facebook}}" class="social-icon" target="_blank"><i class="icon-facebook"></i></a>
+            <a href="{{$information->link_facebook}}" class="social-icon" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook-f"></i></a>
         @endif
 
         @if($information->link_twitter)
-            <a href="{{$information->link_twitter}}" class="social-icon" target="_blank"><i class="icon-twitter"></i></a>
+            <a href="{{$information->link_twitter}}" class="social-icon" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a>
         @endif
 
         @if($information->link_youtube)

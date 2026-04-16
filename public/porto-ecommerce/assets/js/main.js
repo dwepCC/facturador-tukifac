@@ -1,11 +1,44 @@
 !
 function(e) {
 	"use strict";
+	window.tukiMiniCartLineHtml = function(element) {
+		var qty = parseFloat(element.cantidad) > 0 ? parseFloat(element.cantidad) : 1;
+		var price = parseFloat(element.sale_unit_price);
+		if (isNaN(price)) {
+			price = 0;
+		}
+		var lineSub = (qty * price).toFixed(2);
+		var sym = element.currency_type_symbol != null ? String(element.currency_type_symbol) : "S/";
+		var id = String(element.id);
+		var desc = String(element.description != null ? element.description : "Producto").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+		var imgSmall = element.image_small;
+		var imgSrc = imgSmall && imgSmall !== "imagen-no-disponible.jpg"
+			? "/storage/uploads/items/" + String(imgSmall).replace(/"/g, "")
+			: "/logo/imagen-no-disponible.jpg";
+		var imgTag = ' src="' + imgSrc + '"';
+		return (
+			'<article class="tuki_mini_cart__item product" data-tuki-mini-cart-id="' + id + '">' +
+			'<a class="tuki_mini_cart__thumb" href="/ecommerce/item/' + id + '">' +
+			'<img class="tuki_mini_cart__img" width="56" height="56" loading="lazy" decoding="async" alt="' + desc + '"' + imgTag + " />" +
+			"</a>" +
+			'<div class="tuki_mini_cart__body">' +
+			'<a class="tuki_mini_cart__title product-title" href="/ecommerce/item/' + id + '">' + desc + "</a>" +
+			'<div class="tuki_mini_cart__meta">' +
+			'<span class="tuki_mini_cart__unit-line"><span class="cart-product-qty">' + qty + "</span> × <span>" + sym + " " + price.toFixed(2) + "</span></span>" +
+			'<span class="tuki_mini_cart__line-sub">' + sym + " " + lineSub + "</span>" +
+			"</div></div>" +
+			'<a href="#" class="tuki_mini_cart__remove btn-remove" role="button" onclick="remove(' + id + ');return false;" title="Quitar" aria-label="Quitar producto">' +
+			'<i class="fas fa-times" aria-hidden="true"></i></a></article>'
+		);
+	};
 	var o = {
 		initialised: !1,
 		mobile: !1,
 		init: function() {
-			this.initialised || (this.initialised = !0, this.initShop(), this.addToCart(), this.checkMobile(), this.stickyHeader(), this.headerSearchToggle(), this.mMenuIcons(), this.mMenuToggle(), this.mobileMenu(), this.scrollToTop(), 
+			this.initialised || (this.initialised = !0, this.initShop(), this.addToCart(), e(document).off("tukiProductsCartChanged.tukiSync").on("tukiProductsCartChanged.tukiSync", function() {
+				o.productsCartDropDown();
+				o.calculateTotalCart();
+			}), this.checkMobile(), this.stickyHeader(), this.headerSearchToggle(), this.mMenuIcons(), this.mMenuToggle(), this.mobileMenu(), this.scrollToTop(), 
 			this.quantityInputs(), this.countTo(), this.tooltip(), this.popover(), this.changePassToggle(), this.changeBillToggle(), this.catAccordion(), this.ajaxLoadProduct(), this.toggleFilter(), 
 			this.toggleSidebar(), this.productTabSroll(), this.scrollToElement(), this.loginPopup(), this.windowClick(), e.fn.superfish && this.menuInit(), e.fn.owlCarousel 
 			&& this.owlCarousels(), "object" == typeof noUiSlider && this.filterSlider(), e.fn.themeSticky && this.stickySidebar(), e.fn.magnificPopup && this.lightBox())
@@ -335,6 +368,24 @@ function(e) {
 		},
 		
 		lightBox: function() {
+			var tukiQvSkeletonTpl = [
+				'<div class="tuki_qv_skeleton" aria-busy="true" aria-label="Cargando vista previa">',
+				'<div class="tuki_qv_skeleton__inner">',
+				'<div class="tuki_qv_skeleton__media">',
+				'<div class="tuki_qv_skeleton__shine tuki_qv_skeleton__img"></div>',
+				'<div class="tuki_qv_skeleton__thumbs">',
+				'<span class="tuki_qv_skeleton__shine"></span><span class="tuki_qv_skeleton__shine"></span><span class="tuki_qv_skeleton__shine"></span>',
+				"</div></div>",
+				'<div class="tuki_qv_skeleton__body">',
+				'<div class="tuki_qv_skeleton__shine tuki_qv_skeleton__line tuki_qv_skeleton__line--lg"></div>',
+				'<div class="tuki_qv_skeleton__shine tuki_qv_skeleton__line tuki_qv_skeleton__line--md"></div>',
+				'<div class="tuki_qv_skeleton__shine tuki_qv_skeleton__line tuki_qv_skeleton__line--sm"></div>',
+				'<div class="tuki_qv_skeleton__bar"></div>',
+				'<div class="tuki_qv_skeleton__actions">',
+				'<div class="tuki_qv_skeleton__shine tuki_qv_skeleton__btn"></div>',
+				'<div class="tuki_qv_skeleton__shine tuki_qv_skeleton__btn tuki_qv_skeleton__btn--wide"></div>',
+				"</div></div></div></div>"
+			].join("");
 			var t = [],
 				n = e(0 === e(".product-single-carousel .owl-item:not(.cloned) img").length ? ".product-single-gallery img" : ".product-single-carousel .owl-item:not(.cloned) img");
 			n.each(function() {
@@ -351,36 +402,70 @@ function(e) {
 						enabled: !0
 					}
 				}, i)
-			}), e("a.btn-quickview").on("click", function(t) {
-				t.preventDefault(), o.ajaxLoading();
-				
+			}), e(document).on("click", "a.btn-quickview", function(t) {
+				t.preventDefault();
 				var n = e(this).attr("href");
-				setTimeout(function() {
-					e.magnificPopup.open({
-						type: "ajax",
-						mainClass: "mfp-ajax-product",
-						tLoading: "",
-						preloader: !1,
-						removalDelay: 350,
-						items: {
-							src: n
-						},
-						
-						callbacks: {
-							ajaxContentAdded: function() {
-								o.owlCarousels(), o.quantityInputs(), "undefined" != typeof addthis ? addthis.layers.refresh() : e.getScript("http://s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5b927288a03dbde6")
-							},
-							
-							beforeClose: function() {
-								e(".ajaxOverlay").remove()
+				if (!n) return e(".ajaxOverlay").remove(), void 0;
+				var isTukiQuickview = n.indexOf("item_partial") !== -1;
+				if (!isTukiQuickview) o.ajaxLoading();
+				var injectTukiQvSkeleton = function() {
+					if (!isTukiQuickview) return;
+					var $c = e(".mfp-wrap.mfp-tuki-quickview .mfp-content");
+					if (!$c.length) return;
+					if ($c.find(".tuki_quickview").length) return;
+					if ($c.find(".tuki_qv_skeleton").length) return;
+					$c.html(tukiQvSkeletonTpl);
+				};
+				e.magnificPopup.open({
+					type: "ajax",
+					mainClass: "mfp-ajax-product mfp-tuki-quickview",
+					tLoading: "",
+					preloader: !1,
+					removalDelay: 350,
+					items: {
+						src: n
+					},
+					callbacks: {
+						open: function() {
+							injectTukiQvSkeleton();
+							if ("function" == typeof window.requestAnimationFrame) {
+								window.requestAnimationFrame(function() {
+									injectTukiQvSkeleton();
+									window.requestAnimationFrame(injectTukiQvSkeleton);
+								});
 							}
+							setTimeout(injectTukiQvSkeleton, 32);
 						},
-						
-						ajax: {
-							tError: ""
+						ajaxContentAdded: function() {
+							try {
+								e(".mfp-wrap.mfp-tuki-quickview .mfp-content .tuki_qv_skeleton").remove();
+								var $qv = jQuery(".mfp-content .tuki_quickview");
+								if ($qv.length) {
+									var $mainImg = $qv.find("#tuki_qv_main_img");
+									$qv.find(".tuki_quickview__thumb").off("click.tukiQvThumb").on("click.tukiQvThumb", function () {
+										var src = jQuery(this).attr("data-tuki-qv-src");
+										if (!src || !$mainImg.length) return;
+										$mainImg.attr("src", src);
+										$qv.find(".tuki_quickview__thumb").removeClass("is-active").attr("aria-pressed", "false");
+										jQuery(this).addClass("is-active").attr("aria-pressed", "true");
+									});
+								} else {
+									o.owlCarousels();
+								}
+								o.quantityInputs();
+							} catch (err) {}
+							try {
+								"undefined" != typeof addthis && addthis.layers && addthis.layers.refresh()
+							} catch (err2) {}
+						},
+						beforeClose: function() {
+							e(".ajaxOverlay").remove()
 						}
-					})
-				}, 1000)
+					},
+					ajax: {
+						tError: ""
+					}
+				})
 			})
 		},
 		
@@ -487,76 +572,93 @@ function(e) {
 		},
 		productsCartDropDown: function()
 		{
-			//console.log('drop dowm')
-			//clean cart dropdown
 			jQuery(".dropdown-cart-products").empty();
 			jQuery(".cart-count").empty();
-			let count = 0;
-			//get data local syrogare prodicts
-			let array = localStorage.getItem('products_cart');
-			array = JSON.parse(array)
-			count = array.length;
-				
-			array.forEach(element => {
-				jQuery(".dropdown-cart-products").append( `
-						<div class="product">
-							<div class="product-details">
-							<h4 class="product-title">
-								<a href="$">${element.description}</a>
-							</h4>
-							<span class="cart-product-info">
-								<span class="cart-product-qty">1</span> x ${element.sale_unit_price}
-							</span>
-							</div>
-							<figure class="product-image-container">
-								<a href="#" class="product-image">
-									<img alt="product" src="/storage/uploads/items/${element.image_small}" />
-								</a>
-								<a href="#" onclick="remove(${element.id})" class="btn-remove" title="Remove Product">
-									<i class="icon-cancel"></i>
-								</a>
-							</figure>
-						</div>` 
-					);
-			});
-			
+			var array = o.parseProductsCartArray(localStorage.getItem("products_cart"));
+			var count = array.length;
+			var $shell = jQuery(".tuki_header_cart .tuki_mini_cart__shell");
+			$shell.toggleClass("is-empty", count === 0);
+			if (!count) {
+				jQuery(".dropdown-cart-products").append(
+					'<div class="tuki_mini_cart__empty">Tu carrito está vacío. Agrega productos desde la tienda.</div>'
+				);
+			} else {
+				array.forEach(function(element) {
+					jQuery(".dropdown-cart-products").append(window.tukiMiniCartLineHtml(element));
+				});
+			}
 			jQuery(".cart-count").append(count);
-
+		},
+		parseProductsCartArray: function(raw) {
+			var arr;
+			try {
+				arr = JSON.parse(raw);
+			} catch (err) {
+				arr = null;
+			}
+			return Array.isArray(arr) ? arr : [];
+		},
+		readAddCartPayload: function($btn) {
+			var item = null;
+			var attr = $btn.attr("data-product");
+			if (attr && String(attr).length) {
+				try {
+					item = JSON.parse(attr);
+				} catch (err) {
+					item = null;
+				}
+			}
+			if (!item) {
+				item = $btn.data("product");
+			}
+			return item && (item.id != null && item.id !== "") ? item : null;
 		},
 		addToCart: function()
 		{
 			let contex = this
-			e(".add-cart").click(function(t) {
-
-				let array = localStorage.getItem('products_cart');
-				array = JSON.parse(array);
-
-				let item = jQuery(this).data('product')
-				let found = array.find( x=> x.id == item.id)
-				if(!found)
-				{
-					array.push( jQuery(this).data('product') );
-					localStorage.setItem('products_cart', JSON.stringify( array ) );
-					contex.productsCartDropDown();
-					contex.successAddProduct();
-					contex.calculateTotalCart();
-
-					$('#product_added').html(`
-						<div class="product-single-details-restaurant">
-						<h1 class="product-title">${item.description}</h1>
-						<div class="price-box">
-							<span class="product-price">S/ ${ Number(item.sale_unit_price).toFixed(2) }</span>
-						</div>
-						<div class="product-desce">
-							<p>${item.name}  </p>
-						</div>	</div>`);
-						
-					$('#product_added_image').html( `<img src="/storage/uploads/items/${item.image_medium}" class="img" alt="product">`)
+			e(document).off("click.tukiAddCart", ".add-cart").on("click.tukiAddCart", ".add-cart", function(t) {
+				t.preventDefault();
+				var $btn = e(this);
+				if ($btn.hasClass("tuki_add_cart_busy") || $btn.closest(".productdisabled").length) {
+					return;
 				}
-				else{
-					contex.alreadyProductCart();
+				var item = contex.readAddCartPayload($btn);
+				if (!item) {
+					return;
 				}
-				
+				var array = contex.parseProductsCartArray(localStorage.getItem("products_cart"));
+				var found = array.find(function(x) {
+					return x.id == item.id;
+				});
+				$btn.addClass("tuki_add_cart_busy").attr("aria-busy", "true");
+				try {
+					if (!found) {
+						array.push(item);
+						localStorage.setItem("products_cart", JSON.stringify(array));
+						contex.productsCartDropDown();
+						contex.successAddProduct();
+						contex.calculateTotalCart();
+						e("#product_added").html(
+							"<div class=\"product-single-details-restaurant\">" +
+							"<h1 class=\"product-title\">" + String(item.description || "") + "</h1>" +
+							"<div class=\"price-box\">" +
+							"<span class=\"product-price\">S/ " + Number(item.sale_unit_price).toFixed(2) + "</span>" +
+							"</div>" +
+							"<div class=\"product-desce\">" +
+							"<p>" + String(item.name || "") + "</p>" +
+							"</div></div>"
+						);
+						e("#product_added_image").html(
+							"<img src=\"/storage/uploads/items/" + String(item.image_medium || "") + "\" class=\"img\" alt=\"product\">"
+						);
+					} else {
+						contex.alreadyProductCart();
+					}
+				} finally {
+					window.setTimeout(function() {
+						$btn.removeClass("tuki_add_cart_busy").attr("aria-busy", "false");
+					}, 320);
+				}
 			})
 		},
 		successAddProduct: function()
@@ -568,19 +670,30 @@ function(e) {
 			jQuery('#modal-already-product').modal('show');
 		},
 		initShop: function(){
-			if(!localStorage.getItem('products_cart') )
-			{
-				localStorage.setItem('products_cart', JSON.stringify([]))
+			var raw = localStorage.getItem("products_cart");
+			var ok = false;
+			try {
+				if (raw == null || raw === "") {
+					ok = false;
+				} else {
+					var p = JSON.parse(raw);
+					ok = Array.isArray(p);
+				}
+			} catch (err) {
+				ok = false;
+			}
+			if (!ok) {
+				localStorage.setItem("products_cart", JSON.stringify([]));
 			}
 		},
 		calculateTotalCart: function()
 		{
 
-			let array = localStorage.getItem('products_cart');
-			array = JSON.parse(array);
+			let array = o.parseProductsCartArray(localStorage.getItem('products_cart'));
 			let total = 0;
 			array.forEach(element => {
-				total += parseFloat(element.sale_unit_price)
+				var qty = parseFloat(element.cantidad) > 0 ? parseFloat(element.cantidad) : 1;
+				total += parseFloat(element.sale_unit_price) * qty;
 			});
 	
 			$(".cart-total-price").empty();

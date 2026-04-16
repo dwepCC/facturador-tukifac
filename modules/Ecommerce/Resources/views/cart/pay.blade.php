@@ -77,7 +77,7 @@
                         <div class="form-control-tooltip">
                             <input type="tel" class="form-control" required>
                             <span class="input-tooltip" data-toggle="tooltip" title="For delivery questions."
-                                data-placement="right"><i class="icon-question-circle"></i></span>
+                                data-placement="right"><i class="fas fa-question-circle"></i></span>
                         </div><!-- End .form-control-tooltip -->
                     </div><!-- End .form-group -->
                 </form>

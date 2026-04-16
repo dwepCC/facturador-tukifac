@@ -6,31 +6,34 @@
         : asset('storage/defaults/' . $defaultImage);
 @endphp
 
-<div class="dropdown cart-dropdown">
+<div class="dropdown cart-dropdown tuki_header_cart">
     <a href="#" class="dropdown-toggle" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-shopping-bag"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M6.331 8h11.339a2 2 0 0 1 1.977 2.304l-1.255 8.152a3 3 0 0 1 -2.966 2.544h-6.852a3 3 0 0 1 -2.965 -2.544l-1.255 -8.152a2 2 0 0 1 1.977 -2.304z"></path><path d="M9 11v-5a3 3 0 0 1 6 0v5"></path></svg>
         <span class="cart-count">0</span>
     </a>
-    <div class="dropdown-menu">
-        <div class="dropdownmenu-wrapper">
+    <div class="dropdown-menu dropdown-menu-right tuki_mini_cart__dropdown" aria-label="Vista previa del carrito">
+        <div class="dropdownmenu-wrapper tuki_mini_cart__shell">
+            <div class="tuki_mini_cart__head">
+                <span class="tuki_mini_cart__head-title">Tu carrito</span>
+                <span class="tuki_mini_cart__head-badge">Vista previa</span>
+            </div>
 
-            <div class="dropdown-cart-products">
+            <div class="dropdown-cart-products tuki_mini_cart__list"></div>
 
-            </div><!-- End .cart-product -->
+            <div class="tuki_mini_cart__total dropdown-cart-total">
+                <div class="tuki_mini_cart__total-row">
+                    <span class="tuki_mini_cart__total-label">Total estimado</span>
+                    <span class="tuki_mini_cart__total-amount"><span class="tuki_mini_cart__total-currency">S/</span> <span class="cart-total-price">0.00</span></span>
+                </div>
+            </div>
 
-            <div class="dropdown-cart-total">
-                <span>Total</span>
-
-                <span class="cart-total-price">S/ 0</span>
-            </div><!-- End .dropdown-cart-total -->
-
-            <div class="dropdown-cart-action">
-                <a  href="{{ route('tenant_detail_cart') }}" class="btn">Ver Carrito</a>
-                <!--<a href="#" class="btn">Checkout</a> -->
-            </div><!-- End .dropdown-cart-total -->
-        </div><!-- End .dropdownmenu-wrapper -->
-    </div><!-- End .dropdown-menu -->
-</div><!-- End .dropdown -->
+            <div class="tuki_mini_cart__actions dropdown-cart-action">
+                <a href="{{ route('tenant_detail_cart') }}" class="btn tuki_mini_cart__btn tuki_mini_cart__btn--primary">Ver carrito</a>
+                <a href="{{ route('tenant.ecommerce.index') }}" class="btn tuki_mini_cart__btn tuki_mini_cart__btn--ghost">Seguir comprando</a>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 @push('scripts')
@@ -38,71 +41,87 @@
 
 	function remove(id)
 	{
-		
-		let array = localStorage.getItem('products_cart');
-		array = JSON.parse(array);
-		let indexFound = array.findIndex( x=> x.id == id)
-		array.splice(indexFound, 1);
-		localStorage.setItem('products_cart', JSON.stringify( array ) );
+		let array = [];
+		try {
+			array = JSON.parse(localStorage.getItem('products_cart') || '[]');
+		} catch (e) {
+			array = [];
+		}
+		if (!Array.isArray(array)) {
+			array = [];
+		}
+		let indexFound = array.findIndex( x=> x.id == id);
+		if (indexFound >= 0) {
+			array.splice(indexFound, 1);
+		}
+		localStorage.setItem('products_cart', JSON.stringify(array));
 		populate();
 		calculatetotal();
-	
+		if (typeof jQuery !== 'undefined') {
+			jQuery(document).trigger('tukiProductsCartChanged');
+		}
 	}
 
 	function calculatetotal()
 	{
-		let array = localStorage.getItem('products_cart');
-		array = JSON.parse(array);
+		let array = [];
+		try {
+			array = JSON.parse(localStorage.getItem('products_cart') || '[]');
+		} catch (e) {
+			array = [];
+		}
+		if (!Array.isArray(array)) {
+			array = [];
+		}
 		let total = 0;
-		array.forEach(element => {
-			total += parseFloat(element.sale_unit_price)
+		array.forEach(function (element) {
+			var qty = parseFloat(element.cantidad) > 0 ? parseFloat(element.cantidad) : 1;
+			var price = parseFloat(element.sale_unit_price);
+			if (isNaN(price)) {
+				price = 0;
+			}
+			total += price * qty;
 		});
-
 		$(".cart-total-price").empty();
 		$(".cart-total-price").append(total.toFixed(2));
-
 	}
 
 	function populate()
 	{
 		$(".dropdown-cart-products").empty();
-			$(".cart-count").empty();
-			let count = 0;
-			//get data local syrogare prodicts
-			let array = localStorage.getItem('products_cart');
-			array = JSON.parse(array)
-			count = array.length;
-
-			const defaultImagePath = '{{ $defaultImagePath }}';
-				
-			array.forEach(element => {
-				const imagePath = (element.image_small && element.image_small !== 'imagen-no-disponible.jpg') 
-					? `/storage/uploads/items/${element.image_small}` 
-					: defaultImagePath;
-				
-				$(".dropdown-cart-products").append( `
-						<div class="product">
-							<div class="product-details">
-							<h4 class="product-title">
-								<a href="$">${element.description}</a>
-							</h4>
-							<span class="cart-product-info">
-								<span class="cart-product-qty">1</span> x ${element.sale_unit_price}
-							</span>
-							</div>
-							<figure class="product-image-container">
-								<a href="#" class="product-image">
-									<img alt="${element.description}" src="${imagePath}" />
-								</a>
-								<a href="#" onclick="remove(${element.id})" class="btn-remove" title="Remove Product">
-									<i class="icon-cancel"></i>
-								</a>
-							</figure>
-						</div>` 
-					);
+		$(".cart-count").empty();
+		let array = [];
+		try {
+			array = JSON.parse(localStorage.getItem('products_cart') || '[]');
+		} catch (e) {
+			array = [];
+		}
+		if (!Array.isArray(array)) {
+			array = [];
+		}
+		let count = array.length;
+		var $shell = $(".tuki_header_cart .tuki_mini_cart__shell");
+		if ($shell.length) {
+			$shell.toggleClass("is-empty", count === 0);
+		}
+		if (!count) {
+			$(".dropdown-cart-products").append(
+				'<div class="tuki_mini_cart__empty">Tu carrito está vacío. Agrega productos desde la tienda.</div>'
+			);
+		} else if (typeof window.tukiMiniCartLineHtml === "function") {
+			array.forEach(function (element) {
+				$(".dropdown-cart-products").append(window.tukiMiniCartLineHtml(element));
 			});
-			
-			$(".cart-count").append(count);
+		} else {
+			array.forEach(function (element) {
+				var d = String(element.description || "").replace(/</g, "&lt;");
+				$(".dropdown-cart-products").append(
+					'<article class="tuki_mini_cart__item product"><div class="tuki_mini_cart__body"><a class="tuki_mini_cart__title" href="/ecommerce/item/' +
+					element.id + '">' + d + "</a></div></article>"
+				);
+			});
+		}
+		$(".cart-count").append(count);
 	}
 
 	

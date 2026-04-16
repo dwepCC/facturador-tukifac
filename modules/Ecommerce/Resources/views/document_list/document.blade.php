@@ -1,4 +1,14 @@
 @extends('ecommerce::layouts.layout_ecommerce_cart.index')
+
+@push('tuki_extra_styles')
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+@endpush
+
+@push('tuki_vendor_scripts')
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://unpkg.com/element-ui/lib/umd/locale/es.js"></script>
+@endpush
+
 @section('content')
 
 <style>
@@ -110,7 +120,7 @@
                     </template>                
                 </div>
 
-                <button class="btn btn-default dropdown-toggle mr-2 mt-1" style="height: 35px" type="button" id="dropdownFilter" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                <button class="btn btn-default dropdown-toggle mr-2 mt-1" style="height: 35px" type="button" id="dropdownFilter" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
                   Filtros <span class="caret"></span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-table" aria-labelledby="dropdownFilter">

@@ -2,12 +2,12 @@
     // Detectar contexto de restaurant por nombre de ruta
     $isRestaurant = request()->routeIs('tenant.restaurant.*', 'restaurant.*');
 @endphp
-<div class="dropdown cart-dropdown" style="margin-left: 9px;">
+<div class="dropdown cart-dropdown tuki_header_account" style="margin-left: 9px;">
 
     @guest('ecommerce')
-        <a class="header-contact mr-0 login-link" href="#" style="text-decoration: none;">
-            <img src="{{ asset('images/circle-user.svg') }}" alt="User" style="width: 18px; height: 18px;">
-            <strong class="ml-2" style="font-size: 15px; color: #fff;">Iniciar sesión</strong>
+        <a class="header-contact mr-0 login-link tuki_login_trigger" href="#" style="text-decoration: none;" aria-label="Iniciar sesión">
+            <img src="{{ asset('images/circle-user.svg') }}" alt="" class="tuki_login_trigger__icon" width="18" height="18">
+            <span class="tuki_login_trigger__label">Iniciar sesión</span>
         </a>
     @elseauth('ecommerce')
         <a href="#" class="dropdown-toggle" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"

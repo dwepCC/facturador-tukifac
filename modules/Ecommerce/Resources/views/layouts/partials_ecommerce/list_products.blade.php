@@ -1,120 +1,74 @@
+@php
+    $systemConfiguration = \App\Models\Tenant\Configuration::first();
+    $defaultImage = $systemConfiguration->product_default_image ?? 'imagen-no-disponible.jpg';
+    $defaultImagePath = $defaultImage === 'imagen-no-disponible.jpg'
+        ? asset('logo/imagen-no-disponible.jpg')
+        : asset('storage/defaults/' . $defaultImage);
+
+    $stockControlEnabled = (bool) $configuration;
+@endphp
+
 @foreach ($dataPaginate as $item)
-    <div class="col-6 {{ \Route::currentRouteName() == 'tenant.ecommerce.index' ? 'col-md-3' : 'col-md-4' }}">
-        <div class="product product-style {{ stock($item, $configuration) ? 'productdisabled' : '' }}">
-            <figure class="product-image-container product-image-container-ecommerce">
-                @php
-                    $configuration = \App\Models\Tenant\Configuration::first();
-                    $defaultImage = $configuration->product_default_image ?? 'imagen-no-disponible.jpg';
-                    $defaultImagePath = $defaultImage === 'imagen-no-disponible.jpg'
-                        ? asset('logo/imagen-no-disponible.jpg')
-                        : asset('storage/defaults/' . $defaultImage);
-                            
-                    $imagePath = $item->image !== 'imagen-no-disponible.jpg'
-                        ? asset('storage/uploads/items/' . $item->image)
-                        : $defaultImagePath;
-                @endphp
-                            
-                <a href="/ecommerce/item/{{ $item->id }}" class="product-image product-image-list">
-                    <img src="{{ $imagePath }}" class="image" alt="{{ $item->description }}">
+    @php
+        $imagePath = $item->image !== 'imagen-no-disponible.jpg'
+            ? asset('storage/uploads/items/' . $item->image)
+            : $defaultImagePath;
+
+        $outOfStock = false;
+        if ($stockControlEnabled) {
+            $totalStock = $item->warehouses ? $item->warehouses->sum('stock') : 0;
+            $outOfStock = $totalStock <= 0;
+        }
+    @endphp
+
+    <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+        <div class="product product-style tuki_product_tile {{ $outOfStock ? 'productdisabled' : '' }}">
+            <figure class="product-image-container product-image-container-ecommerce tuki_product_tile__figure">
+                <a href="/ecommerce/item/{{ $item->id }}" class="product-image product-image-list tuki_product_tile__media">
+                    <img src="{{ $imagePath }}" class="image" alt="{{ $item->description }}" loading="lazy"
+                        onerror="this.onerror=null;this.src={{ json_encode($defaultImagePath) }};">
                 </a>
-                <a href="{{route('item_partial', ['id' => $item->id])}}" class="btn-quickview">Vista Rápida</a>
-                {{-- <span class="product-label label-sale">-20%</span> --}}
+                <a href="{{ route('item_partial', ['id' => $item->id]) }}" class="btn-quickview tuki_product_tile__quickview">Vista rápida</a>
                 @if(json_encode($item->is_new) == 1)
                     <span class="product-label label-hot">Nuevo</span>
                 @endif
-                @if(stock($item, $configuration))
+                @if($outOfStock)
                     <span class="product-label product-danger">AGOTADO</span>
                 @endif
             </figure>
-            <div class="product-details-ecommerce">
-                <div class="ratings-container">
-                    <div class="product-ratings">
-                        <span class="ratings" style="width:0%"></span>
-                    </div>
-                </div>
+
+            <div class="product-details-ecommerce tuki_product_tile__content">
                 <div class="product-information">
                     <h2 class="product-title-ecommerce">
                         <a href="/ecommerce/item/{{ $item->id }}">{{ $item->description }}</a>
                     </h2>
 
                     @if(isset($preferences['show_description']) && $preferences['show_description'] == 1)
-                        @if ($item->name)
-                            <p class="text-muted product-description">
-                                {{ $item->name }}
-                            </p>
-                        @else
-                            <p class="text-muted product-description" style="opacity: .5">
-                                Sin descripción disponible.
-                            </p>
-                        @endif
+                        <p class="text-muted product-description {{ $item->name ? '' : 'product-description--empty' }}">
+                            {{ $item->name ? $item->name : 'Sin descripción disponible.' }}
+                        </p>
                     @endif
 
                     @if(isset($preferences['show_stock']) && $preferences['show_stock'] == 1)
                         @if($item->stock > 0)
-                        <h3 class="product-stock">Disponible: 
-                            <span>{{ number_format($item->getStockByWarehouseMain(), 0) }}</span>
-                        </h3>
+                            <div class="product-stock">Disponible: <span>{{ number_format($item->getStockByWarehouseMain(), 0) }}</span></div>
                         @else
-                        <h3 class="product-stock text-danger">
-                            Sin stock
-                        </h3>
+                            <div class="product-stock text-danger">Sin stock</div>
                         @endif
                     @endif
                 </div>
-                <div class="product-price-ecommerce">
+
+                <div class="product-price-ecommerce tuki_product_tile__buyrow">
                     <div class="price-box-ecommerce">
-                        <!-- <span class="old-price">S/ {{ number_format( ($item->sale_unit_price * 1.2 ) , 2 )}}</span> -->
-                        <span class="product-price-ecommerce">{{ $item->currency_type['symbol'] }} {{ number_format($item->sale_unit_price, 2) }}</span>
+                        @include('ecommerce::layouts.partials_ecommerce.tuki_price_display', ['model' => $item, 'inline' => true])
                     </div>
                     <div class="product-action">
-                        <a href="#" class="paction add-cart" data-product="{{ json_encode( $item ) }}" title="Add to Cart">
-                            <span>Agregar a Carrito</span>
+                        <a href="#" class="paction add-cart tuki_add_cart_btn" data-product='@json($item)' title="Agregar al carrito" aria-label="Agregar al carrito">
+                            <i class="fas fa-cart-plus" aria-hidden="true"></i>
                         </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
 @endforeach
-
-<?php
-
-    function stock($item, $config)
-    {
-        if($config) {
-            $stock=0;
-            foreach ($item->warehouses as $key => $value) {
-                $stock += $value->stock;
-            }
-            return ($stock > 0) ? false : true;
-        }
-    }
-?>
-
-<style>
-    /* .product-style {
-        border-style: solid;
-        border-width: 1px;
-        border-color: "#ddd";
-        margin: 10px 1px;
-    } */
-    .product-image-list {
-        max-height: 210px;
-        min-height: 210px;
-    }
-    .image {
-        max-height: 210px;
-    }
-    .product-danger {
-        float: right;
-        color: #fff;
-        background-color: #dc3545;
-        border-color: #dc3545;
-    }
-    .productdisabled
-    {
-        pointer-events: none;
-        /* opacity: 0.7; */
-    }
-</style>

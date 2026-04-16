@@ -871,6 +871,9 @@ if ($hostname) {
 
             //Clients
             Route::get('clients', 'System\ClientController@index')->name('system.clients.index');
+            Route::get('clientes-metricas-central', 'System\ClientController@indexCentralMetrics')->name('system.clients.central-metrics.index');
+            Route::get('clientes-metricas-central/records', 'System\ClientController@recordsCentralMetrics');
+            Route::get('clientes-metricas-central/document-events', 'System\ClientController@centralDocumentEvents');
             Route::get('document-packages', 'System\ClientDocumentPackageController@index')->name('system.document-packages.index');
             Route::get('clients/records', 'System\ClientController@records');
             Route::get('clients/record/{client}', 'System\ClientController@record');

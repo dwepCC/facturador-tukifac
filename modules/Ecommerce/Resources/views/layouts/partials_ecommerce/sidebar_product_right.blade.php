@@ -1,5 +1,6 @@
-<aside class="sidebar-product col-lg-3 padding-left-lg mobile-sidebar">
-    <div class="sidebar-wrapper">
+<aside id="tuki-pdp-sidebar" class="sidebar-product col-lg-3 padding-left-lg mobile-sidebar tuki_ecom_item_sidebar" role="complementary" aria-label="Información y productos relacionados">
+    {{-- NO usar la clase "sidebar-wrapper": main.js aplica themeSticky() y en la PDP fija mal el bloque encima de la galería. --}}
+    <div class="tuki_ecom_item_sidebar_inner">
         <div class="widget widget-brand">
             <!--<a href="#">
                 <img src="{{ asset('porto-ecommerce/assets/images/product-brand.png') }}" alt="brand name">
@@ -10,19 +11,19 @@
             <ul>
                 @if($information->tag_shipping)
                     <li>
-                        <i class="icon-shipping"></i>
+                        <i class="fas fa-truck"></i>
                         <h4>{!!$information->tag_shipping!!}</h4>
                     </li>
                 @endif
                 @if($information->tag_dollar)
                 <li>
-                    <i class="icon-us-dollar"></i>
+                    <i class="fas fa-dollar-sign"></i>
                     <h4>{!!$information->tag_dollar!!}</h4>
                 </li>
                 @endif
                 @if($information->tag_support)
                 <li>
-                    <i class="icon-online-support"></i>
+                    <i class="fas fa-headset"></i>
                     <h4>{!!$information->tag_support!!}</h4>
                 </li>
                 @endif
@@ -58,6 +59,13 @@
             </div><!-- End .banner-->
         </div>
 
-        @include('ecommerce::layouts.partials_ecommerce.widget_products')
+        @if (empty($tukiPdpFeaturedFullWidth))
+            @include('ecommerce::layouts.partials_ecommerce.widget_products')
+        @else
+            {{-- PDP escritorio: destacados van en la banda ancha; en móvil solo en el drawer (la banda se oculta con d-none d-lg-block). --}}
+            <div class="tuki_pdp_sidebar_featured_mobile d-lg-none">
+                @include('ecommerce::layouts.partials_ecommerce.widget_products')
+            </div>
+        @endif
     </div>
 </aside><!-- End .col-md-3 -->

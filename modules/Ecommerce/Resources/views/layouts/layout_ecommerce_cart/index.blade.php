@@ -1,97 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
-<!-- Mirrored from portotheme.com/html/porto_ecommerce/demo-6/cart.html by HTTrack Website Copier/3.x [XR&CO'2014], Sat, 07 Sep 2019 03:40:04 GMT -->
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <title>eCommerce</title>
-
-    <meta name="keywords" content="HTML5 Template" />
-    <meta name="description" content="Porto - Bootstrap eCommerce Template">
-    <meta name="author" content="SW-THEMES">
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('porto-ecommerce/assets/images/icons/favicon.ico') }}">
-
-    <!-- Plugins CSS File -->
-    <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/css/bootstrap.min.css') }}">
-
-    <!-- Main CSS File -->
-    <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/css/style.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/css/custom.css') }}">
-
-    <!-- Fontawesome -->
-    <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/font-awesome/css/fontawesome-all.min.css') }}">
-
-    <!-- Estilos personalizados -->
-    <link rel="stylesheet" href="{{ asset('porto-light/css/styles_ecommerce.css') }}" />
-
-    <!-- Element UI CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
-    
+    <title>@yield('title', 'Carrito')</title>
+    <meta name="keywords" content="ecommerce" />
+    <meta name="description" content="Carrito eCommerce">
+    @include('ecommerce::layouts.partials_ecommerce.tuki_head', ['tukiRatingCss' => true, 'tukiElementUi' => false])
 </head>
-<body>
-    <div class="page-wrapper">
+
+<body class="tuki_body">
+    <div class="tuki_page page-wrapper">
         @include('ecommerce::layouts.partials_ecommerce.header')
         @include('ecommerce::layouts.partials_ecommerce.header_bottom_sticky')
-        <main class="main">
-            <nav aria-label="breadcrumb" class="breadcrumb-nav">
-                <div class="container">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{url('ecommerce')}}"><i class="icon-home"></i></a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Shopping Cart</li>
-                    </ol>
-                </div><!-- End .container -->
-            </nav>
+        <main class="tuki_main main">
+            {{-- Mismo ancho que la vista principal: .tuki_storefront aplica max-width a .container (shim CSS) --}}
+            <div class="tuki_storefront tuki_storefront--cart">
+                <nav aria-label="Migas de pan" class="breadcrumb-nav tuki_breadcrumb">
+                    <div class="container">
+                        <ol class="breadcrumb tuki_breadcrumb__list">
+                            <li class="breadcrumb-item">
+                                <a href="{{ route('tenant.ecommerce.index') }}" class="tuki_breadcrumb__link"><i class="fas fa-home" aria-hidden="true"></i><span class="sr-only">Inicio</span></a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">Carrito</li>
+                        </ol>
+                    </div>
+                </nav>
 
-            <div class="container">
-                 @yield('content')
-            </div><!-- End .container -->
+                <div class="container tuki_cart-page-wrap">
+                    @yield('content')
+                </div>
+            </div>
 
-            <div class="mb-6"></div><!-- margin -->
-        </main><!-- End .main -->
+            <div class="mb-6"></div>
+        </main>
 
         <footer class="footer">
             @include('ecommerce::layouts.partials_ecommerce.footer')
-        </footer><!-- End .footer -->
-    </div><!-- End .page-wrapper -->
+        </footer>
+    </div>
 
-    <div class="mobile-menu-overlay"></div><!-- End .mobil-menu-overlay -->
+    <div class="mobile-menu-overlay"></div>
 
     <div class="mobile-menu-container">
         @include('ecommerce::layouts.partials_ecommerce.mobile_menu')
-    </div><!-- End .mobile-menu-container -->
+    </div>
 
+    <a id="scroll-top" href="#top" title="Top" role="button" class="tuki_scroll_top"><i class="fas fa-chevron-up"></i></a>
 
-
-    <a id="scroll-top" href="#top" title="Top" role="button"><i class="icon-angle-up"></i></a>
-
-     <!-- Plugins JS File -->
-    <script src="{{ asset('porto-ecommerce/assets/js/jquery.min.js') }}"></script>
-    <script src="{{ asset('porto-ecommerce/assets/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('porto-ecommerce/assets/js/plugins.min.js') }}"></script>
-    <script src="{{ asset('porto-ecommerce/assets/js/culqi_v3.js') }}"></script>
-    <script src="{{ asset('porto-ecommerce/assets/js/sweetalert2.all.min.js') }}"></script>
-    <script src="{{ asset('porto-ecommerce/assets/js/moment.min.js') }}"></script>
-
-    <!-- Main JS File -->
-    <script src="{{ asset('porto-ecommerce/assets/js/main.js') }}"></script>
-    <script src="{{ asset('porto-ecommerce/assets/js/vue.js') }}"></script>
-    <script src="{{ asset('porto-ecommerce/assets/js/axios.min.js') }}"></script>
-
-    <!-- Element UI JavaScript -->
-    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
-    <!-- Element UI Spanish Locale -->
-    <script src="https://unpkg.com/element-ui/lib/umd/locale/es.js"></script>
-
-    @vite('resources/js/app.js')
+    @include('ecommerce::layouts.partials_ecommerce.tuki_scripts', [
+        'tukiIncludeCart' => true,
+        'tukiIncludeNouislider' => false,
+        'tukiIncludeRatingJs' => false,
+        'tukiIncludeCulqi' => true,
+        'tukiIncludeSweetalert' => true,
+        'tukiIncludeMoment' => true,
+        'tukiIncludeAxios' => true,
+        'tukiVueFull' => true,
+    ])
 
     @stack('scripts')
 </body>
 
-<!-- Mirrored from portotheme.com/html/porto_ecommerce/demo-6/cart.html by HTTrack Website Copier/3.x [XR&CO'2014], Sat, 07 Sep 2019 03:40:04 GMT -->
 </html>

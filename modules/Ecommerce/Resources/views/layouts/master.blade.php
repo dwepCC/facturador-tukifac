@@ -1,64 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
-
-<!-- Mirrored from portotheme.com/html/porto_ecommerce/demo-6/ by HTTrack Website Copier/3.x [XR&CO'2014], Sat, 07 Sep 2019 03:39:38 GMT -->
+<html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-    <title>eCommerce</title>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'Tienda')</title>
     <meta name="keywords" content="ecommerce" />
     <meta name="description" content="eCommerce">
-    <meta name="author" content="SW-THEMES">
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('porto-ecommerce/assets/images/icons/favicon.ico') }}">
-
-    <!-- Plugins CSS File -->
-    <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/css/bootstrap.min.css') }}">
-
-    <!-- Main CSS File -->
-    <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/css/style.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/css/custom.css') }}">
-
-    <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/css/rating.css') }}">
-
-
-    @vite('resources/js/app.js')
-
-
-    <!-- Fontawesome -->
-    <link rel="stylesheet" href="{{ asset('porto-ecommerce/assets/font-awesome/css/fontawesome-all.min.css') }}">
-    <!-- Estilos personalizados -->
-    <link rel="stylesheet" href="{{ asset('porto-light/css/styles_ecommerce.css') }}" />
+    @include('ecommerce::layouts.partials_ecommerce.tuki_head', ['tukiRatingCss' => true, 'tukiElementUi' => false])
 </head>
 
-<body>
-    <div class="page-wrapper">
+<body class="tuki_body">
+    <div class="tuki_page page-wrapper">
 
         @include('ecommerce::layouts.partials_ecommerce.header')
-        <main class="main">
+        <main class="tuki_main main">
         @yield('content')
-        </main><!-- End .main -->
+        </main>
 
         <footer class="footer">
             @include('ecommerce::layouts.partials_ecommerce.footer')
-        </footer><!-- End .footer -->
-    </div><!-- End .page-wrapper -->
+        </footer>
+    </div>
 
-    <div class="mobile-menu-overlay"></div><!-- End .mobil-menu-overlay -->
+    <div class="mobile-menu-overlay"></div>
 
     <div class="mobile-menu-container">
-
         @include('ecommerce::layouts.partials_ecommerce.mobile_menu')
-
-    </div><!-- End .mobile-menu-container -->
+    </div>
 
     <div class="newsletter-popup mfp-hide" id="newsletter-popup-form">
-        <!-- style="background-image: url(assets/images/newsletter_popup_bg.jpg)" -->
         <div class="newsletter-popup-content">
             <img src="{{ asset('porto-ecommerce/assets/images/logo-black.png') }}" alt="Logo" class="logo-newsletter">
             <h2>BE THE FIRST TO KNOW</h2>
@@ -68,7 +37,7 @@
                     <input type="email" class="form-control" id="newsletter-email" name="newsletter-email"
                         placeholder="Email address" required>
                     <input type="submit" class="btn" value="Go!">
-                </div><!-- End .from-group -->
+                </div>
             </form>
             <div class="newsletter-subscribe">
                 <div class="checkbox">
@@ -78,27 +47,23 @@
                     </label>
                 </div>
             </div>
-        </div><!-- End .newsletter-popup-content -->
-    </div><!-- End .newsletter-popup -->
+        </div>
+    </div>
 
-    <a id="scroll-top" href="#top" title="Top" role="button"><i class="icon-angle-up"></i></a>
+    <a id="scroll-top" href="#top" title="Top" role="button" class="tuki_scroll_top"><i class="fas fa-chevron-up"></i></a>
 
-    <!-- Plugins JS File -->
-    <script src="{{ asset('porto-ecommerce/assets/js/jquery.min.js') }}"></script>
-    <script src="{{ asset('porto-ecommerce/assets/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('porto-ecommerce/assets/js/plugins.min.js') }}"></script>
-
-    <!-- Main JS File -->
-    <script src="{{ asset('porto-ecommerce/assets/js/cart.js') }}"></script>
-    <script src="{{ asset('porto-ecommerce/assets/js/main.js') }}"></script>
-    <script src="{{ asset('porto-ecommerce/assets/js/vue.min.js') }}"></script>
-
-
+    @include('ecommerce::layouts.partials_ecommerce.tuki_scripts', [
+        'tukiIncludeCart' => true,
+        'tukiIncludeNouislider' => false,
+        'tukiIncludeRatingJs' => false,
+        'tukiIncludeCulqi' => false,
+        'tukiIncludeSweetalert' => false,
+        'tukiIncludeMoment' => false,
+        'tukiIncludeAxios' => false,
+        'tukiVueFull' => false,
+    ])
 
     @stack('scripts')
 </body>
 
-<!-- Mirrored from portotheme.com/html/porto_ecommerce/demo-6/ by HTTrack Website Copier/3.x [XR&CO'2014], Sat, 07 Sep 2019 03:39:54 GMT -->
-
 </html>
-

@@ -1,91 +1,149 @@
-
 @php
     use Illuminate\Support\Str;
     $path = explode('/', request()->path());
-    $path[1] = (array_key_exists(1, $path)> 0)?$path[1]:'';
-    $path[0] = ($path[0] === '')?'ecommerce':$path[0];
+    $activeSlug = isset($path[1]) ? $path[1] : '';
 @endphp
-            <div class="container">
-                <div class="row">
-                    <nav class="main-nav flex-grow-1">
-                                <ul class="all-category my-0 pb-4">
-                                <li class="title-category">Nuestras Categorias</li>
-                                <li>
-                                    <a href="{{ route('tenant.ecommerce.index') }}" class="{{ $path[1] == '' ? 'bg-success text-light' : '' }}">Ver todos</a>
-                                </li>
-                                </ul>
-                        <div class="container">
-                            <ul id="scrollContainer" class="menu restaurante sf-arrows sf-js-enabled" style="touch-action: pan-y;">
-                            @foreach ($categories as $category)
-                <li class="menu-item ecommerce">
-                    <a href="{{ route('tenant.ecommerce.index', Str::slug($category->name, '-')) }}" 
-                    class="{{ $path[1] == $category->name ? 'bg-success text-light' : '' }}"><img src="{{ asset('storage/uploads/categories/'. $category->image) }}" alt="{{$category->name}}" draggable="false">
-                    {{ $category->name }}
-                    </a>
-                </li>
+<div class="container tuki_category_strip">
+    <div class="tuki_categories ecom-categories">
+        <div class="ecom-categories__header">
+            <div class="ecom-categories__title">Categorías</div>
+            <a class="ecom-categories__all {{ $activeSlug === '' ? 'is-active' : '' }}" href="{{ route('tenant.ecommerce.index') }}">Ver todos</a>
+        </div>
+
+        <div id="ecomCategoryScroller" class="ecom-categories__scroller" role="navigation" aria-label="Categorías" tabindex="0">
+            @foreach ($categories as $category)
+                @php
+                    $slug = Str::slug($category->name, '-');
+                @endphp
+                <a class="ecom-category-chip {{ $activeSlug === $slug ? 'is-active' : '' }}" href="{{ route('tenant.ecommerce.index', $slug) }}" draggable="false">
+                    <span class="ecom-category-chip__img">
+                        <img src="{{ asset('storage/uploads/categories/'. $category->image) }}" alt="{{ $category->name }}" loading="lazy" draggable="false">
+                    </span>
+                    <span class="ecom-category-chip__label">{{ $category->name }}</span>
+                </a>
             @endforeach
-                </ul>
-            </div>
-        </nav>
+        </div>
     </div>
 </div>
-<!-- codigo para el scroll de las categorias -->
+
 <script>
-  const container = document.getElementById('scrollContainer');
+(function () {
+    function initCategoryScrollerDrag() {
+        var el = document.getElementById('ecomCategoryScroller');
+        if (!el || el.dataset.tukiDragInit === '1') return;
+        el.dataset.tukiDragInit = '1';
 
-let isDragging = false;
-let startX;
-let scrollLeft;
+        var active = false;
+        var dragActive = false;
+        var startX = 0;
+        var startScroll = 0;
+        var pointerId = null;
+        var THRESHOLD = 6;
 
-// Evento de mouse down
-container.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    container.classList.add('active');
-    startX = e.pageX - container.offsetLeft; // Punto de partida relativo al contenedor
-    scrollLeft = container.scrollLeft;      // Desplazamiento actual
-});
+        function prefersReducedMotion() {
+            return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        }
 
-// Evento de mouse move
-container.addEventListener('mousemove', (e) => {
-    if (!isDragging) return; // Si no está arrastrando, no hacer nada
-    e.preventDefault(); // Evitar selección de texto mientras arrastras
-    const x = e.pageX - container.offsetLeft; // Posición actual
-    const walk = (x - startX) * 2; // Distancia movida, ajustada para mayor sensibilidad
-    container.scrollLeft = scrollLeft - walk;
-});
+        function scrollStep(delta) {
+            el.scrollBy({
+                left: delta,
+                behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+            });
+        }
 
-// Evento de mouse up / mouse leave
-['mouseup', 'mouseleave'].forEach(event => {
-    container.addEventListener(event, () => {
-        isDragging = false;
-    });
-});
-// //arrar de imagenes de categorias
-// const images = {
-//     'Bebidas': `{{ asset('images/bebidas_cat.png') }}`,
-//     'Brasas': `{{ asset('images/brasas_cat.png') }}`,
-//     'Comida rápida': `{{ asset('images/comida_rapida_cat.png') }}`,
-//     'Pizzas': `{{ asset('images/pizzas_cat.png') }}`,
-//     'Makis': `{{ asset('images/makis_cat.png') }}`,
-//     'Ensaladas': `{{ asset('images/ensaladas_cat.png') }}`,
-//     'Salmones': `{{ asset('images/salmones_cat.png') }}`,
-//     'Hamburguesas': `{{ asset('images/hamburguesa_cat.png') }}`,
-//     'Caldos': `{{ asset('images/caldos_cat.png') }}`,
-// };
-// // console.log(images);
+        el.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                scrollStep(140);
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                scrollStep(-140);
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                el.scrollTo({ left: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                el.scrollTo({ left: el.scrollWidth, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+            }
+        });
 
-// //mostar las imagenes del array images dentro de una etiqueta img que esta dentro de un li 
-// const lis = document.querySelectorAll('.menu li a');
-// lis.forEach((li, index) => {
-//     const category = li.textContent.trim();
-//     // console.log(category);
-//     const img = document.createElement('img');
-//     img.src = images[category];
-//     // console.log(img.src);
-//     img.style.width = '75px';
-//     img.style.height = 'auto';
-//     img.draggable = false;
-//     li.prepend(img);
-// });
+        /* Evita que Chrome/Edge inicien arrastre nativo del enlace (URL), que roba el mousemove en PC */
+        el.addEventListener(
+            'dragstart',
+            function (e) {
+                if (e.target.closest && e.target.closest('.ecom-category-chip')) {
+                    e.preventDefault();
+                }
+            },
+            true
+        );
 
+        el.addEventListener(
+            'pointerdown',
+            function (e) {
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                active = true;
+                dragActive = false;
+                startX = e.clientX;
+                startScroll = el.scrollLeft;
+                pointerId = e.pointerId;
+                try {
+                    el.setPointerCapture(e.pointerId);
+                } catch (err) { /* noop */ }
+            },
+            true
+        );
+
+        el.addEventListener('pointermove', function (e) {
+            if (!active || e.pointerId !== pointerId) return;
+            var dx = e.clientX - startX;
+            if (!dragActive && Math.abs(dx) > THRESHOLD) {
+                dragActive = true;
+                el.classList.add('is-dragging');
+            }
+            if (dragActive) {
+                el.scrollLeft = startScroll - dx;
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        function endPointer(e) {
+            if (!active || e.pointerId !== pointerId) return;
+            var wasDrag = dragActive;
+            active = false;
+            pointerId = null;
+            el.classList.remove('is-dragging');
+            try {
+                el.releasePointerCapture(e.pointerId);
+            } catch (err) { /* noop */ }
+
+            if (wasDrag) {
+                el.addEventListener(
+                    'click',
+                    function stopMisclick(ev) {
+                        ev.preventDefault();
+                        ev.stopImmediatePropagation();
+                    },
+                    { capture: true, once: true }
+                );
+            }
+            dragActive = false;
+        }
+
+        el.addEventListener('pointerup', endPointer);
+        el.addEventListener('pointercancel', endPointer);
+        el.addEventListener('lostpointercapture', function () {
+            active = false;
+            pointerId = null;
+            dragActive = false;
+            el.classList.remove('is-dragging');
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCategoryScrollerDrag);
+    } else {
+        initCategoryScrollerDrag();
+    }
+})();
 </script>

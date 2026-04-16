@@ -1,87 +1,44 @@
-<div class="widget widget-featured">
-            <h3 class="widget-title">Productos Destacados</h3>
+<div class="widget widget-featured tuki_sidebar_featured">
+    <h3 id="tuki-pdp-featured-heading" class="widget-title tuki_sidebar_featured__heading">Productos destacados</h3>
 
-            <div class="widget-body">
-                <div class="owl-carousel widget-featured-products">
-                    <div class="featured-col">
+    <div class="widget-body">
+        @php
+            $sidebarFeatured = $items->take(3)->merge($items->take(-3))->unique('id')->values();
 
-                        @php
-                        $row3 = $items->take(3);
-                        $row3inverse = $items->take(-3);
-                        
-                        $configurationModel = \App\Models\Tenant\Configuration::first();
-                        $defaultImage = $configurationModel->product_default_image ?? 'imagen-no-disponible.jpg';
-                        $defaultImagePath = $defaultImage === 'imagen-no-disponible.jpg'
-                            ? asset('logo/imagen-no-disponible.jpg')
-                            : asset('storage/defaults/' . $defaultImage);
-                        @endphp
+            $configurationModel = \App\Models\Tenant\Configuration::first();
+            $defaultImage = $configurationModel->product_default_image ?? 'imagen-no-disponible.jpg';
+            $defaultImagePath = $defaultImage === 'imagen-no-disponible.jpg'
+                ? asset('logo/imagen-no-disponible.jpg')
+                : asset('storage/defaults/' . $defaultImage);
+        @endphp
 
-                        @foreach ($row3 as $item)
-                        <div class="product product-sm">
-                            <figure class="product-image-container">
-                                <a href="/ecommerce/item/{{ $item->id }}" class="product-image">
-                                    @php
-                                        $itemImagePath = ($item->image && $item->image !== 'imagen-no-disponible.jpg')
-                                            ? asset('storage/uploads/items/'.$item->image)
-                                            : $defaultImagePath;
-                                    @endphp
-                                    <img src="{{ $itemImagePath }}" alt="{{ $item->description }}">
-                                </a>
-                            </figure>
-                            <div class="product-details">
-                                <h2 class="product-title">
-                                    <a href="/ecommerce/item/{{ $item->id }}">{{$item->description}}</a>
-                                </h2>
-                                <div class="ratings-container">
-                                    <div class="product-ratings">
-                                        <span class="ratings" style="width:80%"></span>
-                                        <!-- End .ratings -->
-                                    </div><!-- End .product-ratings -->
-                                </div><!-- End .product-container -->
-                                <div class="price-box">
-                                    <span class="product-price">{{ $item->currency_type_symbol }} {{ number_format($item->sale_unit, 2) }}</span>
-                                </div><!-- End .price-box -->
-                            </div><!-- End .product-details -->
-                        </div><!-- End .product -->
-                        @endforeach
-
-
-
-                    </div><!-- End .featured-col -->
-
-                    <div class="featured-col">
-
-                        @foreach ($row3inverse as $item)
-                        <div class="product product-sm">
-                            <figure class="product-image-container">
-                                <a href="/ecommerce/item/{{ $item->id }}" class="product-image">
-                                    @php
-                                        $itemImagePath = ($item->image && $item->image !== 'imagen-no-disponible.jpg')
-                                            ? asset('storage/uploads/items/'.$item->image)
-                                            : $defaultImagePath;
-                                    @endphp
-                                    <img src="{{ $itemImagePath }}" alt="{{ $item->description }}">
-                                </a>
-                            </figure>
-                            <div class="product-details">
-                                <h2 class="product-title">
-                                    <a href="/ecommerce/item/{{ $item->id }}">{{$item->description}}</a>
-                                </h2>
-                                <div class="ratings-container">
-                                    <div class="product-ratings">
-                                        <span class="ratings" style="width:80%"></span>
-                                        <!-- End .ratings -->
-                                    </div><!-- End .product-ratings -->
-                                </div><!-- End .product-container -->
-                                <div class="price-box">
-                                    <span class="product-price">
-                                        {{ $item->currency_type_symbol }} {{ number_format($item->sale_unit, 2) }}</span>
-                                </div><!-- End .price-box -->
-                            </div><!-- End .product-details -->
-                        </div><!-- End .product -->
-                        @endforeach
-
-                    </div><!-- End .featured-col -->
-                </div><!-- End .widget-featured-slider -->
-            </div><!-- End .widget-body -->
-        </div><!-- End .widget -->
+        <div class="tuki_sidebar_featured__grid" role="list">
+            @foreach ($sidebarFeatured as $item)
+                @php
+                    $itemImagePath = ($item->image && $item->image !== 'imagen-no-disponible.jpg')
+                        ? asset('storage/uploads/items/'.$item->image)
+                        : $defaultImagePath;
+                @endphp
+                <article class="tuki_sidebar_featured__card" role="listitem">
+                    <a href="{{ route('tenant.ecommerce.item', ['id' => $item->id]) }}" class="tuki_sidebar_featured__thumb">
+                        <img src="{{ $itemImagePath }}" alt="{{ $item->description }}" loading="lazy"
+                            onerror="this.onerror=null;this.src={{ json_encode($defaultImagePath) }};">
+                    </a>
+                    <div class="tuki_sidebar_featured__meta">
+                        <h4 class="tuki_sidebar_featured__name">
+                            <a href="{{ route('tenant.ecommerce.item', ['id' => $item->id]) }}">{{ \Illuminate\Support\Str::limit($item->description, 46) }}</a>
+                        </h4>
+                        <div class="tuki_sidebar_featured__price">
+                            @include('ecommerce::layouts.partials_ecommerce.tuki_price_display', ['model' => $item, 'inline' => true])
+                        </div>
+                        <div class="tuki_sidebar_featured__action">
+                            <a href="#" class="paction add-cart tuki_add_cart_btn tuki_sidebar_featured__cart" data-product='@json($item)' title="Agregar al carrito" aria-label="Agregar al carrito">
+                                <i class="fas fa-cart-plus" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            @endforeach
+        </div>
+    </div>
+</div>

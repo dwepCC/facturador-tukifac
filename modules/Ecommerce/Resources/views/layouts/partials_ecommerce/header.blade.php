@@ -1,25 +1,5 @@
 
 <style>
-#header_bar .header-menu {
-    max-height: 300px !important;
-    overflow:auto;
-    overflow-y: auto;
-}
-
-#header_bar .header-menu::-webkit-scrollbar-track {
-    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.1);
-    background-color: #fdfdfd;
-}
-
-#header_bar .header-menu::-webkit-scrollbar {
-    width: 6px;
-    background-color: #fdfdfd;
-}
-
-#header_bar .header-menu::-webkit-scrollbar-thumb {
-    background-color: #0187cc;
-}
-
 .header-dropdown a img {
     border-radius: 8px;
     padding: 4px;
@@ -29,25 +9,6 @@
     .header-dropdown {
         min-width: 100px !important;
     }
-}
-
-.header-menu ul a {
-    padding: 3px 6px;
-}
-
-.header-menu {
-    box-shadow: 0 0 2px rgba(0,0,0,0.1);
-    padding: 0 !important;
-    border: none;
-}
-
-.header-menu a:hover, .header-menu a:focus {
-    color: #0187cc;
-    background-color: #f4f4f4;
-}
-
-.header-menu ul a {
-    text-transform: capitalize !important;
 }
 
 .search_input {
@@ -138,9 +99,57 @@ div.cart-dropdown {
     display: inline-block; /* Muestra el ícono */
 }
 
+.header-middle .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.header-left,
+.header-right,
+#header_bar {
+    min-width: 0;
+}
+
+#header_bar {
+    flex: 1 1 auto;
+}
+
+.header-left {
+    flex: 0 0 auto;
+}
+
+.header-right {
+    flex: 0 0 auto;
+}
+
+.ecom-search {
+    min-width: 0;
+    width: 100%;
+    max-width: 680px;
+}
+
+@media (max-width: 991.98px) {
+    /* flex-wrap lo refina ecommerce_tuki_shim.css (.tuki_storefront_header) */
+    .header-middle .container {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .header-left .logo {
+        max-width: 130px !important;
+    }
+    .ecom-search {
+        max-width: none;
+    }
+    .header-contact {
+        display: none;
+    }
+}
+
  </style>
 
- <header class="header">
+ <header class="header tuki_storefront_header">
 
      <div class="header-middle">
          <div   class="container">
@@ -157,31 +166,59 @@ div.cart-dropdown {
              
              <div id="header_bar" class="header-center header-dropdowns">
 
-                 <div class="header-dropdown header-dropdown-inside" style="min-width:400px;">
-                    <img src="{{ asset('images/search.svg') }}" alt="search" class="search-icon" style="width: 18px; height: 18px;">
-                    <input placeholder="Buscar..." type="text" class="search_input form-control form-control-lg" v-model="value" v-on:keyup="autoComplete" @focus="isFocused = true" @blur="isFocused = false"/>
-                    <img src="{{ asset('images/circle-xmark.svg') }}" alt="Clear" class="clear-icon" @click="clearInput">
-                     <div class="header-menu">
-                         <ul v-if="results.length > 0">
-                            <li v-for="result in results">
-                                <a :href="'/ecommerce/item/' + result.id" class="d-flex">
-                                    <div class="flex-grow-1"><img style="max-width: 80px" :src="result.image_url_small" alt="England flag">
-                                    <span class="search_title" style="font-size: 1.0em;"> @{{ result.description }} </span>
-                                    </div>
-                                    <span class="search_price">@{{result.sale_unit_price}}</span>
-                                    {{-- <div class="search_btn btn btn-default">@{{result.sale_unit_price}}</div> --}}
-                                </a>
-                            </li>
-                         </ul>
-                     </div><!-- End .header-menu -->
+                 <div class="header-dropdown header-dropdown-inside ecom-search tuki_ecom_search">
+                    <div
+                        class="tuki_ecom_search_backdrop"
+                        v-show="searchPanelVisible"
+                        @click="closeSearchPanel"
+                        aria-hidden="true"
+                    ></div>
+                    <div class="tuki_ecom_search_inner">
+                        <img src="{{ asset('images/search.svg') }}" alt="" class="search-icon" width="18" height="18" role="presentation">
+                        <input
+                            type="search"
+                            enterkeyhint="search"
+                            autocomplete="off"
+                            placeholder="Buscar..."
+                            class="search_input form-control form-control-lg"
+                            v-model="value"
+                            @keyup="autoComplete"
+                            @input="autoComplete"
+                            @focus="onSearchFocus"
+                            @keydown.esc.prevent="closeSearchPanel"
+                        />
+                        <img src="{{ asset('images/circle-xmark.svg') }}" alt="Limpiar búsqueda" class="clear-icon" width="18" height="18" @click.prevent="clearInput">
+                        <transition name="tuki-ecom-search">
+                            <div
+                                v-show="searchPanelVisible"
+                                class="header-menu tuki_ecom_search_panel"
+                                role="listbox"
+                                :aria-label="'Resultados: ' + results.length"
+                            >
+                                <ul class="tuki_ecom_search_list list-unstyled mb-0">
+                                    <li v-for="result in results" :key="result.id" class="tuki_ecom_search_item" role="option">
+                                        <a :href="'/ecommerce/item/' + result.id" class="tuki_ecom_search_hit" @click="onSelectResult">
+                                            <span class="tuki_ecom_search_hit__thumb">
+                                                <img :src="result.image_url_small" :alt="result.description" loading="lazy" width="52" height="52">
+                                            </span>
+                                            <span class="tuki_ecom_search_hit__main">
+                                                <span class="tuki_ecom_search_hit__title">@{{ result.description }}</span>
+                                            </span>
+                                            <span class="tuki_ecom_search_hit__price">@{{ result.sale_unit_price }}</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </transition>
+                    </div>
                  </div><!-- End .header-dropown -->
 
 
              </div><!-- End .headeer-center -->
 
              <div class="header-right">
-                 <button class="mobile-menu-toggler" type="button">
-                     <i class="icon-menu"></i>
+                 <button class="mobile-menu-toggler" type="button" aria-label="Abrir menú">
+                     <i class="fas fa-bars"></i>
                  </button>
                  <div class="header-contact">
                      <span> Atención al</span>
@@ -208,24 +245,61 @@ div.cart-dropdown {
     var app = new Vue({
         el: '#header_bar',
         data: {
-            value: '', 
-            isFocused: false, 
+            value: '',
             suggestions: [],
             resource: 'ecommerce',
             results: [],
+            searchPanelDismissed: false,
+        },
+        computed: {
+            searchPanelVisible() {
+                return this.results.length > 0 && !this.searchPanelDismissed;
+            },
         },
         created() {
             this.getItems();
         },
+        mounted() {
+            var self = this;
+            this._tukiSearchOnDocDown = function (e) {
+                var root = self.$el;
+                if (!root || !e.target) {
+                    return;
+                }
+                if (!root.contains(e.target)) {
+                    self.closeSearchPanel();
+                }
+            };
+            document.addEventListener('mousedown', this._tukiSearchOnDocDown, true);
+            document.addEventListener('touchstart', this._tukiSearchOnDocDown, true);
+        },
+        beforeDestroy() {
+            if (this._tukiSearchOnDocDown) {
+                document.removeEventListener('mousedown', this._tukiSearchOnDocDown, true);
+                document.removeEventListener('touchstart', this._tukiSearchOnDocDown, true);
+            }
+        },
         methods: {
+            closeSearchPanel() {
+                this.searchPanelDismissed = true;
+            },
+            onSearchFocus() {
+                this.searchPanelDismissed = false;
+                this.autoComplete();
+            },
+            onSelectResult() {
+                this.closeSearchPanel();
+            },
             // Método para limpiar el campo de texto
             clearInput() {
-                this.value = ''; 
-                this.results = []; 
+                this.value = '';
+                this.results = [];
+                this.searchPanelDismissed = false;
             },
 
             // Método para manejar la autocompletación
             autoComplete() {
+                this.searchPanelDismissed = false;
                 if (this.value) {
                     let val = this.value.toUpperCase();
                     this.results = this.suggestions.filter((obj) => {

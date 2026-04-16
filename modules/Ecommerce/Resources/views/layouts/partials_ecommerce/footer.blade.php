@@ -1,112 +1,122 @@
-<style>
-    .vl {
-        border-left: 2px solid black;
-        height: 100%;
-        margin-left: 30%;
-    }
+@php
+    $__tuki_inf = $information ?? null;
+    $__tuki_footer_phone = $__tuki_inf ? trim((string) ($__tuki_inf->information_contact_phone ?? '')) : '';
+    $__tuki_footer_tel_href = $__tuki_footer_phone !== '' ? preg_replace('/\s+/', '', $__tuki_footer_phone) : '';
+    /** URLs tal cual en BD (trim); no usar solo filled() por compatibilidad con espacios / tipos legacy */
+    $__tuki_footer_fb = $__tuki_inf ? trim((string) ($__tuki_inf->link_facebook ?? '')) : '';
+    $__tuki_footer_tw = $__tuki_inf ? trim((string) ($__tuki_inf->link_twitter ?? '')) : '';
+    $__tuki_footer_tt = $__tuki_inf ? trim((string) ($__tuki_inf->link_tiktok ?? '')) : '';
+    $__tuki_footer_ig = $__tuki_inf ? trim((string) ($__tuki_inf->link_instagram ?? '')) : '';
+    $__tuki_footer_has_social = $__tuki_footer_fb !== '' || $__tuki_footer_tw !== '' || $__tuki_footer_tt !== '' || $__tuki_footer_ig !== '';
+@endphp
 
-</style>
-
-<div class="footer-middle">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-4">
-                <div class="widget widget-info">
-                    <h4 class="widget-title">Contáctanos</h4>
-                    <ul class="contact-info">
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-phone"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" /></svg>
-                            <a href="tel:+51944999965" target="blank" style="font-size: 25px;">{{$information->information_contact_phone}}</a>
-                        </li>
-                        @if($information->information_contact_address)
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-map-pin"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z" /></svg>
-                            <a href="#" target="blank" style="font-size: 14px;">
-                                {{$information->information_contact_address}}
-                            </a>
-                        </li>
+<div class="footer-middle tuki_footer__middle">
+    <div class="container tuki_footer__container">
+        <div class="row tuki_footer__grid {{ $__tuki_footer_has_social ? '' : 'justify-content-lg-between' }}">
+            <div class="col-12 mb-4 mb-lg-0 {{ $__tuki_footer_has_social ? 'col-lg-4' : 'col-lg-5' }}">
+                <section class="tuki_footer__panel" aria-labelledby="tuki-footer-contact-heading">
+                    <h4 id="tuki-footer-contact-heading" class="tuki_footer__heading">Contáctanos</h4>
+                    <ul class="tuki_footer__contact-list">
+                        @if (filled($__tuki_footer_phone))
+                            <li class="tuki_footer__contact-row">
+                                <span class="tuki_footer__contact-icon" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" /></svg>
+                                </span>
+                                <a class="tuki_footer__link tuki_footer__link--strong" href="tel:{{ $__tuki_footer_tel_href }}" rel="nofollow">{{ $__tuki_footer_phone }}</a>
+                            </li>
                         @endif
-                        <!-- correo -->
-                        @if($information->information_contact_email)
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-mail"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z" /><path d="M3 7l9 6l9 -6" /></svg>
-                            <a href="mailto:{{$information->information_contact_email}}" target="blank" style="font-size: 14px;">{{$information->information_contact_email}}</a>
-                        </li>
+                        @if ($__tuki_inf && $information->information_contact_address)
+                            <li class="tuki_footer__contact-row">
+                                <span class="tuki_footer__contact-icon" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z" /></svg>
+                                </span>
+                                <span class="tuki_footer__text">{{ $information->information_contact_address }}</span>
+                            </li>
+                        @endif
+                        @if ($__tuki_inf && $information->information_contact_email)
+                            <li class="tuki_footer__contact-row">
+                                <span class="tuki_footer__contact-icon" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z" /><path d="M3 7l9 6l9 -6" /></svg>
+                                </span>
+                                <a class="tuki_footer__link" href="mailto:{{ $information->information_contact_email }}">{{ $information->information_contact_email }}</a>
+                            </li>
                         @endif
                     </ul>
-                </div>
+                </section>
             </div>
-            <div class="col-md-4">
-                <div class="widget">
-                    <h4 class="widget-title text-center">Enlaces de interés</h4>
-                    <div class="row d-flex align-items-center justify-content-center">
-                        <div class="col-sm-6 col-md-5 text-center">
-                            <ul class="links">
-                                <li><a href="{{ route("tenant.ecommerce.index") }}">Inicio</a></li>
-                                <li><a href="{{ route('tenant_detail_cart') }}">Ver Carrito</a></li>
-                                @guest
-                                <li><a href="{{route('tenant_ecommerce_login')}}" class="login-link">Login</a></li>
-                                @else
-                                <li><a role="menuitem" href="{{ route('logout') }}" class="login-link" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                    Salir
-                                </a></li>
-                                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+
+            <div class="col-12 mb-4 mb-lg-0 {{ $__tuki_footer_has_social ? 'col-lg-4' : 'col-lg-5' }}">
+                <section class="tuki_footer__panel tuki_footer__panel--links" aria-labelledby="tuki-footer-links-heading">
+                    <h4 id="tuki-footer-links-heading" class="tuki_footer__heading tuki_footer__heading--center-lg">Enlaces de interés</h4>
+                    <nav class="tuki_footer__nav" aria-label="Enlaces de interés">
+                        <ul class="links tuki_footer__links">
+                            <li><a href="{{ route('tenant.ecommerce.index') }}">Inicio</a></li>
+                            <li><a href="{{ route('tenant_detail_cart') }}">Ver carrito</a></li>
+                            @guest
+                                <li><a href="{{ route('tenant_ecommerce_login') }}" class="login-link">Iniciar sesión</a></li>
+                            @else
+                                <li>
+                                    <a role="menuitem" href="{{ route('logout') }}" class="login-link"
+                                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                        Salir
+                                    </a>
+                                </li>
+                                <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
                                     @csrf
                                 </form>
-                                @endguest
-                            </ul>
+                            @endguest
+                        </ul>
+                    </nav>
+                </section>
+            </div>
+
+            @if ($__tuki_footer_has_social)
+                <div class="col-12 mb-lg-0 col-lg-4">
+                    <section class="tuki_footer__panel tuki_footer__panel--social" aria-labelledby="tuki-footer-social-heading">
+                        <h4 id="tuki-footer-social-heading" class="tuki_footer__heading tuki_footer__heading--end-lg">Redes sociales</h4>
+                        <div class="tuki_footer__socials">
+                            @if ($__tuki_footer_fb !== '')
+                                <a href="{{ $__tuki_footer_fb }}" class="tuki_footer__social-btn" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 10v4h3v7h4v-7h3l1 -4h-4v-2a1 1 0 0 1 1 -1h3v-4h-3a5 5 0 0 0 -5 5v2h-3" /></svg>
+                                </a>
+                            @endif
+                            @if ($__tuki_footer_tw !== '')
+                                <a href="{{ $__tuki_footer_tw }}" class="tuki_footer__social-btn" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4l11.733 16h4.267l-11.733 -16z" /><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772" /></svg>
+                                </a>
+                            @endif
+                            @if ($__tuki_footer_tt !== '')
+                                <a href="{{ $__tuki_footer_tt }}" class="tuki_footer__social-btn" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M21 7.917v4.034a9.948 9.948 0 0 1 -5 -1.951v4.5a6.5 6.5 0 1 1 -8 -6.326v4.326a2.5 2.5 0 1 0 4 2v-11.5h4.083a6.005 6.005 0 0 0 4.917 4.917z" /></svg>
+                                </a>
+                            @endif
+                            @if ($__tuki_footer_ig !== '')
+                                <a href="{{ $__tuki_footer_ig }}" class="tuki_footer__social-btn" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 8a4 4 0 0 1 4 -4h8a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-8a4 4 0 0 1 -4 -4z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /><path d="M16.5 7.5v.01" /></svg>
+                                </a>
+                            @endif
                         </div>
-                    </div>
+                    </section>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="widget">
-                    <h4 class="widget-title text-end">Redes Sociales</h4>
-                    <div class="social-icons d-flex justify-content-end">
-
-                        <!-- @if($information->link_facebook)
-                            <a href="{{$information->link_facebook}}" class="social-icon" target="_blank"></a>
-                        @endif -->
-
-                        <!-- @if($information->link_twitter)
-                            <a href="{{$information->link_twitter}}" class="social-icon" target="_blank"><i class="icon-twitter"></i></a>
-                        @endif -->
-
-                        <!-- @if($information->link_instagram)
-                            <a href="{{$information->link_instagram}}" class="social-icon" target="_blank"><i class="fab fa-youtube"></i></a>
-                        @endif -->
-
-                        <a href="{{$information->link_facebook}}" target="_blank">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brand-facebook"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 10v4h3v7h4v-7h3l1 -4h-4v-2a1 1 0 0 1 1 -1h3v-4h-3a5 5 0 0 0 -5 5v2h-3" /></svg>
-                        </a>
-                        <a href="{{$information->link_twitter}}" target="_blank">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brand-x"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4l11.733 16h4.267l-11.733 -16z" /><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772" /></svg>
-                        </a>
-                        <a href="{{$information->link_tiktok}}" target="_blank">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brand-tiktok"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M21 7.917v4.034a9.948 9.948 0 0 1 -5 -1.951v4.5a6.5 6.5 0 1 1 -8 -6.326v4.326a2.5 2.5 0 1 0 4 2v-11.5h4.083a6.005 6.005 0 0 0 4.917 4.917z" /></svg>
-                        </a>
-                        <a href="{{$information->link_instagram}}" target="_blank">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brand-instagram"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 8a4 4 0 0 1 4 -4h8a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-8a4 4 0 0 1 -4 -4z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /><path d="M16.5 7.5v.01" /></svg>
-                        </a>
-                    </div>
-                </div>
-            </div>
+            @endif
         </div>
     </div>
 </div>
 
-<div class="container container-footer d-flex align-items-center justify-content-between">
-    <p class="text-center copy-text mt-3 mb-3">&copy; Copyright {{ date('Y') }} {{ $company->name }}. Todos los derechos reservados</p>
-    <div class="footer-bottom" style="padding-bottom: 2rem;">
-        <!-- <p class="footer-copyright">Facturador Pro 4. &copy; {{ now()->year }}. Todos los Derechos Reservados</p> -->
-        <img src="{{ asset('porto-ecommerce/assets/images/payments.svg') }}" alt="payment methods"
-            class="footer-payments">
+<div class="container tuki_footer__legal">
+    <div class="tuki_footer__legal-inner">
+        <p class="tuki_footer__copyright">&copy; {{ date('Y') }} {{ $company->name }}. Todos los derechos reservados.</p>
+        <div class="tuki_footer__payments">
+            <img src="{{ asset('porto-ecommerce/assets/images/payments.svg') }}" alt="Medios de pago aceptados" class="footer-payments" width="280" height="24" loading="lazy" decoding="async">
+        </div>
     </div>
 </div>
 
-@if($information->phone_whatsapp)
-    @if(strlen($information->phone_whatsapp) > 0)
-    <a class='ws-flotante' href='https://wa.me/{{$information->phone_whatsapp}}' target="BLANK" style="background-image: url('{{asset('logo/ws.png')}}'); background-size: 70px; background-repeat: no-repeat;" ></a>
+@if ($information->phone_whatsapp)
+    @if (strlen($information->phone_whatsapp) > 0)
+        <a class="ws-flotante tuki_footer__wa" href="https://wa.me/{{ $information->phone_whatsapp }}" target="_blank" rel="noopener noreferrer"
+            aria-label="Contactar por WhatsApp"
+            style="background-image: url('{{ asset('logo/ws.png') }}');"></a>
     @endif
 @endif
 
@@ -117,7 +127,7 @@
             <div class="modal-body">
 
                 <div class="alert alert-success" role="alert">
-                    <i class="icon-ok"></i> Tu producto se agregó al carrito
+                    <i class="fas fa-check"></i> Tu producto se agregó al carrito
                 </div>
                 <div class="row">
                     <div id="product_added_image" class="col-md-4">
@@ -295,65 +305,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     setDocumentsCounter();
 });
-
-function hexToHSL(hex) {
-  let r = 0, g = 0, b = 0;
-
-  if (hex.length === 4) {
-    r = "0x" + hex[1] + hex[1];
-    g = "0x" + hex[2] + hex[2];
-    b = "0x" + hex[3] + hex[3];
-  } else if (hex.length === 7) {
-    r = "0x" + hex[1] + hex[2];
-    g = "0x" + hex[3] + hex[4];
-    b = "0x" + hex[5] + hex[6];
-  }
-
-  r /= 255;
-  g /= 255;
-  b /= 255;
-
-  const max = Math.max(r, g, b),
-        min = Math.min(r, g, b);
-  let h, s, l = (max + min) / 2;
-
-  if (max === min) {
-    h = s = 0; // gris
-  } else {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-    }
-    h /= 6;
-  }
-
-  return [
-    Math.round(h * 360),
-    Math.round(s * 100) + "%",
-    Math.round(l * 100) + "%"
-  ];
-}
-
-// Fetch a Laravel
-fetch('/ecommerce/color-ecommerce')
-  .then(response => response.json())
-  .then(data => {
-    console.log('Color ecommerce:', data.color);
-
-    // Convertir el HEX recibido a HSL
-    const hsl = hexToHSL(data.color);
-
-    // Guardar en variables CSS globales
-    document.documentElement.style.setProperty("--primary-h", hsl[0]);
-    document.documentElement.style.setProperty("--primary-s", hsl[1]);
-    document.documentElement.style.setProperty("--primary-l", hsl[2]);
-
-  })
-  .catch(error => console.error('Error obteniendo el color:', error));
 
 </script>
 

@@ -1,0 +1,5579 @@
+/**
+ * Shim mínimo para reemplazar style.min.css de Porto en el ecommerce.
+ * Carga después de Bootstrap y antes/después de ecommerce_taukifac según head.
+ */
+
+/* Evitar flash de contenido oculto si main.js tarda en añadir .loaded */
+body.tuki_body:not(.loaded) > *:not(.loading-overlay) {
+  visibility: visible !important;
+}
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  background: rgba(255, 255, 255, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+body:not(.loaded) .loading-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.loaded .loading-overlay {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.bounce-loader {
+  display: flex;
+  gap: 0.35rem;
+}
+.bounce-loader > div {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--tuki-color-primary, #0d6efd);
+  animation: tuki_bounce 0.6s infinite ease-in-out alternate;
+}
+.bounce-loader .bounce2 { animation-delay: 0.15s; }
+.bounce-loader .bounce3 { animation-delay: 0.3s; }
+@keyframes tuki_bounce {
+  from { transform: translateY(0); opacity: 0.5; }
+  to { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Menú móvil (body.mmenu-active lo pone main.js)
+   Por encima del header sticky (.header z-index ~1100 en styles_ecommerce.css). */
+.mobile-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 11500;
+  background: rgba(0, 0, 0, 0.45);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+body.mmenu-active .mobile-menu-overlay {
+  visibility: visible;
+  opacity: 1;
+}
+
+.mobile-menu-container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(320px, 92vw);
+  height: 100%;
+  max-height: 100vh;
+  z-index: 11501;
+  background: #fff;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
+  transform: translateX(100%);
+  transition: transform 0.35s ease;
+  overflow-y: auto;
+}
+body.mmenu-active .mobile-menu-container {
+  transform: translateX(0);
+}
+
+.mobile-menu-wrapper {
+  padding: 1rem 1.25rem 2rem;
+  position: relative;
+}
+.mobile-menu-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  cursor: pointer;
+  font-size: 1.25rem;
+  color: #6c757d;
+  z-index: 2;
+}
+.mobile-menu-close:hover {
+  color: var(--tuki-color-primary, #0d6efd);
+}
+
+/* Atención al cliente (solo menú lateral móvil; en header se oculta <lg vía shim storefront) */
+.tuki_mobile_menu__contact {
+  margin-top: 1.25rem;
+  padding: 1rem 0.85rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(165deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.tuki_mobile_menu__contact-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 0.65rem;
+}
+
+.tuki_mobile_menu__contact-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 48px;
+  padding: 0.45rem 0.55rem;
+  margin-bottom: 0.35rem;
+  border-radius: 12px;
+  text-decoration: none !important;
+  color: #0f172a !important;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  border: 1px solid transparent;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.tuki_mobile_menu__contact-row:last-child {
+  margin-bottom: 0;
+}
+
+.tuki_mobile_menu__contact-row:hover,
+.tuki_mobile_menu__contact-row:focus {
+  background: #fff;
+  border-color: rgba(15, 23, 42, 0.08);
+  color: #0f172a !important;
+}
+
+.tuki_mobile_menu__contact-row:active {
+  transform: scale(0.99);
+}
+
+.tuki_mobile_menu__contact-icon {
+  flex-shrink: 0;
+  width: 2.35rem;
+  height: 2.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  color: #fff;
+}
+
+.tuki_mobile_menu__contact-row--tel .tuki_mobile_menu__contact-icon {
+  background: linear-gradient(145deg, #475569, #334155);
+}
+
+.tuki_mobile_menu__contact-row--wa .tuki_mobile_menu__contact-icon {
+  background: linear-gradient(145deg, #22c55e, #16a34a);
+}
+
+.tuki_mobile_menu__contact-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.tuki_mobile_menu__contact-icon i {
+  display: block;
+  line-height: 1;
+  font-size: 1.05rem;
+  font-style: normal;
+}
+
+.tuki_mobile_menu__contact-row--wa .tuki_mobile_menu__contact-icon i {
+  font-size: 1.15rem;
+}
+
+/* Redes en drawer móvil (clases genéricas .social-icon sin prefijo .footer) */
+.mobile-menu-wrapper .social-icons {
+  margin-top: 1.15rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.mobile-menu-wrapper .social-icons .social-icon {
+  width: 3.1rem;
+  height: 3.1rem;
+  min-width: 3.1rem;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  line-height: 1;
+  border-radius: 12px;
+  text-decoration: none !important;
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1);
+  border: 1px solid hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.22);
+  transition:
+    transform 0.15s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.mobile-menu-wrapper .social-icons .social-icon i {
+  line-height: 1;
+  font-style: normal;
+}
+
+.mobile-menu-wrapper .social-icons .social-icon:hover,
+.mobile-menu-wrapper .social-icons .social-icon:focus {
+  transform: translateY(-2px);
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  color: var(--tuki-color-primary-contrast, #fff) !important;
+  border-color: transparent;
+}
+
+.mobile-nav .mobile-menu {
+  list-style: none;
+  margin: 2rem 0 0;
+  padding: 0;
+}
+.mobile-nav .mobile-menu > li {
+  border-bottom: 1px solid #eee;
+}
+.mobile-nav .mobile-menu a {
+  display: block;
+  padding: 0.65rem 0;
+  color: #212529;
+  text-decoration: none;
+}
+.mobile-nav .mobile-menu a:hover {
+  color: var(--tuki-color-primary, #0d6efd);
+}
+.mobile-nav .mobile-menu ul {
+  list-style: none;
+  margin: 0 0 0.5rem 1rem;
+  padding: 0;
+}
+.mmenu-btn {
+  float: right;
+  cursor: pointer;
+  padding: 0 0.35rem;
+  user-select: none;
+}
+
+/* Botón volver arriba */
+#scroll-top {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 997;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--tuki-color-primary, #0d6efd);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+#scroll-top.visible {
+  opacity: 1;
+  visibility: visible;
+}
+#scroll-top:hover {
+  color: #fff;
+  filter: brightness(0.95);
+}
+
+/* Dropdown carrito legacy (sin tuki_header_cart, p. ej. otros módulos) */
+.cart-dropdown:not(.tuki_header_cart) .dropdown-menu {
+  min-width: 300px;
+  padding: 0.75rem;
+}
+
+.cart-dropdown:not(.tuki_header_cart) .dropdownmenu-wrapper {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* =============================================================================
+   Mini carrito (header) — panel premium tipo Shopify
+   ============================================================================= */
+
+.tuki_header_cart .tuki_mini_cart__dropdown.dropdown-menu {
+  min-width: min(22rem, calc(100vw - 1.5rem));
+  max-width: calc(100vw - 1.25rem);
+  padding: 0;
+  margin-top: 0.6rem;
+  border: none;
+  border-radius: 18px;
+  box-shadow:
+    0 4px 6px rgba(15, 23, 42, 0.04),
+    0 22px 50px rgba(15, 23, 42, 0.14);
+  overflow: hidden;
+  background: #fff;
+  transform-origin: top right;
+}
+
+@media (max-width: 575.98px) {
+  .tuki_header_cart .tuki_mini_cart__dropdown.dropdown-menu {
+    min-width: min(20rem, calc(100vw - 1rem));
+    right: 0.25rem !important;
+    left: auto !important;
+  }
+}
+
+.tuki_header_cart .tuki_mini_cart__dropdown.dropdown-menu.show {
+  animation: tuki_mini_cart_enter 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes tuki_mini_cart_enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tuki_header_cart .tuki_mini_cart__shell.dropdownmenu-wrapper {
+  display: flex;
+  flex-direction: column;
+  max-height: min(28rem, 88vh);
+  padding: 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.tuki_header_cart .tuki_mini_cart__shell.dropdownmenu-wrapper::before,
+.tuki_header_cart .tuki_mini_cart__shell.dropdownmenu-wrapper::after {
+  content: none !important;
+  display: none !important;
+}
+
+.tuki_header_cart .tuki_mini_cart__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem 0.65rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+}
+
+.tuki_header_cart .tuki_mini_cart__head-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--title-color, #0f172a);
+}
+
+.tuki_header_cart .tuki_mini_cart__head-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--subtitle-color, #64748b);
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.05);
+}
+
+.tuki_header_cart .tuki_mini_cart__list.dropdown-cart-products {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: min(15.5rem, 42vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.4rem 0.65rem 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.22) transparent;
+}
+
+.tuki_header_cart .tuki_mini_cart__list.dropdown-cart-products::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tuki_header_cart .tuki_mini_cart__list.dropdown-cart-products::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.18);
+  border-radius: 999px;
+}
+
+.tuki_header_cart .tuki_mini_cart__list.dropdown-cart-products::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tuki_header_cart .tuki_mini_cart__empty {
+  padding: 1.75rem 1rem;
+  text-align: center;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--subtitle-color, #64748b);
+}
+
+.tuki_header_cart .tuki_mini_cart__item.product {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr) auto;
+  gap: 0.55rem 0.65rem;
+  align-items: start;
+  padding: 0.65rem 0.45rem;
+  margin: 0 0 0.15rem;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.tuki_header_cart .tuki_mini_cart__item.product:last-child {
+  margin-bottom: 0;
+}
+
+.tuki_header_cart .tuki_mini_cart__item.product:hover {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.tuki_header_cart .tuki_mini_cart__thumb {
+  display: block;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f1f5f9;
+  flex-shrink: 0;
+}
+
+.tuki_header_cart .tuki_mini_cart__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.tuki_header_cart .tuki_mini_cart__body {
+  min-width: 0;
+}
+
+.tuki_header_cart .tuki_mini_cart__title.product-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0 0 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--title-color, #0f172a);
+  text-decoration: none;
+}
+
+.tuki_header_cart .tuki_mini_cart__title:hover,
+.tuki_header_cart .tuki_mini_cart__title:focus {
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  text-decoration: none;
+}
+
+.tuki_header_cart .tuki_mini_cart__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  font-size: 0.72rem;
+  color: var(--subtitle-color, #64748b);
+}
+
+.tuki_header_cart .tuki_mini_cart__unit-line {
+  font-variant-numeric: tabular-nums;
+}
+
+.tuki_header_cart .tuki_mini_cart__line-sub {
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--title-color, #0f172a);
+  font-variant-numeric: tabular-nums;
+}
+
+.tuki_header_cart .tuki_mini_cart__remove.btn-remove {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid rgba(220, 53, 69, 0.35);
+  background: rgba(220, 53, 69, 0.08);
+  color: #c82333;
+  text-decoration: none !important;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.12s ease;
+}
+
+.tuki_header_cart .tuki_mini_cart__remove.btn-remove:hover,
+.tuki_header_cart .tuki_mini_cart__remove.btn-remove:focus {
+  background: rgba(220, 53, 69, 0.16);
+  color: #a71d2a;
+  border-color: rgba(220, 53, 69, 0.55);
+}
+
+.tuki_header_cart .tuki_mini_cart__remove.btn-remove:active {
+  transform: scale(0.94);
+}
+
+.tuki_header_cart .tuki_mini_cart__remove.btn-remove i {
+  pointer-events: none;
+  font-size: 0.72rem;
+}
+
+.tuki_header_cart .tuki_mini_cart__total.dropdown-cart-total {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem 0.65rem;
+  margin: 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, #fafbfc 0%, #f1f5f9 100%);
+}
+
+.tuki_header_cart .tuki_mini_cart__total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tuki_header_cart .tuki_mini_cart__total-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--subtitle-color, #64748b);
+}
+
+.tuki_header_cart .tuki_mini_cart__total-amount {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  font-variant-numeric: tabular-nums;
+}
+
+.tuki_header_cart .tuki_mini_cart__total-currency {
+  font-size: 0.78rem;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.tuki_header_cart .tuki_mini_cart__actions.dropdown-cart-action {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0 1rem 1rem;
+}
+
+.tuki_header_cart .tuki_mini_cart__btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.86rem;
+  text-align: center;
+  text-decoration: none !important;
+  border: 1px solid transparent;
+  transition:
+    filter 0.18s ease,
+    transform 0.15s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.tuki_header_cart .tuki_mini_cart__btn--primary {
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  color: var(--tuki-color-primary-contrast, #fff);
+  border-color: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.35);
+  box-shadow:
+    0 2px 6px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.25),
+    0 8px 20px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.22);
+}
+
+.tuki_header_cart .tuki_mini_cart__btn--primary:hover,
+.tuki_header_cart .tuki_mini_cart__btn--primary:focus {
+  filter: brightness(1.05);
+  color: var(--tuki-color-primary-contrast, #fff);
+  transform: translateY(-1px);
+}
+
+.tuki_header_cart .tuki_mini_cart__btn--ghost {
+  background: #fff;
+  color: var(--title-color, #0f172a);
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+.tuki_header_cart .tuki_mini_cart__btn--ghost:hover,
+.tuki_header_cart .tuki_mini_cart__btn--ghost:focus {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.18);
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+}
+
+/* Newsletter popup (mfp-hide = oculto hasta magnificPopup; sin plugin queda oculto) */
+.newsletter-popup.mfp-hide {
+  display: none !important;
+}
+
+/* Listado / categoría (antes en style.min Porto) */
+.banner-cat {
+  min-height: 220px;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+}
+.banner-cat .banner-content {
+  padding: 2rem 0;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.banner-cat .banner-title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0.5rem 0;
+}
+
+/* Carrusel promociones: altura fluida acotada (sin choque min/max) + object-fit en img */
+.banner-slider-wrapper {
+  --tuki-slider-height: clamp(190px, min(30vw, 50vh), 460px);
+}
+
+.banner-slider-wrapper.full-width-banner {
+  --tuki-slider-height: clamp(210px, min(36vw, 54vh), 540px);
+}
+
+@media (max-width: 575.98px) {
+  .banner-slider-wrapper {
+    --tuki-slider-height: clamp(168px, 48vw, 248px);
+  }
+
+  .banner-slider-wrapper.full-width-banner {
+    --tuki-slider-height: clamp(180px, 52vw, 280px);
+  }
+}
+
+.banner-slider-wrapper .home-slider.ecommerce,
+.banner-slider-wrapper .home-slider.ecommerce .owl-stage-outer,
+.banner-slider-wrapper .home-slider.ecommerce .owl-stage,
+.banner-slider-wrapper .home-slider.ecommerce .owl-item {
+  min-height: var(--tuki-slider-height);
+}
+
+/* Imagen del slide */
+.banner-slider-wrapper .tuki_slide_image {
+  display: block;
+  width: 100%;
+  min-height: var(--tuki-slider-height);
+  height: var(--tuki-slider-height);
+  object-fit: cover;
+  object-position: center;
+  background-color: #e2e8f0;
+}
+
+.banner-slider-wrapper .home-slide {
+  position: relative;
+  height: 100%;
+}
+
+.banner-slider-wrapper .home-slide .banner-slide-link {
+  min-height: var(--tuki-slider-height);
+  display: flex;
+  flex-direction: column;
+}
+
+.banner-slider-wrapper .home-slide .banner-slide-link .tuki_slide_image {
+  flex: 1 1 auto;
+}
+
+/* Flechas por encima del carrusel; hit area cómodo */
+.banner-slider-wrapper .banner-nav-btn {
+  z-index: 15;
+}
+
+.banner-slider-wrapper .home-slider.ecommerce.owl-theme .owl-dots {
+  bottom: 14px;
+  z-index: 12;
+  padding-bottom: 4px;
+}
+
+.banner-slider-wrapper .home-slider.ecommerce.owl-theme .owl-dots .owl-dot span {
+  transition: transform 0.2s ease, background 0.2s ease, width 0.2s ease;
+}
+.breadcrumb-nav {
+  padding: 0.75rem 0;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+.breadcrumb {
+  margin-bottom: 0;
+  background: transparent;
+}
+.toolbox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #eee;
+}
+.sidebar-shop {
+  padding-top: 1rem;
+}
+.sidebar-toggle {
+  cursor: pointer;
+  padding: 0.5rem;
+  font-size: 1.25rem;
+  color: #495057;
+}
+.featured-section:not(.tuki_featured_below) {
+  padding: 2rem 0;
+  background: #f8f9fa;
+  margin-top: 2rem;
+}
+
+.tuki_storefront--product .featured-section.tuki_featured_below {
+  margin-top: 0;
+  background: transparent;
+}
+.pagination {
+  margin: 1rem 0;
+}
+
+/* --- Home catálogo: pantallas grandes y tarjetas de producto --- */
+
+@media (min-width: 1200px) {
+  .header-middle .container,
+  .tuki_storefront_header .header-middle .container {
+    max-width: 1380px;
+  }
+
+  .tuki_storefront .container,
+  .tuki_category_strip.container {
+    max-width: 1380px;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .header-right {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.65rem;
+  }
+
+  .header-right .header-contact {
+    order: 0;
+  }
+
+  .header-right .cart-dropdown {
+    order: 1;
+  }
+}
+
+@media (min-width: 1400px) {
+  .header-middle .container,
+  .tuki_storefront_header .header-middle .container,
+  .tuki_storefront .container,
+  .tuki_category_strip.container {
+    max-width: 1440px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .tuki_storefront .container,
+  .tuki_category_strip.container,
+  .tuki_storefront_header .header-middle .container {
+    max-width: 1560px;
+  }
+}
+
+/* Sección productos: respiración y ancho coherente */
+.tuki_catalog .ecom-section--products {
+  padding-top: 0.5rem;
+  padding-bottom: 2rem;
+}
+
+.tuki_catalog .ecom-section__header {
+  margin-bottom: 1.25rem;
+}
+
+.tuki_catalog .ecom-section__title {
+  font-size: clamp(1.2rem, 1.5vw, 1.45rem);
+}
+
+/* Tarjeta: contenedor de imagen estable (evita “huecos” y solapamientos) */
+.tuki_catalog .tuki_product_tile__figure {
+  position: relative;
+  margin-bottom: 0.75rem !important;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #f1f4f9;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tuki_catalog .tuki_product_tile__media {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0.5rem;
+}
+
+.tuki_catalog .tuki_product_tile__media img.image {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* Vista rápida: solo al hover en escritorio; en táctil siempre visible abajo */
+.tuki_catalog .tuki_product_tile__quickview {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  margin: 0 !important;
+  padding: 0.4rem 0.9rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  border-radius: 999px !important;
+  z-index: 3;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  visibility: hidden;
+  /* Sin esto, el enlace invisible (Porto: opacity 0) sigue capturando clics sobre precio / agregar al carrito en escritorio */
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  text-decoration: none !important;
+}
+
+.tuki_catalog .tuki_product_tile:hover .tuki_product_tile__quickview {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .tuki_catalog .tuki_product_tile__quickview {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    position: static;
+    transform: none;
+    display: table;
+    margin: 0.5rem auto 0 !important;
+    text-align: center;
+  }
+}
+
+/*
+  Porto (.btn-quickview) fuerza translateY(50%) y márgenes: en escritorio desplaza el enlace
+  fuera del figure y capa sobre precio/carrito. Solo corregimos en dispositivos con hover fino
+  para no pisar transform:none del layout táctil.
+*/
+@media (hover: hover) and (pointer: fine) {
+  .tuki_catalog .tuki_product_tile__figure .btn-quickview.tuki_product_tile__quickview,
+  .tuki_storefront .tuki_product_tile__figure .btn-quickview.tuki_product_tile__quickview {
+    transform: translateX(-50%) !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
+/* Título y descripción más legibles en grid denso */
+.tuki_catalog .product-title-ecommerce {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.tuki_catalog .product-title-ecommerce a {
+  font-size: clamp(0.88rem, 0.95vw, 1.02rem) !important;
+  line-height: 1.35 !important;
+}
+
+.tuki_catalog .product-description {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  margin-bottom: 0.35rem;
+}
+
+.tuki_catalog .product-details-ecommerce {
+  padding: 0.35rem 10px 10px !important;
+}
+
+.tuki_catalog .price-box-ecommerce {
+  font-size: clamp(0.95rem, 1.1vw, 1.1rem) !important;
+}
+
+/* Categorías: chips alineados */
+.tuki_categories .ecom-categories__scroller {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.tuki_categories .ecom-category-chip__img {
+  flex-shrink: 0;
+}
+
+/* Grid extra ancho: menos hueco vertical entre filas */
+@media (min-width: 1400px) {
+  .tuki_catalog .ecom-products-grid > [class*="col-"] {
+    margin-bottom: 1rem;
+  }
+}
+
+/* =============================================================================
+   Storefront premium (homepage): UI/UX — solo CSS, colores desde variables tenant
+   ============================================================================= */
+
+.tuki_storefront {
+  background: linear-gradient(180deg, #fafbfc 0%, #f4f6f9 38%, #fafbfc 100%);
+}
+
+/* Homepage: sin el antiguo padding-top inline (8rem); el header es sticky y ya ocupa su fila */
+.tuki_storefront--home {
+  padding-top: clamp(0.35rem, 1vw, 0.65rem);
+}
+
+.tuki_storefront--catalog {
+  padding-top: clamp(0.5rem, 1.5vw, 1rem);
+}
+
+/* Carrito: mismo grid/ancho que catálogo, sin depender de tuki_catalog */
+.tuki_storefront--cart {
+  padding-top: clamp(0.5rem, 1.5vw, 1rem);
+}
+
+.tuki_storefront--product {
+  padding-top: clamp(0.5rem, 1.5vw, 1rem);
+  padding-bottom: clamp(1.25rem, 2.5vw, 2rem);
+}
+
+/* PDP: columna + relacionados en un solo flujo (evita solapes con el grid / Owl) */
+.tuki_storefront--product .tuki_pdp_stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  position: relative;
+  /* auto: z-index:0 encerraba el aside fixed dentro de un contexto y el overlay hermano (.tuki_pdp_mobile_chrome) quedaba SIEMPRE encima (solo se veía el oscurecido). */
+  z-index: auto;
+}
+
+.tuki_storefront--product .tuki_product_page__row {
+  align-items: flex-start;
+}
+
+.tuki_storefront--product .tuki_product_page__row > [class*="col-"] {
+  min-width: 0;
+}
+
+/*
+ * Causa raíz del solapamiento “Productos destacados” sobre la galería:
+ * main.js → themeSticky() selecciona .sidebar-wrapper (minWidth 991) y puede dejar el bloque en position:fixed
+ * con coordenadas erróneas respecto al nuevo contenedor de la PDP.
+ * Este layout solo incluye este aside vía sidebar_product_right: ya no usamos la clase .sidebar-wrapper.
+ */
+.tuki_storefront--product aside.tuki_ecom_item_sidebar {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+}
+
+.tuki_storefront--product .tuki_ecom_item_sidebar_inner {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* PDP móvil: panel lateral (chrome fuera del .container en el Blade) */
+.tuki_storefront--product .tuki_product_page__row--pdp {
+  position: relative;
+}
+
+body.tuki_pdp_sidebar_panel_open {
+  overflow: hidden;
+}
+
+/* Contenedor fijo: no intercepta clics salvo overlay/botón (hijos con pointer-events: auto) */
+.tuki_storefront--product .tuki_pdp_mobile_chrome {
+  pointer-events: none;
+}
+
+@media (max-width: 991.98px) {
+  .tuki_storefront--product .tuki_pdp_mobile_chrome .tuki_pdp_sidebar_overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10950;
+    background: rgba(15, 23, 42, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity 0.28s ease,
+      visibility 0.28s ease;
+  }
+
+  main.tuki_main.tuki_pdp_sidebar_panel_open .tuki_storefront--product .tuki_pdp_mobile_chrome .tuki_pdp_sidebar_overlay,
+  main.main.tuki_pdp_sidebar_panel_open .tuki_storefront--product .tuki_pdp_mobile_chrome .tuki_pdp_sidebar_overlay {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  /*
+   * FAB panel lateral: centrado en el eje vertical del viewport, pegado al borde derecho
+   * (no bajo el header; evita sensación “aplastada” contra la barra de búsqueda).
+   */
+  .tuki_storefront--product .tuki_pdp_mobile_chrome .tuki_pdp_sidebar_open {
+    position: fixed;
+    top: 50%;
+    right: max(12px, env(safe-area-inset-right, 0px));
+    bottom: auto;
+    left: auto;
+    z-index: 11020;
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
+    min-height: 50px;
+    padding: 0;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow:
+      0 4px 14px rgba(15, 23, 42, 0.12),
+      0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+    color: var(--title-color, #0f172a);
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+    pointer-events: auto;
+    transform: translateY(-50%);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      background-color 0.2s ease,
+      opacity 0.22s ease;
+  }
+
+  .tuki_storefront--product .tuki_pdp_mobile_chrome .tuki_pdp_sidebar_open:hover {
+    transform: translateY(-50%) scale(1.05);
+    box-shadow:
+      0 8px 24px rgba(15, 23, 42, 0.16),
+      0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+    background: #fff;
+  }
+
+  .tuki_storefront--product .tuki_pdp_mobile_chrome .tuki_pdp_sidebar_open:focus {
+    outline: 2px solid hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.45);
+    outline-offset: 2px;
+  }
+
+  /* Con el cajón abierto: no tapar el contenido ni competir con el scroll del panel */
+  main.tuki_main.tuki_pdp_sidebar_panel_open .tuki_storefront--product .tuki_pdp_mobile_chrome .tuki_pdp_sidebar_open,
+  main.main.tuki_pdp_sidebar_panel_open .tuki_storefront--product .tuki_pdp_mobile_chrome .tuki_pdp_sidebar_open {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%) scale(0.9);
+  }
+
+  /*
+   * Drawer lateral: anclado arriba del viewport (top: 0) para no dejar franja vacía sobre el overlay.
+   * El notch se respeta con padding-top en .tuki_ecom_item_sidebar_inner; scroll sigue en el inner.
+   */
+  .tuki_storefront--product .tuki_product_page__row--pdp > aside.tuki_ecom_item_sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: auto;
+    width: min(340px, 92vw);
+    max-width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    z-index: 11000;
+    background: #fff;
+    box-shadow: -14px 0 42px rgba(15, 23, 42, 0.2);
+    transform: translate3d(100%, 0, 0);
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0.3s ease;
+    display: block;
+    min-height: 0;
+    color: var(--subtitle-color, #475569);
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+
+  .tuki_storefront--product .tuki_product_page__row--pdp > aside.tuki_ecom_item_sidebar .tuki_ecom_item_sidebar_inner {
+    box-sizing: border-box;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    padding: max(0.85rem, env(safe-area-inset-top, 0px)) 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    pointer-events: auto;
+  }
+
+  /* Porto: margin-top 80px en .widget-featured del sidebar “come” viewport y empeora UX móvil */
+  .tuki_storefront--product .tuki_product_page__row--pdp > aside.tuki_ecom_item_sidebar.sidebar-product .widget.widget-featured {
+    margin-top: 0.65rem !important;
+  }
+
+  /* Owl del banner vacío: no debe capturar gestos verticales del drawer */
+  .tuki_storefront--product .tuki_product_page__row--pdp > aside.tuki_ecom_item_sidebar .widget-banners-slider.owl-carousel .owl-stage-outer {
+    touch-action: pan-y !important;
+  }
+
+  @supports (height: 100dvh) {
+    .tuki_storefront--product .tuki_product_page__row--pdp > aside.tuki_ecom_item_sidebar {
+      height: 100dvh;
+      max-height: 100dvh;
+    }
+  }
+
+  main.tuki_main.tuki_pdp_sidebar_panel_open .tuki_storefront--product .tuki_product_page__row--pdp > aside.tuki_ecom_item_sidebar,
+  main.main.tuki_pdp_sidebar_panel_open .tuki_storefront--product .tuki_product_page__row--pdp > aside.tuki_ecom_item_sidebar {
+    transform: translate3d(0, 0, 0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .tuki_storefront--product aside.tuki_ecom_item_sidebar .widget-info h4,
+  .tuki_storefront--product aside.tuki_ecom_item_sidebar .widget-info {
+    color: inherit;
+  }
+
+  .tuki_storefront--product .tuki_pdp_sidebar_featured_mobile {
+    margin-top: 0.35rem;
+  }
+}
+
+@media (min-width: 992px) {
+  .tuki_storefront--product .tuki_pdp_mobile_chrome {
+    display: none !important;
+  }
+}
+
+/* --- PDP sidebar: “Productos destacados” (rejilla compacta, mismo lenguaje que tarjetas tienda) --- */
+.tuki_storefront--product .tuki_sidebar_featured {
+  margin-bottom: 0.5rem;
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__heading {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.65rem;
+  color: var(--title-color, #0f172a);
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+}
+
+@media (min-width: 480px) {
+  .tuki_storefront--product .tuki_sidebar_featured__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+}
+
+/* PDP: “Productos destacados” bajo ficha + sidebar, ancho del container (evita franja estrecha + mucho blanco) */
+.tuki_storefront--product .tuki_pdp_featured_wide {
+  width: 100%;
+  max-width: 100%;
+  margin-top: clamp(0.85rem, 2vw, 1.5rem);
+  padding-top: clamp(0.5rem, 1.2vw, 0.85rem);
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.tuki_storefront--product .tuki_pdp_featured_wide .widget.widget-featured {
+  margin-top: 0;
+}
+
+.tuki_storefront--product .tuki_pdp_featured_wide .tuki_sidebar_featured__heading {
+  font-size: clamp(1rem, 1.1vw + 0.85rem, 1.2rem);
+  margin-bottom: 0.75rem;
+}
+
+.tuki_storefront--product .tuki_pdp_featured_wide .tuki_sidebar_featured__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 148px), 1fr));
+  gap: 0.65rem;
+}
+
+@media (min-width: 576px) {
+  .tuki_storefront--product .tuki_pdp_featured_wide .tuki_sidebar_featured__grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 158px), 1fr));
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 992px) {
+  .tuki_storefront--product .tuki_pdp_featured_wide .tuki_sidebar_featured__grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 165px), 1fr));
+    gap: 0.85rem;
+  }
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__card:hover {
+  border-color: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.35);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.1);
+  transform: translateY(-1px);
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__thumb {
+  display: block;
+  aspect-ratio: 1;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__meta {
+  padding: 0.45rem 0.5rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__name {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--title-color, #0f172a);
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__name a {
+  color: inherit;
+  text-decoration: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__name a:hover {
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__price .tuki_price_stack {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.35rem;
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__price .tuki_price_amount {
+  font-size: 0.78rem !important;
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__price .tuki_price_prev {
+  font-size: 0.68rem !important;
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__action {
+  margin-top: auto;
+  padding-top: 0.2rem;
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__cart.tuki_add_cart_btn {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  border-radius: 10px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.tuki_storefront--product .tuki_sidebar_featured__cart.tuki_add_cart_btn i {
+  font-size: 0.85rem;
+}
+
+/* Respaldo: anular sticky heredado si en algún entorno aún existiera .sidebar-wrapper */
+.tuki_storefront--product .sidebar-wrapper {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: auto !important;
+  max-width: 100% !important;
+  transform: none !important;
+}
+
+/* ecommerce_taukifac.css mete 5rem aquí y desalinea la PDP respecto al bloque de abajo */
+.tuki_storefront--product .product-single-container.product-single-default {
+  margin-top: 0 !important;
+}
+
+/* PDP: “También te puede interesar” — siempre debajo de la fila ficha+sidebar, sin superponer */
+.tuki_storefront--product .tuki_featured_below {
+  position: relative;
+  z-index: 0;
+  flex: 0 0 auto;
+  order: 2;
+  width: 100%;
+  margin-top: clamp(1.75rem, 3vw, 2.75rem);
+  margin-left: 0;
+  margin-right: 0;
+  padding-top: clamp(1.35rem, 2.5vw, 2rem);
+  padding-bottom: clamp(1.75rem, 3vw, 2.75rem);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, #eef2f7 0%, #f8fafc 42%, #f1f5f9 100%);
+  clear: both;
+  overflow: visible;
+}
+
+.tuki_featured_below__inner {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.tuki_featured_below__head {
+  margin-bottom: 1.35rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.tuki_featured_below__title {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--title-color, #0f172a);
+}
+
+.tuki_featured_below__subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--subtitle-color, #64748b);
+  max-width: 36rem;
+  line-height: 1.45;
+}
+
+.tuki_featured_below__empty {
+  margin: 0;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--subtitle-color, #64748b);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px dashed rgba(15, 23, 42, 0.12);
+  border-radius: 14px;
+}
+
+/* --- PDP: “También te puede interesar” (rejilla densa, cards más compactas que el carrusel Owl) --- */
+.tuki_storefront--product .tuki_related_strip {
+  margin-top: 0.15rem;
+}
+
+.tuki_storefront--product .tuki_related_strip__col {
+  display: flex;
+}
+
+.tuki_storefront--product .tuki_related_strip__tile.tuki_product_tile {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.tuki_storefront--product .tuki_related_strip__tile.tuki_product_tile:hover {
+  border-color: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.28);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
+  transform: translateY(-2px);
+}
+
+.tuki_storefront--product .tuki_related_strip .tuki_product_tile__figure {
+  margin-bottom: 0;
+}
+
+.tuki_storefront--product .tuki_related_strip .tuki_product_tile__media {
+  display: block;
+  aspect-ratio: 1;
+  background: #f8fafc;
+}
+
+.tuki_storefront--product .tuki_related_strip .tuki_product_tile__media img.image {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+}
+
+.tuki_storefront--product .tuki_related_strip .tuki_product_tile__content {
+  padding: 0.45rem 0.55rem 0.55rem;
+}
+
+.tuki_storefront--product .tuki_related_strip .product-title-ecommerce {
+  font-size: 0.78rem;
+  line-height: 1.3;
+  margin: 0 0 0.25rem;
+}
+
+.tuki_storefront--product .tuki_related_strip .product-title-ecommerce a {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tuki_storefront--product .tuki_related_strip .tuki_product_tile__buyrow {
+  padding-top: 0.45rem;
+  margin-top: 0.15rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.tuki_storefront--product .tuki_related_strip .tuki_price_amount {
+  font-size: 0.82rem !important;
+}
+
+.tuki_storefront--product .tuki_related_strip .tuki_price_prev {
+  font-size: 0.72rem !important;
+}
+
+.tuki_storefront--product .tuki_related_strip .product-action .add-cart.tuki_add_cart_btn {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  border-radius: 10px !important;
+}
+
+.tuki_storefront--product .tuki_related_strip .product-action .add-cart.tuki_add_cart_btn i {
+  font-size: 0.95rem;
+}
+
+/*
+ * PDP “También te puede interesar”: Porto/τaukifac fuerza .btn-quickview con font 1.3rem,
+ * padding 12px, márgenes laterales y translateY(50%); el shim solo anula transform en hover+fine,
+ * así que en móvil el botón crece y solapa el título. Mantenemos col-6: pill compacta sobre la imagen.
+ */
+@media (max-width: 767.98px) {
+  .tuki_storefront--product .tuki_related_strip .tuki_product_tile__figure {
+    position: relative !important;
+    overflow: hidden;
+  }
+
+  .tuki_storefront--product .tuki_related_strip .tuki_product_tile__figure .btn-quickview.tuki_product_tile__quickview {
+    position: absolute !important;
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: 6px !important;
+    transform: translateX(-50%) !important;
+    margin: 0 auto !important;
+    width: auto;
+    max-width: calc(100% - 10px) !important;
+    padding: 0.28rem 0.5rem !important;
+    font: 700 0.62rem / 1.15 var(--tuki-font-sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif) !important;
+    border-radius: 999px !important;
+    white-space: nowrap !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    box-sizing: border-box;
+    z-index: 5;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Hero + slider alineados al grid del storefront (mismos laterales que .container) */
+.tuki_storefront .tuki_hero.ecom-hero {
+  margin-top: 0;
+  padding-top: 0;
+  padding-bottom: 0.5rem;
+}
+
+/* Banner “full” dentro del shell ancho: vuelve bordes redondeados (ya no va edge-to-edge en viewport) */
+.tuki_storefront .tuki_hero__shell--wide .full-width-banner.banner-slider-wrapper,
+.tuki_storefront .tuki_hero__shell--wide .home-slider.ecommerce.full-width-banner {
+  border-radius: 18px;
+}
+
+.tuki_storefront .tuki_hero__shell {
+  position: relative;
+}
+
+/* Modo “ancho” (config full banner): mismo tope que el resto de secciones, no viewport edge-to-edge */
+.tuki_storefront .tuki_hero__shell--wide {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+@media (min-width: 1200px) {
+  .tuki_storefront .tuki_hero__shell--wide {
+    max-width: 1380px;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .tuki_storefront .tuki_hero__shell--wide {
+    max-width: 1440px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .tuki_storefront .tuki_hero__shell--wide {
+    max-width: 1560px;
+  }
+}
+
+.tuki_storefront .tuki_section--categories {
+  padding-top: 0.85rem;
+  padding-bottom: 0.25rem;
+}
+
+.tuki_storefront .tuki_section--products {
+  padding-top: 1.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.tuki_storefront .tuki_section--offers {
+  padding-top: 0.5rem;
+  padding-bottom: 3rem;
+}
+
+/* --- Cabecera --- */
+.tuki_storefront_header.header {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+.tuki_storefront_header .header-middle {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.tuki_storefront_header .logo img {
+  max-height: 44px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Búsqueda */
+.tuki_storefront_header .ecom-search .search_input {
+  height: 44px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  background: #fff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  padding-left: 44px !important;
+  padding-right: 44px !important;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tuki_storefront_header .ecom-search .search_input:focus {
+  border-color: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  box-shadow:
+    0 0 0 3px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.18),
+    0 4px 14px rgba(0, 0, 0, 0.06) !important;
+  outline: none;
+}
+
+.tuki_storefront_header .ecom-search .search_input::-webkit-search-cancel-button,
+.tuki_storefront_header .ecom-search .search_input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.tuki_storefront_header .ecom-search .search-icon {
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+}
+
+.tuki_storefront_header .ecom-search:focus-within .search-icon {
+  opacity: 0.9;
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+}
+
+/* =============================================================================
+   Ecommerce header — autocomplete: panel flotante (no empuja altura del header)
+   ============================================================================= */
+
+.tuki_storefront_header .ecom-search.tuki_ecom_search {
+  position: relative;
+  z-index: 12070;
+}
+
+.tuki_storefront_header .ecom-search.tuki_ecom_search .tuki_ecom_search_inner {
+  position: relative;
+  width: 100%;
+  z-index: 2;
+}
+
+.tuki_storefront_header .ecom-search.tuki_ecom_search .tuki_ecom_search_backdrop {
+  display: none;
+}
+
+@media (max-width: 991.98px) {
+  .tuki_storefront_header .ecom-search.tuki_ecom_search .tuki_ecom_search_backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    background: rgba(15, 23, 42, 0.38);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+}
+
+@media (min-width: 992px) {
+  .tuki_storefront_header .ecom-search.tuki_ecom_search .tuki_ecom_search_backdrop {
+    display: none !important;
+  }
+}
+
+.tuki_storefront_header #header_bar .header-menu.tuki_ecom_search_panel {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: calc(100% + 8px) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: min(100vw - 1.5rem, 560px) !important;
+  margin: 0 !important;
+  padding: 0.35rem 0 !important;
+  max-height: min(420px, 58vh) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  border-radius: 16px !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  background: #fff !important;
+  box-shadow:
+    0 4px 6px rgba(15, 23, 42, 0.04),
+    0 18px 48px rgba(15, 23, 42, 0.14) !important;
+  scrollbar-width: thin;
+  scrollbar-color: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.45) rgba(15, 23, 42, 0.06);
+}
+
+.tuki_storefront_header #header_bar .header-menu.tuki_ecom_search_panel::-webkit-scrollbar {
+  width: 7px;
+  display: block;
+}
+
+.tuki_storefront_header #header_bar .header-menu.tuki_ecom_search_panel::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.04);
+  border-radius: 10px;
+}
+
+.tuki_storefront_header #header_bar .header-menu.tuki_ecom_search_panel::-webkit-scrollbar-thumb {
+  background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.4);
+  border-radius: 10px;
+}
+
+.tuki_storefront_header .tuki_ecom_search_list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tuki_storefront_header .tuki_ecom_search_item + .tuki_ecom_search_item {
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.tuki_storefront_header .tuki_ecom_search_hit {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 0.65rem !important;
+  min-height: 64px !important;
+  height: auto !important;
+  padding: 0.55rem 0.85rem !important;
+  margin: 0 !important;
+  text-decoration: none !important;
+  color: #0f172a !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tuki_storefront_header .tuki_ecom_search_hit:hover,
+.tuki_storefront_header .tuki_ecom_search_hit:focus {
+  background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.07) !important;
+  color: #0f172a !important;
+  outline: none;
+  box-shadow: inset 3px 0 0 hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+}
+
+.tuki_storefront_header .tuki_ecom_search_hit__thumb {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #f1f5f9 0%, #e8edf4 100%);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.tuki_storefront_header .tuki_ecom_search_hit__thumb img {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  object-fit: cover;
+  filter: none !important;
+  padding: 0 !important;
+}
+
+.tuki_storefront_header .tuki_ecom_search_hit__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+
+.tuki_storefront_header .tuki_ecom_search_hit__title {
+  display: block;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: none !important;
+}
+
+.tuki_storefront_header .tuki_ecom_search_hit__price {
+  flex: 0 0 auto;
+  font-size: 0.82rem !important;
+  font-weight: 800 !important;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1) !important;
+  padding: 0.28rem 0.55rem !important;
+  border-radius: 10px !important;
+  white-space: nowrap;
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tuki-ecom-search-enter-active,
+.tuki-ecom-search-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tuki-ecom-search-enter,
+.tuki-ecom-search-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+@media (max-width: 991.98px) {
+  .tuki_storefront_header #header_bar .header-menu.tuki_ecom_search_panel {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: min(calc(100vw - 1.25rem), 520px) !important;
+    max-width: min(calc(100vw - 1.25rem), 520px) !important;
+    max-height: min(420px, calc(100vh - 140px - env(safe-area-inset-bottom, 0px))) !important;
+    border-radius: 18px !important;
+  }
+
+  .tuki-ecom-search-enter,
+  .tuki-ecom-search-leave-to {
+    transform: translate(-50%, -8px) !important;
+  }
+
+  .tuki-ecom-search-enter-active,
+  .tuki-ecom-search-leave-active {
+    transform-origin: top center;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .tuki_storefront_header #header_bar .header-menu.tuki_ecom_search_panel {
+    width: calc(100vw - 1rem) !important;
+    max-width: calc(100vw - 1rem) !important;
+    max-height: min(52vh, calc(100vh - 120px - env(safe-area-inset-bottom, 0px))) !important;
+    border-radius: 16px !important;
+  }
+}
+
+body.mmenu-active .tuki_storefront_header .header-menu.tuki_ecom_search_panel,
+body.mmenu-active .tuki_storefront_header .tuki_ecom_search_backdrop {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
+/* Hamburguesa: solo móvil / tablet (Bootstrap lg = 992px) */
+.tuki_storefront_header .mobile-menu-toggler {
+  display: none !important;
+}
+
+@media (max-width: 991.98px) {
+  .tuki_storefront_header .mobile-menu-toggler {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    margin-right: 0.25rem;
+    padding: 0;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    background: #fff;
+    color: #334155;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  }
+
+  .tuki_storefront_header .mobile-menu-toggler:hover {
+    background: #f8fafc;
+    border-color: rgba(0, 0, 0, 0.14);
+    color: #0f172a;
+  }
+
+  .tuki_storefront_header .mobile-menu-toggler:active {
+    transform: scale(0.97);
+  }
+}
+
+.tuki_storefront_header .header-middle .container {
+  gap: 1rem;
+}
+
+@media (min-width: 992px) {
+  .tuki_storefront_header #header_bar {
+    padding: 0 0.5rem;
+  }
+}
+
+/* Atención / WhatsApp */
+.tuki_storefront_header .header-contact:not(.login-link) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1);
+  border: 1px solid hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2);
+  font-size: 0.78rem;
+  line-height: 1.2;
+  color: var(--title-color, #1a1d21);
+}
+
+.tuki_storefront_header .header-contact:not(.login-link) span {
+  font-weight: 500;
+  color: var(--subtitle-color, #5c6570);
+}
+
+.tuki_storefront_header .header-contact:not(.login-link) a {
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tuki_storefront_header .header-contact:not(.login-link) a:hover {
+  text-decoration: underline;
+}
+
+/*
+ * Carrito (header): color NEUTRO fijo — no usa el primario del tenant.
+ * Paleta slate para combinar con cualquier branding.
+ */
+.tuki_storefront_header .tuki_header_cart > .dropdown-toggle {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  height: 42px !important;
+  min-width: 42px;
+  padding: 0 12px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(15, 23, 42, 0.35);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.tuki_storefront_header .tuki_header_cart > .dropdown-toggle:hover {
+  background: #334155 !important;
+  border-color: rgba(15, 23, 42, 0.45);
+  color: #f8fafc !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28);
+}
+
+.tuki_storefront_header .tuki_header_cart > .dropdown-toggle svg {
+  stroke: #f8fafc;
+}
+
+.tuki_storefront_header .tuki_header_cart .dropdown-toggle .cart-count {
+  margin-top: 0 !important;
+  margin-right: 0 !important;
+  margin-left: 6px;
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: #f8fafc !important;
+  background: rgba(248, 250, 252, 0.18) !important;
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+/* Login invitado */
+.tuki_storefront_header .tuki_login_trigger {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 1rem !important;
+  border-radius: 999px !important;
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  border: 1px solid transparent;
+  box-shadow: 0 4px 14px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.3);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.15s ease;
+}
+
+.tuki_storefront_header .tuki_login_trigger:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  text-decoration: none !important;
+}
+
+.tuki_storefront_header .tuki_login_trigger__label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--tuki-color-primary-contrast, #fff) !important;
+  letter-spacing: 0.01em;
+}
+
+.tuki_storefront_header .tuki_login_trigger__icon {
+  flex-shrink: 0;
+  filter: brightness(0) invert(1);
+  opacity: 0.95;
+}
+
+/* Cuenta logueada (toggle) */
+.tuki_storefront_header .tuki_header_account > .dropdown-toggle {
+  background: #fff !important;
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  height: 42px !important;
+  width: 42px;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tuki_storefront_header .tuki_header_account > .dropdown-toggle:hover {
+  border-color: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.45);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+/* --- Categorías --- */
+.tuki_category_strip {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.tuki_storefront .ecom-categories__header {
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.tuki_storefront .ecom-categories__title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--title-color, #0f172a);
+}
+
+.tuki_storefront .ecom-categories__all {
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.35);
+  background: #fff;
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.tuki_storefront .ecom-categories__all:hover {
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  color: var(--tuki-color-primary-contrast, #fff);
+  box-shadow: 0 6px 18px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.35);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.tuki_storefront .ecom-categories__all.is-active {
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  color: var(--tuki-color-primary-contrast, #fff);
+  border-color: transparent;
+}
+
+.tuki_storefront .ecom-category-chip {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  -webkit-user-drag: none;
+}
+
+.tuki_storefront .ecom-category-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.35);
+  text-decoration: none;
+}
+
+.tuki_storefront .ecom-category-chip.is-active {
+  border-color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  box-shadow: 0 6px 18px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.22);
+}
+
+.tuki_storefront .ecom-categories__scroller {
+  scroll-padding-inline: 4px;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  cursor: grab;
+  mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+}
+
+/* Arrastre horizontal: sin “pelea” con scroll-snap; cursor grabbing */
+.tuki_storefront .ecom-categories__scroller.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
+
+.tuki_storefront .ecom-categories__scroller:focus-visible {
+  outline: 2px solid hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  outline-offset: 3px;
+}
+
+@media (max-width: 767.98px) {
+  .tuki_storefront .ecom-categories__scroller {
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* --- Títulos sección productos --- */
+.tuki_storefront .tuki_section_head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.35rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.tuki_storefront .tuki_section_head .ecom-section__title {
+  margin: 0;
+  font-size: clamp(1.2rem, 2.2vw, 1.55rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: var(--title-color, #0f172a);
+}
+
+.tuki_storefront .tuki_section_head__subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  color: var(--subtitle-color, #64748b);
+}
+
+/* --- Grid productos: alturas uniformes --- */
+.tuki_storefront .ecom-products-grid.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.tuki_storefront .ecom-products-grid > [class*="col-"] {
+  display: flex;
+  margin-bottom: 1rem;
+}
+
+.tuki_storefront .tuki_product_tile.product-style {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px !important;
+  border: 1px solid rgba(15, 23, 42, 0.07) !important;
+  background: #fff;
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px rgba(15, 23, 42, 0.06);
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s ease,
+    border-color 0.25s ease;
+}
+
+.tuki_storefront .tuki_product_tile.product-style:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    0 4px 8px rgba(15, 23, 42, 0.04),
+    0 20px 48px rgba(15, 23, 42, 0.12);
+  border-color: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.28) !important;
+}
+
+.tuki_storefront .tuki_product_tile__figure {
+  margin-bottom: 0 !important;
+  border-radius: 0 !important;
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(165deg, #f8fafc 0%, #eef2f7 45%, #e8edf4 100%);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.tuki_storefront .tuki_product_tile__media {
+  padding: 0.85rem !important;
+}
+
+.tuki_storefront .tuki_product_tile__media img.image {
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.06));
+}
+
+.tuki_storefront .tuki_product_tile__content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0.85rem 14px 16px !important;
+}
+
+.tuki_storefront .tuki_product_tile__content .product-information {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.tuki_storefront .product-title-ecommerce {
+  margin: 0 0 0.4rem !important;
+  min-height: 2.75em;
+  font-size: inherit;
+}
+
+.tuki_storefront .product-title-ecommerce a {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: clamp(0.86rem, 0.92vw, 0.98rem) !important;
+  font-weight: 600 !important;
+  line-height: 1.38 !important;
+  letter-spacing: -0.015em;
+  color: var(--title-color, #0f172a) !important;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.tuki_storefront .tuki_product_tile:hover .product-title-ecommerce a {
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+}
+
+.tuki_storefront .product-description {
+  margin-top: 0 !important;
+  margin-bottom: 0.35rem !important;
+  line-height: 1.45 !important;
+  color: var(--subtitle-color, #64748b) !important;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.8rem !important;
+}
+
+.tuki_storefront .product-price-ecommerce.tuki_product_tile__buyrow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-top: auto;
+  padding-top: 0.85rem;
+  margin-bottom: 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.tuki_storefront .tuki_product_tile__buyrow .price-box-ecommerce {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto !important;
+  display: block;
+  margin: 0 !important;
+  line-height: 1.15;
+}
+
+.tuki_storefront .tuki_price_stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+}
+
+.tuki_storefront .tuki_price_stack--inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.55rem;
+}
+
+.tuki_storefront .tuki_price_prev {
+  font-size: clamp(0.82rem, 0.95vw, 0.92rem);
+  font-weight: 600;
+  color: #94a3b8 !important;
+  text-decoration: line-through;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.tuki_storefront .tuki_price_amount {
+  font-size: clamp(1rem, 1.15vw, 1.15rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.tuki_storefront .tuki_product_tile__buyrow .product-action {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 4;
+}
+
+/* Quitar pseudo-icono Porto; botón carrito real con Font Awesome */
+.tuki_storefront .product-action .add-cart.tuki_add_cart_btn::before {
+  content: none !important;
+  display: none !important;
+}
+
+.tuki_storefront .product-action .add-cart.tuki_add_cart_btn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 12px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none !important;
+  color: var(--tuki-color-primary-contrast, #fff) !important;
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  box-shadow:
+    0 2px 4px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.25),
+    0 8px 18px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.28);
+  transition:
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease,
+    filter 0.2s ease;
+}
+
+.tuki_storefront .product-action .add-cart.tuki_add_cart_btn i {
+  font-size: 1.05rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Estado “procesando” al agregar al carrito (main.js) */
+.add-cart.tuki_add_cart_busy,
+.tuki_quickview__btn.add-cart.tuki_add_cart_busy {
+  opacity: 0.62 !important;
+  pointer-events: none !important;
+  cursor: wait !important;
+  filter: grayscale(0.08);
+}
+
+.tuki_storefront .product-action .add-cart.tuki_add_cart_btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  filter: brightness(1.06);
+  box-shadow:
+    0 4px 8px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.3),
+    0 14px 28px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.32);
+}
+
+.tuki_storefront .product-action .add-cart.tuki_add_cart_btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Sobre legacy Porto (.product:hover .add-cart verdoso) */
+.tuki_storefront .product.product-style:hover .paction.add-cart.tuki_add_cart_btn {
+  border-color: transparent !important;
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  color: var(--tuki-color-primary-contrast, #fff) !important;
+}
+
+.tuki_storefront .tuki_product_tile__quickview {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  border: 1px solid hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.35);
+  backdrop-filter: blur(6px);
+}
+
+.tuki_storefront .tuki_product_tile:hover .tuki_product_tile__quickview {
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  color: var(--tuki-color-primary-contrast, #fff) !important;
+  border-color: transparent;
+}
+
+.tuki_storefront .product-label.label-hot {
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  color: var(--tuki-color-primary-contrast, #fff);
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
+  box-shadow: 0 2px 8px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.35);
+}
+
+/* Paginación */
+.tuki_storefront .ecom-pagination {
+  padding-top: 1.5rem;
+}
+
+.tuki_storefront .ecom-pagination .pagination .page-link {
+  border-radius: 10px;
+  margin: 0 2px;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tuki_storefront .ecom-pagination .page-item.active .page-link {
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  border-color: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  color: var(--tuki-color-primary-contrast, #fff) !important;
+}
+
+/* Magnific Popup: por encima del header ecommerce (sticky ~1100) */
+.mfp-bg {
+  z-index: 12040 !important;
+}
+
+.mfp-wrap {
+  z-index: 12050 !important;
+}
+
+/* =============================================================================
+   Vista rápida (Magnific): modal compacto, premium, alineado al storefront tuki_*
+   ============================================================================= */
+
+@keyframes tuki_qv_shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Magnific: .mfp-ajax-holder .mfp-content { width:100% } fuerza ancho de viewport; hay que anularlo explícitamente */
+/* Ancho fluido: casi todo el móvil, y en escritorio crece con el viewport hasta un tope cómodo */
+.mfp-wrap.mfp-tuki-quickview .mfp-container.mfp-ajax-holder > .mfp-content,
+.mfp-wrap.mfp-tuki-quickview .mfp-content {
+  width: auto !important;
+  max-width: min(calc(100vw - 1.5rem), 640px) !important;
+  margin: 1rem auto;
+  padding: 0 1rem;
+  background: transparent;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+@media (min-width: 576px) {
+  .mfp-wrap.mfp-tuki-quickview .mfp-container.mfp-ajax-holder > .mfp-content,
+  .mfp-wrap.mfp-tuki-quickview .mfp-content {
+    max-width: min(92vw, 680px) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .mfp-wrap.mfp-tuki-quickview .mfp-container.mfp-ajax-holder > .mfp-content,
+  .mfp-wrap.mfp-tuki-quickview .mfp-content {
+    max-width: min(88vw, 780px) !important;
+    margin: 1.35rem auto;
+    padding: 0 1.25rem;
+  }
+}
+
+@media (min-width: 992px) {
+  .mfp-wrap.mfp-tuki-quickview .mfp-container.mfp-ajax-holder > .mfp-content,
+  .mfp-wrap.mfp-tuki-quickview .mfp-content {
+    max-width: min(82vw, 900px) !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .mfp-wrap.mfp-tuki-quickview .mfp-container.mfp-ajax-holder > .mfp-content,
+  .mfp-wrap.mfp-tuki-quickview .mfp-content {
+    max-width: min(78vw, 980px) !important;
+  }
+}
+
+/* Skeleton mientras carga el HTML del producto (AJAX) */
+.tuki_qv_skeleton {
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 14px 40px rgba(15, 23, 42, 0.14),
+    0 0 0 1px rgba(15, 23, 42, 0.06);
+  min-height: 280px;
+}
+
+.tuki_qv_skeleton__inner {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+@media (min-width: 768px) {
+  .tuki_qv_skeleton__inner {
+    grid-template-columns: minmax(0, 38%) minmax(0, 62%);
+  }
+}
+
+.tuki_qv_skeleton__shine {
+  background: linear-gradient(
+    110deg,
+    #e8edf4 0%,
+    #f1f5f9 40%,
+    #f8fafc 50%,
+    #f1f5f9 60%,
+    #e8edf4 100%
+  );
+  background-size: 200% 100%;
+  animation: tuki_qv_shimmer 1.35s ease-in-out infinite;
+  border-radius: 10px;
+}
+
+.tuki_qv_skeleton__media {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  background: linear-gradient(180deg, #f1f5f9 0%, #e8edf4 100%);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+@media (min-width: 768px) {
+  .tuki_qv_skeleton__media {
+    border-bottom: none;
+    border-right: 1px solid rgba(15, 23, 42, 0.07);
+  }
+}
+
+.tuki_qv_skeleton__img {
+  width: 100%;
+  max-width: min(72vw, 260px);
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+}
+
+@media (min-width: 768px) {
+  .tuki_qv_skeleton__img {
+    max-width: min(100%, clamp(200px, 28vw, 340px));
+  }
+}
+
+.tuki_qv_skeleton__thumbs {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.tuki_qv_skeleton__thumbs .tuki_qv_skeleton__shine {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.tuki_qv_skeleton__body {
+  padding: 1.1rem 1.15rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.tuki_qv_skeleton__line {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.tuki_qv_skeleton__line--lg {
+  width: 92%;
+  height: 16px;
+}
+
+.tuki_qv_skeleton__line--md {
+  width: 55%;
+}
+
+.tuki_qv_skeleton__line--sm {
+  width: 38%;
+  height: 10px;
+}
+
+.tuki_qv_skeleton__bar {
+  margin-top: 0.35rem;
+  height: 52px;
+  border-radius: 12px;
+  background: linear-gradient(
+    110deg,
+    #e8edf4 0%,
+    #f1f5f9 45%,
+    #f8fafc 50%,
+    #f1f5f9 55%,
+    #e8edf4 100%
+  );
+  background-size: 200% 100%;
+  animation: tuki_qv_shimmer 1.35s ease-in-out infinite;
+}
+
+.tuki_qv_skeleton__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 576px) {
+  .tuki_qv_skeleton__actions {
+    flex-direction: row;
+    align-items: stretch;
+  }
+}
+
+.tuki_qv_skeleton__btn {
+  height: 40px;
+  border-radius: 11px;
+  flex: 0 0 38%;
+}
+
+.tuki_qv_skeleton__btn--wide {
+  flex: 1 1 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tuki_qv_skeleton__shine,
+  .tuki_qv_skeleton__bar {
+    animation: none;
+    background: #e8edf4;
+  }
+}
+
+.mfp-wrap.mfp-tuki-quickview .mfp-close {
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  font-size: 22px;
+  opacity: 0.88;
+  color: #334155;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.12);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.mfp-wrap.mfp-tuki-quickview .mfp-close:hover {
+  opacity: 1;
+  color: #0f172a;
+  background: #f8fafc;
+  transform: scale(1.04);
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.16);
+}
+
+.tuki_quickview {
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 18px 48px rgba(15, 23, 42, 0.18),
+    0 0 0 1px rgba(15, 23, 42, 0.06);
+  text-align: left;
+}
+
+.tuki_quickview__layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  align-items: stretch;
+}
+
+@media (min-width: 768px) {
+  .tuki_quickview__layout {
+    grid-template-columns: minmax(0, 38%) minmax(0, 62%);
+    gap: 0;
+  }
+}
+
+/* Columna imagen: más compacta, menos “aire muerto” */
+.tuki_quickview__media {
+  background: linear-gradient(180deg, #f1f5f9 0%, #e8edf4 100%);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  padding: 0.85rem 0.75rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .tuki_quickview__media {
+    border-bottom: none;
+    border-right: 1px solid rgba(15, 23, 42, 0.07);
+    padding: 0.95rem 0.65rem 0.85rem;
+    justify-content: center;
+  }
+}
+
+.tuki_quickview__stage {
+  width: 100%;
+  max-width: min(88vw, 260px);
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+  padding: 0.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+@media (min-width: 768px) {
+  .tuki_quickview__stage {
+    max-width: min(100%, clamp(200px, 28vw, 340px));
+  }
+}
+
+@media (min-width: 992px) {
+  .tuki_quickview__stage {
+    max-width: min(100%, clamp(220px, 26vw, 380px));
+  }
+}
+
+.tuki_quickview__mainimg {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.tuki_quickview__thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+  max-width: min(100%, 320px);
+  margin: 0 auto;
+  padding-bottom: 0.15rem;
+}
+
+@media (min-width: 768px) {
+  .tuki_quickview__thumbs {
+    max-width: min(100%, 400px);
+  }
+}
+
+.tuki_quickview__thumb {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 2px solid rgba(15, 23, 42, 0.08);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+  transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.tuki_quickview__thumb:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.1);
+}
+
+.tuki_quickview__thumb.is-active {
+  border-color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  box-shadow: 0 0 0 2px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.22);
+}
+
+.tuki_quickview__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Columna texto: densidad controlada */
+.tuki_quickview__body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: #fff;
+}
+
+.tuki_quickview__body-inner {
+  padding: 1rem 1.05rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.62rem;
+  flex: 1 1 auto;
+  min-height: 100%;
+}
+
+@media (min-width: 768px) {
+  .tuki_quickview__body-inner {
+    padding: 1.05rem 1.15rem 1.15rem;
+    gap: 0.68rem;
+    justify-content: flex-start;
+  }
+}
+
+.tuki_quickview__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.tuki_quickview__title {
+  margin: 0;
+  font-size: clamp(1.05rem, 2.4vw, 1.28rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.22;
+  color: var(--title-color, #0f172a);
+}
+
+.tuki_quickview__pricebox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.65rem;
+  margin: 0;
+  padding: 0.45rem 0 0;
+}
+
+.tuki_quickview__pricebox .tuki_price_stack--inline {
+  gap: 0.4rem 0.65rem;
+}
+
+.tuki_quickview__pricebox .tuki_price_amount {
+  font-size: clamp(1.15rem, 2.5vw, 1.42rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.tuki_quickview__pricebox .tuki_price_prev {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-decoration: line-through;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Meta + badge en una franja compacta */
+.tuki_quickview__meta-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  padding: 0.55rem 0.65rem;
+  margin: 0;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 12px;
+}
+
+.tuki_quickview__meta {
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tuki_quickview__meta-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.2rem 0.45rem;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.tuki_quickview__meta-row dt {
+  margin: 0;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.65rem;
+}
+
+.tuki_quickview__meta-row dt::after {
+  content: ":";
+  margin: 0 0.15rem 0 0.05rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.tuki_quickview__meta-row dd {
+  margin: 0;
+  font-weight: 700;
+  color: var(--title-color, #0f172a);
+}
+
+.tuki_quickview__badge-slot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.tuki_quickview__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tuki_quickview__badge--ok {
+  background: rgba(34, 197, 94, 0.14);
+  color: #166534;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.tuki_quickview__badge--out {
+  background: rgba(248, 113, 113, 0.14);
+  color: #991b1b;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+}
+
+.tuki_quickview__desc {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--subtitle-color, #64748b);
+  padding: 0.15rem 0 0;
+  border-top: 1px dashed rgba(15, 23, 42, 0.1);
+  padding-top: 0.55rem;
+}
+
+/* CTAs: primario domina en ancho */
+.tuki_quickview__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.35rem;
+}
+
+@media (min-width: 576px) {
+  .tuki_quickview__actions {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .tuki_quickview__btn--secondary {
+    flex: 0 0 auto;
+    min-width: 7.5rem;
+  }
+
+  .tuki_quickview__btn--primary {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.tuki_quickview__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.62rem 1rem;
+  border-radius: 11px;
+  font-weight: 700;
+  font-size: 0.84rem;
+  text-decoration: none !important;
+  border: 1px solid transparent;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease, filter 0.18s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.tuki_quickview__btn--secondary {
+  background: #fff;
+  color: #334155;
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.tuki_quickview__btn--secondary:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.16);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.tuki_quickview__btn--primary {
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  color: var(--tuki-color-primary-contrast, #fff);
+  box-shadow:
+    0 2px 4px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.25),
+    0 8px 20px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.28);
+}
+
+.tuki_quickview__btn--primary:hover {
+  filter: brightness(1.07);
+  transform: translateY(-2px);
+  color: var(--tuki-color-primary-contrast, #fff);
+  box-shadow:
+    0 4px 8px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.3),
+    0 12px 28px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.32);
+}
+
+.tuki_quickview__btn--primary:active {
+  transform: translateY(0);
+}
+
+.tuki_quickview__btn--primary i {
+  font-size: 0.95rem;
+}
+
+/* Porto ocultaba span en .add-cart; en vista rápida mostramos texto + icono */
+.tuki_quickview .add-cart span,
+.mfp-wrap.mfp-tuki-quickview .add-cart span {
+  display: inline !important;
+}
+
+@media (max-width: 767.98px) {
+  .mfp-wrap.mfp-tuki-quickview .mfp-container.mfp-ajax-holder > .mfp-content,
+  .mfp-wrap.mfp-tuki-quickview .mfp-content {
+    margin: 0.75rem auto;
+    max-width: calc(100vw - 1.25rem) !important;
+    padding: 0 0.65rem;
+  }
+
+  .tuki_quickview__body-inner {
+    padding: 0.95rem 0.95rem 1.05rem;
+  }
+}
+
+/* =============================================================================
+   Footer ecommerce (sobre color primario dinámico del tenant)
+   ============================================================================= */
+
+.footer .footer-middle.tuki_footer__middle {
+  color: var(--tuki-color-primary-contrast, #fff);
+  padding-top: 2.75rem;
+  padding-bottom: 2.5rem;
+}
+
+.footer .tuki_footer__container {
+  max-width: 1140px;
+}
+
+.footer .tuki_footer__heading {
+  margin: 0 0 1.1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tuki-color-primary-contrast, #fff);
+  line-height: 1.25;
+}
+
+@media (min-width: 992px) {
+  .footer .tuki_footer__heading--center-lg {
+    text-align: center;
+  }
+
+  .footer .tuki_footer__heading--end-lg {
+    text-align: end;
+  }
+}
+
+.footer .tuki_footer__panel--links {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+@media (min-width: 992px) {
+  .footer .tuki_footer__panel--links {
+    align-items: center;
+  }
+}
+
+.footer .tuki_footer__contact-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.footer .tuki_footer__contact-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+}
+
+.footer .tuki_footer__contact-icon {
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-top: 0.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--tuki-on-primary-hover-surface, rgba(255, 255, 255, 0.12));
+  color: var(--tuki-color-primary-contrast, #fff);
+}
+
+.footer .tuki_footer__contact-icon svg {
+  display: block;
+}
+
+.footer .tuki_footer__link,
+.footer .tuki_footer__text {
+  color: var(--tuki-color-primary-contrast, #fff);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.footer .tuki_footer__text {
+  color: var(--tuki-on-primary-muted, rgba(255, 255, 255, 0.88));
+}
+
+.footer .tuki_footer__link--strong {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.footer .tuki_footer__link:hover,
+.footer .tuki_footer__link:focus {
+  color: var(--tuki-color-primary-contrast, #fff);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.footer .tuki_footer__nav {
+  width: 100%;
+}
+
+.footer .tuki_footer__links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100% !important;
+  max-width: 16rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+@media (min-width: 992px) {
+  .footer .tuki_footer__panel--links .tuki_footer__links {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+  }
+
+  .footer .tuki_footer__panel--links .tuki_footer__links a {
+    justify-content: center;
+  }
+}
+
+.footer .tuki_footer__links li {
+  margin: 0;
+  padding: 0;
+}
+
+.footer .tuki_footer__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0.2rem 0;
+  color: var(--tuki-on-primary-muted, rgba(255, 255, 255, 0.88));
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.footer .tuki_footer__links a:hover,
+.footer .tuki_footer__links a:focus {
+  color: var(--tuki-color-primary-contrast, #fff);
+  background-color: var(--tuki-on-primary-hover-surface, rgba(255, 255, 255, 0.12));
+}
+
+.footer .tuki_footer__socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: flex-start;
+}
+
+@media (min-width: 992px) {
+  .footer .tuki_footer__panel--social .tuki_footer__socials {
+    justify-content: flex-end;
+  }
+}
+
+.footer .tuki_footer__social-btn {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--tuki-color-primary-contrast, #fff) !important;
+  border: 1px solid var(--tuki-on-primary-border, rgba(255, 255, 255, 0.22));
+  background: var(--tuki-on-primary-hover-surface, rgba(255, 255, 255, 0.08));
+  text-decoration: none !important;
+  opacity: 1;
+  visibility: visible;
+  position: relative;
+  z-index: 1;
+  transition:
+    transform 0.15s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.footer .tuki_footer__social-btn:hover,
+.footer .tuki_footer__social-btn:focus {
+  color: var(--tuki-color-primary-contrast, #fff);
+  border-color: var(--tuki-color-primary-contrast, #fff);
+  background: var(--tuki-on-primary-hover-surface, rgba(255, 255, 255, 0.14));
+  filter: brightness(1.05);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.footer .tuki_footer__social-btn svg {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+  color: inherit;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.footer .tuki_footer__social-btn svg path[stroke="none"] {
+  stroke: none;
+}
+
+.footer .tuki_footer__legal {
+  padding-left: 15px;
+  padding-right: 15px;
+  padding-bottom: 1.75rem;
+}
+
+.footer .tuki_footer__legal-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  padding-top: 1.35rem;
+  border-top: 1px solid var(--tuki-on-primary-border, rgba(255, 255, 255, 0.22));
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .footer .tuki_footer__legal-inner {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    text-align: start;
+    gap: 1.5rem;
+  }
+}
+
+.footer .tuki_footer__copyright {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--tuki-on-primary-muted, rgba(255, 255, 255, 0.88));
+  max-width: 36rem;
+}
+
+.footer .tuki_footer__payments {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.65rem;
+  border-radius: 12px;
+  background: var(--tuki-on-primary-hover-surface, rgba(255, 255, 255, 0.1));
+}
+
+.footer .tuki_footer__payments .footer-payments {
+  display: block;
+  max-width: min(100%, 300px);
+  width: 100%;
+  height: auto;
+  margin: 0;
+  opacity: 0.95;
+}
+
+.footer .tuki_footer__wa.ws-flotante {
+  background-size: 70px;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 50px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+/* =============================================================================
+   Migas de pan (layout carrito y otras páginas con tuki_breadcrumb)
+   ============================================================================= */
+
+.tuki_breadcrumb {
+  padding: 0.75rem 0 0;
+  margin-bottom: 0;
+}
+
+.tuki_breadcrumb__list {
+  margin-bottom: 0;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.tuki_breadcrumb__link {
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  text-decoration: none;
+}
+
+.tuki_breadcrumb__link:hover,
+.tuki_breadcrumb__link:focus {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* =============================================================================
+   Ficha de producto (PDP) — ecommerce/item/{id}
+   ============================================================================= */
+
+.tuki_product_page {
+  margin-bottom: 0;
+  position: relative;
+  z-index: 0;
+}
+
+.tuki_storefront--product .tuki_product_page__main-col {
+  position: relative;
+  z-index: 0;
+}
+
+.tuki_product_page__shell {
+  margin-bottom: 0;
+}
+
+.tuki_product_page__hero-row {
+  align-items: flex-start;
+}
+
+.tuki_product_page__gallery-card {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 18px;
+  box-shadow: 0 10px 34px rgba(15, 23, 42, 0.06);
+  padding: clamp(0.65rem, 1.2vw, 1rem);
+  overflow: hidden;
+}
+
+.tuki_product_page__gallery .product-slider-container {
+  position: relative;
+}
+
+/*
+ * Imagen principal: “stage” con altura máxima según viewport (fotos HD no inundan la PDP).
+ * La imagen escala con object-fit: contain dentro del stage.
+ */
+.tuki_product_page__gallery .owl-item .product-item {
+  --tuki-pdp-gallery-max: clamp(220px, min(72vw, 58vh), 620px);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: min(100%, 720px);
+  min-height: 200px;
+  max-height: var(--tuki-pdp-gallery-max);
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.tuki_product_page__gallery .product-single-image {
+  border-radius: 14px;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: var(--tuki-pdp-gallery-max);
+  margin: 0 auto;
+  object-fit: contain;
+  object-position: center;
+}
+
+@media (max-width: 575.98px) {
+  .tuki_product_page__gallery .owl-item .product-item {
+    --tuki-pdp-gallery-max: clamp(200px, 76vw, 70vh);
+    min-height: 180px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .tuki_product_page__gallery .owl-item .product-item {
+    --tuki-pdp-gallery-max: clamp(300px, 50vh, 580px);
+  }
+}
+
+/* Porto: .prod-full-screen i:after { content: 'Ampliar Imagen' } — anulado en PDP Tuki */
+.tuki_product_page .prod-full-screen i::after,
+.tuki_product_page .prod-full-screen i:after {
+  content: none !important;
+  display: none !important;
+}
+
+.tuki_product_page__zoom {
+  position: absolute;
+  z-index: 6;
+  right: 10px;
+  bottom: 10px;
+  margin: 0 !important;
+  padding: 0.4rem 0.85rem !important;
+  min-height: 42px;
+  width: auto !important;
+  height: auto !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.2;
+  background: rgba(255, 255, 255, 0.96) !important;
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.tuki_product_page__zoom:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.16);
+}
+
+.tuki_product_page__zoom:focus {
+  outline: 2px solid hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.45);
+  outline-offset: 2px;
+}
+
+.tuki_product_page__zoom-ic {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.tuki_product_page__zoom-txt {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+@media (max-width: 400px) {
+  .tuki_product_page__zoom-txt {
+    display: none;
+  }
+
+  .tuki_product_page__zoom {
+    padding: 0.45rem !important;
+    min-width: 42px;
+    min-height: 42px;
+  }
+}
+
+.tuki_product_page__thumbs {
+  margin-top: 0.75rem !important;
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: stretch;
+}
+
+.tuki_product_page__thumbs .owl-dot {
+  flex: 0 0 calc(25% - 0.34rem);
+  max-width: calc(25% - 0.34rem);
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.tuki_product_page__thumbs .owl-dot img {
+  width: 100%;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Una sola miniatura: no ocupar todo el ancho como “segunda foto” */
+.tuki_product_page__thumbs .owl-dot:only-child {
+  flex: 0 0 88px;
+  max-width: 88px;
+}
+
+.tuki_product_page__thumbs .owl-dot:hover img,
+.tuki_product_page__thumbs .owl-dot.active img {
+  border-color: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.45);
+  box-shadow: 0 2px 8px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2);
+}
+
+.tuki_product_page__info {
+  padding-left: clamp(0.5rem, 2vw, 1.25rem);
+}
+
+@media (max-width: 1023.98px) {
+  .tuki_product_page__info {
+    padding-left: 0;
+    margin-top: 1rem;
+  }
+}
+
+.tuki_product_page__title {
+  font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  color: var(--title-color, #0f172a);
+  margin-bottom: 0.65rem;
+}
+
+.tuki_product_page__meta {
+  margin-bottom: 0.85rem;
+}
+
+.tuki_product_page__reviews-link {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  text-decoration: none;
+}
+
+.tuki_product_page__reviews-link:hover,
+.tuki_product_page__reviews-link:focus {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tuki_storefront--product .tuki_product_page__price .tuki_price_amount {
+  font-size: clamp(1.2rem, 2.4vw, 1.65rem);
+}
+
+.tuki_product_page__desc {
+  font-size: 0.95rem;
+  color: var(--subtitle-color, #475569);
+  line-height: 1.55;
+}
+
+.tuki_product_page__category span {
+  font-weight: 600;
+  color: var(--title-color, #0f172a);
+}
+
+.tuki_product_page__stock strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.tuki_product_page__badge {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.12rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.tuki_product_page__badge--ok {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.tuki_product_page__badge--out {
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+}
+
+.tuki_product_page__lead {
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}
+
+.tuki_product_page__attrs {
+  margin: 1rem 0 1.25rem;
+  padding: 0.85rem 1rem;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 14px;
+}
+
+.tuki_product_page__attr-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 38%) 1fr;
+  gap: 0.35rem 0.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  font-size: 0.9rem;
+}
+
+.tuki_product_page__attr-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.tuki_product_page__attr-row dt {
+  margin: 0;
+  font-weight: 600;
+  color: var(--subtitle-color, #64748b);
+}
+
+.tuki_product_page__attr-row dd {
+  margin: 0;
+  color: var(--title-color, #0f172a);
+}
+
+.tuki_product_page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+/* Botón carrito en ficha: ancho completo con texto (no solo icono 44px del grid) */
+.tuki_storefront .tuki_product_page__actions .add-cart.tuki_add_cart_btn.tuki_product_page__add-cart {
+  flex: 1 1 200px;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 48px !important;
+  height: auto !important;
+  padding: 0.65rem 1.15rem !important;
+  gap: 0.5rem;
+  border-radius: 14px !important;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.tuki_storefront .tuki_product_page__actions .add-cart.tuki_add_cart_btn.tuki_product_page__add-cart span {
+  display: inline !important;
+  pointer-events: none;
+}
+
+.tuki_product_page__wa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 48px;
+  padding: 0.55rem 1.1rem;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none !important;
+  color: #fff !important;
+  background: #25d366;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+  transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tuki_product_page__wa:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  color: #fff !important;
+}
+
+.tuki_product_page__wa svg {
+  flex-shrink: 0;
+}
+
+.tuki_product_page__share {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.tuki_product_page__tabs {
+  position: relative;
+  z-index: 0;
+  margin-top: clamp(1.25rem, 2.5vw, 2rem);
+  margin-bottom: clamp(0.5rem, 1.5vw, 1rem);
+}
+
+.tuki_product_page__tabs .nav-tabs {
+  border-bottom: none;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.tuki_product_page__tabs .nav-tabs .nav-item {
+  margin-bottom: 0;
+}
+
+.tuki_product_page__tabs .nav-tabs .nav-link {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 12px !important;
+  color: var(--subtitle-color, #64748b);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.55rem 1rem;
+  background: #f8fafc;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.tuki_product_page__tabs .nav-tabs .nav-link:hover {
+  border-color: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.35);
+  color: var(--title-color, #0f172a);
+}
+
+.tuki_product_page__tabs .nav-tabs .nav-link.active {
+  color: var(--tuki-color-primary-contrast, #fff) !important;
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l)) !important;
+  border-color: transparent !important;
+  box-shadow:
+    0 2px 6px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.25),
+    0 10px 22px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.22);
+}
+
+.tuki_product_page__tabs .tab-content {
+  margin-top: 0.85rem;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05);
+}
+
+.tuki_product_page__tabs .tab-pane {
+  color: var(--subtitle-color, #475569);
+  line-height: 1.65;
+}
+
+/* =============================================================================
+   PDP — tablet y móvil (≤1023px). Escritorio ≥1024px sin cambios.
+   Breakpoints: 1023 / 767 / 575 / 424 / 374
+   ============================================================================= */
+
+@media (max-width: 1023.98px) {
+  .tuki_storefront--product {
+    padding-top: 0.35rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .tuki_storefront--product .tuki_product_page__container {
+    padding-left: max(1rem, calc(0.6rem + env(safe-area-inset-left, 0px)));
+    padding-right: max(1rem, calc(0.6rem + env(safe-area-inset-right, 0px)));
+  }
+
+  .tuki_storefront--product .tuki_breadcrumb {
+    padding: 0.4rem 0 0;
+  }
+
+  .tuki_storefront--product .tuki_breadcrumb__list {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.78rem;
+  }
+
+  /* Galería + ficha en columna única hasta 1023px */
+  .tuki_storefront--product .tuki_product_page__hero-row > [class*="col-"] {
+    flex: 0 0 100%;
+    max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .tuki_storefront--product .tuki_product_page__hero-row {
+    --tuki-pdp-hero-gap: 0.85rem;
+    row-gap: var(--tuki-pdp-hero-gap);
+  }
+
+  .tuki_product_page__info {
+    margin-top: 0.15rem;
+  }
+
+  .tuki_product_page__details {
+    padding-left: 0;
+    padding-right: 0;
+    max-width: 100%;
+  }
+
+  /* Jerarquía: título → precio → meta → texto */
+  .tuki_storefront--product .tuki_product_page__title {
+    font-size: clamp(1.02rem, 2.6vw + 0.35rem, 1.32rem);
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.55rem;
+    hyphens: auto;
+    overflow-wrap: anywhere;
+  }
+
+  .tuki_storefront--product .tuki_product_page__meta {
+    margin-bottom: 0.7rem;
+  }
+
+  .tuki_storefront--product .tuki_product_page__price {
+    margin-bottom: 0.65rem;
+  }
+
+  .tuki_storefront--product .tuki_product_page__price .tuki_price_stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+  }
+
+  .tuki_storefront--product .tuki_product_page__price .tuki_price_amount {
+    font-size: clamp(1.06rem, 2.4vw + 0.4rem, 1.38rem);
+    line-height: 1.15;
+  }
+
+  .tuki_storefront--product .tuki_product_page__price .tuki_price_prev {
+    font-size: 0.84rem !important;
+    line-height: 1.2;
+    order: -1;
+  }
+
+  .tuki_storefront--product .tuki_product_page__desc {
+    margin-top: 0.35rem;
+  }
+
+  .tuki_storefront--product .tuki_product_page__desc,
+  .tuki_storefront--product .tuki_product_page__category,
+  .tuki_storefront--product .tuki_product_page__stock {
+    font-size: 0.875rem;
+    line-height: 1.48;
+  }
+
+  .tuki_storefront--product .tuki_product_page__category span,
+  .tuki_storefront--product .tuki_product_page__stock strong {
+    font-weight: 600;
+    font-size: 0.92em;
+  }
+
+  .tuki_storefront--product .tuki_product_page__stock {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+  }
+
+  .tuki_storefront--product .tuki_product_page__stock .tuki_product_page__badge {
+    margin-left: 0;
+  }
+
+  .tuki_storefront--product .tuki_product_page__badge {
+    font-size: 0.64rem;
+    padding: 0.12rem 0.48rem;
+    letter-spacing: 0.03em;
+  }
+
+  .tuki_storefront--product .tuki_product_page__reviews-link {
+    font-size: 0.8rem;
+  }
+
+  .tuki_storefront--product .tuki_product_page__actions {
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 1.1rem;
+    gap: 0.55rem;
+  }
+
+  .tuki_storefront--product .tuki_product_page__actions .add-cart.tuki_add_cart_btn.tuki_product_page__add-cart {
+    width: 100% !important;
+    max-width: 100%;
+    flex: none !important;
+    min-height: 48px !important;
+    font-size: 0.9rem !important;
+    padding: 0.62rem 1rem !important;
+    border-radius: 14px !important;
+    justify-content: center;
+    touch-action: manipulation;
+  }
+
+  .tuki_storefront--product .tuki_product_page__wa {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+    font-size: 0.88rem;
+    padding: 0.55rem 1rem;
+  }
+
+  .tuki_storefront--product .tuki_product_page__share {
+    margin-top: 1.1rem;
+    padding-top: 0.85rem;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  .tuki_product_page__share .addthis_inline_share_toolbox {
+    max-width: 100%;
+  }
+
+  .tuki_product_page__attrs {
+    padding: 0.75rem 0.85rem;
+    margin: 0.9rem 0 1rem;
+  }
+
+  /* Galería: mejor uso del ancho en tablet */
+  .tuki_product_page__gallery-card {
+    padding: clamp(0.5rem, 1.8vw, 0.75rem);
+    border-radius: 16px;
+  }
+
+  .tuki_product_page__gallery .owl-item .product-item {
+    --tuki-pdp-gallery-max: clamp(210px, min(78vw, 52vh), 520px);
+    min-height: 188px;
+    border-radius: 13px;
+  }
+
+  .tuki_product_page__gallery .product-single-image {
+    border-radius: 13px;
+  }
+
+  .tuki_product_page__thumbs {
+    margin-top: 0.65rem !important;
+    gap: 0.4rem;
+  }
+
+  .tuki_product_page__thumbs .owl-dot img {
+    height: 62px;
+  }
+
+  .tuki_product_page__zoom {
+    right: max(8px, env(safe-area-inset-right, 0px));
+    bottom: max(8px, env(safe-area-inset-bottom, 0px));
+    z-index: 5;
+    min-height: 44px;
+    padding: 0.42rem 0.75rem !important;
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.14);
+  }
+
+  .tuki_product_page__tabs {
+    margin-top: 1rem;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .tuki_product_page__tabs .nav-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 0.4rem;
+    padding-bottom: 0.35rem;
+    margin-bottom: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    mask-image: linear-gradient(90deg, transparent, #000 10px, #000 calc(100% - 10px), transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 10px, #000 calc(100% - 10px), transparent);
+  }
+
+  .tuki_product_page__tabs .nav-tabs .nav-item {
+    flex: 0 0 auto;
+  }
+
+  .tuki_product_page__tabs .nav-tabs .nav-link {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.72rem;
+    white-space: nowrap;
+  }
+
+  .tuki_product_page__tabs .tab-content {
+    padding: 0.85rem 0.75rem;
+    border-radius: 14px;
+    font-size: 0.9rem;
+  }
+
+  .tuki_product_page__tabs .tab-pane img,
+  .tuki_product_page__tabs .tab-pane video,
+  .tuki_product_page__tabs .tab-pane iframe,
+  .tuki_product_page__tabs .product-desc-content img,
+  .tuki_product_page__tabs .product-especTecn-content img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .tuki_product_page__tabs .tab-pane table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: 0.86rem;
+  }
+
+  .tuki_product_page__tabs .product-desc-content p,
+  .tuki_product_page__tabs .product-especTecn-content p {
+    overflow-wrap: anywhere;
+  }
+
+  .tuki_product_page__tabs .collateral-box,
+  .tuki_product_page__tabs .page__demo {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .tuki_storefront--product .tuki_product_page__attr-row {
+    grid-template-columns: 1fr;
+    gap: 0.15rem 0;
+  }
+
+  .tuki_storefront--product .tuki_product_page__attr-row dt {
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .tuki_storefront--product .tuki_product_page__container {
+    padding-left: max(0.95rem, calc(0.5rem + env(safe-area-inset-left, 0px)));
+    padding-right: max(0.95rem, calc(0.5rem + env(safe-area-inset-right, 0px)));
+  }
+
+  .tuki_storefront--product .tuki_product_page__hero-row {
+    --tuki-pdp-hero-gap: 0.7rem;
+  }
+
+  .tuki_product_page__gallery .owl-item .product-item {
+    --tuki-pdp-gallery-max: clamp(196px, min(82vw, 56vh), 480px);
+    min-height: 172px;
+  }
+
+  .tuki_product_page__thumbs .owl-dot img {
+    height: 58px;
+  }
+
+  .tuki_storefront--product .tuki_product_page__title {
+    font-size: clamp(0.98rem, 3.2vw + 0.3rem, 1.22rem);
+  }
+
+  .tuki_storefront--product .tuki_product_page__price .tuki_price_amount {
+    font-size: clamp(1.02rem, 3.5vw + 0.35rem, 1.28rem);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .tuki_storefront--product .tuki_product_page__container {
+    padding-left: max(1.05rem, calc(0.45rem + env(safe-area-inset-left, 0px)));
+    padding-right: max(1.05rem, calc(0.45rem + env(safe-area-inset-right, 0px)));
+  }
+
+  .tuki_storefront--product .tuki_breadcrumb__list {
+    padding: 0.42rem 0.7rem;
+    font-size: 0.72rem;
+  }
+
+  .tuki_product_page__gallery-card {
+    padding: 0.48rem 0.58rem;
+    border-radius: 14px;
+  }
+
+  .tuki_product_page__gallery .owl-item .product-item {
+    --tuki-pdp-gallery-max: clamp(176px, min(86vw, 58vh), 420px);
+    min-height: 158px;
+    border-radius: 12px;
+  }
+
+  .tuki_product_page__thumbs .owl-dot img {
+    height: 54px;
+  }
+
+  .tuki_product_page__thumbs {
+    gap: 0.35rem;
+  }
+
+  .tuki_product_page__zoom {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.4rem 0.65rem !important;
+  }
+
+  .tuki_storefront--product .tuki_product_page__title {
+    font-size: clamp(0.92rem, 4vw + 0.2rem, 1.1rem);
+    margin-bottom: 0.42rem;
+  }
+
+  .tuki_storefront--product .tuki_product_page__price .tuki_price_amount {
+    font-size: clamp(0.98rem, 4.2vw + 0.25rem, 1.18rem);
+  }
+
+  .tuki_storefront--product .tuki_product_page__price .tuki_price_prev {
+    font-size: 0.76rem !important;
+  }
+
+  .tuki_storefront--product .tuki_product_page__desc,
+  .tuki_storefront--product .tuki_product_page__category,
+  .tuki_storefront--product .tuki_product_page__stock {
+    font-size: 0.8125rem;
+  }
+
+  .tuki_storefront--product .tuki_product_page__badge {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.4rem;
+  }
+
+  .tuki_storefront--product .tuki_product_page__reviews-link {
+    font-size: 0.76rem;
+  }
+
+  .tuki_storefront--product .tuki_product_page__actions .add-cart.tuki_add_cart_btn.tuki_product_page__add-cart {
+    font-size: 0.86rem !important;
+    min-height: 48px !important;
+    padding: 0.55rem 0.9rem !important;
+  }
+
+  .tuki_storefront--product .tuki_product_page__wa {
+    font-size: 0.84rem;
+    min-height: 48px;
+    padding: 0.5rem 0.88rem;
+  }
+
+  .tuki_product_page__tabs .nav-tabs .nav-link {
+    font-size: 0.72rem;
+    padding: 0.44rem 0.55rem;
+  }
+
+  .tuki_product_page__tabs .tab-content {
+    padding: 0.68rem 0.58rem;
+    font-size: 0.875rem;
+  }
+
+  .tuki_product_page__attrs {
+    font-size: 0.82rem;
+    padding: 0.65rem 0.72rem;
+  }
+}
+
+@media (max-width: 424.98px) {
+  .tuki_storefront--product .tuki_product_page__container {
+    padding-left: max(0.9rem, calc(0.35rem + env(safe-area-inset-left, 0px)));
+    padding-right: max(0.9rem, calc(0.35rem + env(safe-area-inset-right, 0px)));
+  }
+
+  .tuki_product_page__gallery .owl-item .product-item {
+    --tuki-pdp-gallery-max: clamp(168px, 88vw, 52vh);
+    min-height: 148px;
+  }
+
+  .tuki_product_page__thumbs .owl-dot img {
+    height: 50px;
+  }
+
+  .tuki_storefront--product .tuki_product_page__title {
+    font-size: clamp(0.88rem, 4.5vw, 1.05rem);
+  }
+
+  .tuki_storefront--product .tuki_product_page__price .tuki_price_amount {
+    font-size: clamp(0.94rem, 4.8vw, 1.1rem);
+  }
+}
+
+@media (max-width: 374.98px) {
+  .tuki_storefront--product .tuki_product_page__container {
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  }
+
+  .tuki_product_page__gallery .owl-item .product-item {
+    --tuki-pdp-gallery-max: clamp(156px, 90vw, 48vh);
+    min-height: 138px;
+  }
+
+  .tuki_product_page__thumbs .owl-dot img {
+    height: 46px;
+  }
+
+  .tuki_product_page__tabs .nav-tabs .nav-link {
+    font-size: 0.68rem;
+    padding: 0.4rem 0.48rem;
+  }
+}
+
+.tuki_cart-page-wrap {
+  padding-bottom: 3rem;
+}
+
+/* =============================================================================
+   Página carrito (detail_cart)
+   ============================================================================= */
+
+.tuki_cart {
+  padding-top: 0.35rem;
+}
+
+.tuki_cart__hero {
+  margin-bottom: 1.5rem;
+}
+
+.tuki_cart__page-title {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.35rem, 2.5vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--title-color, #001524);
+}
+
+.tuki_cart__lead {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--subtitle-color, #60769a);
+  max-width: 40rem;
+}
+
+.tuki_cart__grid {
+  align-items: flex-start;
+  --tuki-cart-gap: 1.75rem;
+}
+
+@media (min-width: 992px) {
+  .tuki_cart__grid {
+    margin-left: calc(var(--tuki-cart-gap) * -0.25);
+    margin-right: calc(var(--tuki-cart-gap) * -0.25);
+  }
+
+  .tuki_cart__grid > [class*="col-"] {
+    padding-left: calc(var(--tuki-cart-gap) * 0.75);
+    padding-right: calc(var(--tuki-cart-gap) * 0.75);
+  }
+}
+
+.tuki_cart__col-aside > .tuki_cart__card + .tuki_cart__card {
+  margin-top: 1.1rem;
+}
+
+.tuki_cart__card {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 14px 40px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+}
+
+/* Card solo líneas de producto (sin cabecera “Tu carrito” / contador) */
+.tuki_cart__card--lines-only > .tuki_cart__lines-wrap {
+  padding-top: 0.35rem;
+}
+
+.tuki_cart__card--lines-only > .tuki_cart__empty {
+  padding-top: 0.5rem;
+}
+
+.tuki_cart__card-header {
+  padding: 1.05rem 1.25rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+}
+
+.tuki_cart__card-header--split {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.tuki_cart__badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.12);
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  border: 1px solid hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2);
+}
+
+.tuki_cart__card-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--title-color, #001524);
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.tuki_cart__card-title i {
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  font-size: 1rem;
+  width: 1.25rem;
+  text-align: center;
+}
+
+.tuki_cart__card-title--sm {
+  font-size: 0.95rem;
+  padding: 1rem 1.2rem 0.7rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.cart-summary.tuki_cart__card .tuki_cart__card-title--sm {
+  margin: 0 -1.2rem 0.85rem;
+  padding-left: 1.2rem;
+  padding-right: 1.2rem;
+}
+
+.cart-summary.tuki_cart__card > form,
+.cart-summary.tuki_cart__card > .form-group {
+  padding-left: 1.2rem;
+  padding-right: 1.2rem;
+}
+
+.cart-summary.tuki_cart__card > form {
+  padding-bottom: 1.1rem;
+}
+
+.cart-summary.tuki_cart__card > .form-group:first-of-type {
+  padding-top: 0.85rem;
+}
+
+.cart-summary.tuki_cart__card > .form-group {
+  padding-bottom: 0.35rem;
+}
+
+.cart-summary.tuki_cart__card .tuki_cart__summary {
+  margin: 0 1.2rem 1rem;
+}
+
+.cart-summary.tuki_cart__card .tuki_cart__checkout {
+  padding: 0 1.2rem 1.2rem;
+}
+
+/* ---------- Carrito vacío ---------- */
+
+.tuki_cart__empty {
+  text-align: center;
+  padding: 2.75rem 1.5rem 2.5rem;
+}
+
+.tuki_cart__empty-icon {
+  width: 4.5rem;
+  height: 4.5rem;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #f1f5f9, #e8edf4);
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  font-size: 1.65rem;
+}
+
+.tuki_cart__empty-title {
+  margin: 0 0 0.4rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--title-color, #001524);
+}
+
+.tuki_cart__empty-text {
+  margin: 0 auto 1.25rem;
+  max-width: 22rem;
+  font-size: 0.92rem;
+  color: var(--subtitle-color, #60769a);
+}
+
+.tuki_cart__btn--primary-solid {
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  border: 1px solid hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  color: var(--tuki-color-primary-contrast, #fff);
+  padding: 0.55rem 1.35rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tuki_cart__btn--primary-solid:hover,
+.tuki_cart__btn--primary-solid:focus {
+  filter: brightness(1.06);
+  color: var(--tuki-color-primary-contrast, #fff);
+  text-decoration: none;
+}
+
+/* ---------- Listado tipo Shopify ---------- */
+
+.tuki_cart__lines-wrap {
+  padding: 0 0 0.25rem;
+}
+
+.tuki_cart__list-head {
+  display: none;
+  /* Última columna fija para el botón quitar: evita solaparse con subtotal */
+  grid-template-columns:
+    5.5rem minmax(0, 2fr) minmax(4.25rem, 0.75fr) minmax(7.75rem, 1.05fr) minmax(5rem, 0.9fr) 3rem;
+  gap: 0 0.75rem;
+  align-items: end;
+  padding: 0.5rem 1.25rem 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--subtitle-color, #60769a);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.tuki_cart__list-head-thumb {
+  grid-column: 1;
+}
+
+.tuki_cart__list-head-product {
+  grid-column: 2;
+}
+
+.tuki_cart__list-head-unit {
+  grid-column: 3;
+  text-align: right;
+}
+
+.tuki_cart__list-head-qty {
+  grid-column: 4;
+  text-align: center;
+}
+
+.tuki_cart__list-head-sub {
+  grid-column: 5;
+  text-align: right;
+}
+
+.tuki_cart__list-head-action {
+  grid-column: 6;
+}
+
+@media (min-width: 992px) {
+  .tuki_cart__list-head {
+    display: grid;
+  }
+}
+
+.tuki_cart__list {
+  margin: 0;
+  padding: 0;
+}
+
+.tuki_cart__line {
+  display: grid;
+  grid-template-columns: 5.25rem minmax(0, 1fr);
+  gap: 0.55rem 1rem;
+  padding: 1.1rem 1.25rem 1.15rem;
+  padding-right: 2.75rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  align-items: start;
+  transition: background-color 0.18s ease;
+  position: relative;
+}
+
+.tuki_cart__line:last-of-type {
+  border-bottom: none;
+}
+
+.tuki_cart__line:hover {
+  background: #fafbfc;
+}
+
+.tuki_cart__line-media {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+}
+
+.tuki_cart__line-body {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  padding-right: 2.35rem;
+}
+
+.tuki_cart__line-qty {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 992px) {
+  .tuki_cart__line {
+    grid-template-columns:
+      5.5rem minmax(0, 2fr) minmax(4.25rem, 0.75fr) minmax(7.75rem, 1.05fr) minmax(5rem, 0.9fr) 3rem;
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 0 0.75rem;
+    padding: 1rem 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .tuki_cart__line-media {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .tuki_cart__line-body {
+    grid-column: 2;
+    grid-row: 1;
+    padding-right: 0;
+  }
+
+  .tuki_cart__line-unit--desk {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .tuki_cart__line-qty {
+    grid-column: 4;
+    grid-row: 1;
+    margin-top: 0;
+  }
+
+  .tuki_cart__line-sub {
+    grid-column: 5;
+    grid-row: 1;
+    padding-top: 0;
+    padding-right: 0.25rem;
+    min-width: 0;
+    align-self: center;
+  }
+
+  .tuki_cart__line-remove {
+    grid-column: 6;
+    grid-row: 1;
+    position: static;
+    top: auto;
+    right: auto;
+    width: 100%;
+    max-width: 3rem;
+    justify-self: end;
+    align-self: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: auto;
+  }
+
+  /* Por encima de cualquier capa residual de la fila: clics siempre en +/- e input */
+  .tuki_cart__line-qty {
+    position: relative;
+    z-index: 3;
+  }
+
+  .tuki_cart__qty-stepper {
+    position: relative;
+    z-index: 3;
+  }
+}
+
+.tuki_cart__line-img-wrap {
+  display: block;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.tuki_cart__line-img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  display: block;
+  vertical-align: middle;
+}
+
+.tuki_cart__line-title {
+  display: block;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--title-color, #001524);
+  text-decoration: none;
+}
+
+.tuki_cart__line-title:hover,
+.tuki_cart__line-title:focus {
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  text-decoration: none;
+}
+
+.tuki_cart__line-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--subtitle-color, #60769a);
+  margin-bottom: 0.2rem;
+}
+
+.tuki_cart__line-label--qty {
+  margin-bottom: 0.35rem;
+}
+
+.tuki_cart__line-unit--mob {
+  margin-top: 0.65rem;
+}
+
+.tuki_cart__line-unit--mob .tuki_cart__line-value {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+@media (min-width: 992px) {
+  .tuki_cart__line-unit--mob {
+    display: none;
+  }
+}
+
+.tuki_cart__line-unit--desk {
+  display: none;
+  text-align: right;
+}
+
+@media (min-width: 992px) {
+  .tuki_cart__line-unit--desk {
+    display: block;
+  }
+
+  .tuki_cart__line-unit--desk .tuki_cart__line-value {
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+}
+
+@media (min-width: 992px) {
+  .tuki_cart__line-qty {
+    margin-top: 0;
+    text-align: center;
+  }
+
+  .tuki_cart__line-label--qty {
+    display: none;
+  }
+}
+
+.tuki_cart__qty-stepper {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+.tuki_cart__qty-btn {
+  width: 2.35rem;
+  flex: 0 0 auto;
+  border: none;
+  background: #f1f5f9;
+  color: var(--title-color, #001524);
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.tuki_cart__qty-btn:hover,
+.tuki_cart__qty-btn:focus {
+  background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.14);
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  outline: none;
+}
+
+.tuki_cart__qty-btn:active {
+  transform: scale(0.96);
+}
+
+.tuki_cart__qty-btn i {
+  pointer-events: none;
+}
+
+.tuki_cart__qty-input {
+  width: 3.25rem;
+  min-width: 2.75rem;
+  max-width: 4rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none !important;
+  border-left: 1px solid rgba(15, 23, 42, 0.08) !important;
+  border-right: 1px solid rgba(15, 23, 42, 0.08) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0.35rem 0.25rem;
+  height: auto;
+  line-height: 1.3;
+}
+
+.tuki_cart__qty-input:focus {
+  box-shadow: inset 0 0 0 2px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.35) !important;
+  outline: none;
+}
+
+/* Solo layout flex; la colocación en grid va en @media (no poner grid-column aquí: pisaba la columna 5 en escritorio y solapaba con “quitar”) */
+.tuki_cart__line-sub {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.35rem;
+}
+
+@media (min-width: 992px) {
+  .tuki_cart__line-sub {
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    padding-top: 0;
+    text-align: right;
+  }
+
+  .tuki_cart__line-sub .tuki_cart__line-label {
+    display: none;
+  }
+}
+
+.tuki_cart__line-subtotal {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--title-color, #001524);
+}
+
+/* Solo móvil: esquina superior derecha. En ≥992px las reglas dentro de .tuki_cart__line anulan absolute
+   (si esto quedara global, position:absolute cubriría la fila y “comía” los clics del centro del stepper). */
+@media (max-width: 991.98px) {
+  .tuki_cart__line-sub {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .tuki_cart__line-remove {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    align-self: start;
+    position: absolute;
+    top: 0.85rem;
+    right: 0.85rem;
+    z-index: 2;
+  }
+}
+
+.tuki_cart__remove {
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: 1px solid rgba(220, 53, 69, 0.35);
+  border-radius: 10px;
+  background: rgba(220, 53, 69, 0.08);
+  color: #c82333;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.12s ease;
+}
+
+.tuki_cart__remove:hover,
+.tuki_cart__remove:focus {
+  background: rgba(220, 53, 69, 0.16);
+  color: #a71d2a;
+  border-color: rgba(220, 53, 69, 0.55);
+  outline: none;
+}
+
+.tuki_cart__remove:active {
+  transform: scale(0.94);
+}
+
+.tuki_cart__remove i {
+  pointer-events: none;
+}
+
+.tuki_cart__list-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem 1.15rem;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border-top: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+@media (max-width: 575.98px) {
+  .tuki_cart__list-foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tuki_cart__list-foot .tuki_cart__btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ---------- Formulario lateral ---------- */
+
+.tuki_cart__label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--subtitle-color, #60769a);
+  margin-bottom: 0.35rem;
+}
+
+.tuki_cart__field-group {
+  margin-bottom: 0.85rem;
+}
+
+.tuki_cart__input-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.tuki_cart__input-wrap .tuki_cart__field {
+  padding-left: 2.35rem;
+  border-radius: 11px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  font-size: 0.9rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tuki_cart__input-wrap .tuki_cart__field:focus {
+  border-color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  box-shadow: 0 0 0 3px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.18);
+  outline: none;
+}
+
+.tuki_cart__input-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  opacity: 0.85;
+  font-size: 0.85rem;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.tuki_cart__input-wrap--textarea .tuki_cart__input-icon {
+  top: 0.95rem;
+  transform: none;
+}
+
+.tuki_cart__input-wrap--textarea .tuki_cart__field {
+  min-height: 4.5rem;
+  padding-top: 0.65rem;
+}
+
+.tuki_cart__select.tuki_cart__field {
+  border-radius: 11px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  font-size: 0.9rem;
+  height: calc(2.25rem + 2px);
+  padding-left: 0.75rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tuki_cart__select.tuki_cart__field:focus {
+  border-color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  box-shadow: 0 0 0 3px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.18);
+  outline: none;
+}
+
+/* ---------- Resumen montos ---------- */
+
+.tuki_cart__summary {
+  padding: 0.35rem 0 0.25rem;
+  font-size: 0.9rem;
+}
+
+.tuki_cart__summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px dashed rgba(15, 23, 42, 0.08);
+}
+
+.tuki_cart__summary-row:last-child {
+  border-bottom: none;
+}
+
+.tuki_cart__summary-key {
+  color: var(--subtitle-color, #60769a);
+  font-weight: 500;
+}
+
+.tuki_cart__summary-val {
+  font-weight: 600;
+  color: var(--title-color, #001524);
+  white-space: nowrap;
+}
+
+.tuki_cart__summary-row--total {
+  margin-top: 0.35rem;
+  padding-top: 0.75rem;
+  border-top: 2px solid rgba(15, 23, 42, 0.1);
+  border-bottom: none;
+}
+
+.tuki_cart__summary-total {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  white-space: nowrap;
+}
+
+/* ---------- Botones inferiores carrito ---------- */
+
+.tuki_cart__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  border-radius: 11px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.tuki_cart__btn--outline {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  color: var(--title-color, #001524);
+}
+
+.tuki_cart__btn--outline:hover,
+.tuki_cart__btn--outline:focus {
+  border-color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  background: #fff;
+}
+
+.tuki_cart__btn--danger-outline {
+  border-color: rgba(220, 53, 69, 0.35);
+  color: #c82333;
+}
+
+.tuki_cart__btn--danger-outline:hover,
+.tuki_cart__btn--danger-outline:focus {
+  background: #fff5f5;
+  border-color: #dc3545;
+  color: #bd2130;
+}
+
+.tuki_cart__checkout .tuki_cart__pay-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.tuki_cart__checkout .btn-primary.tuki_cart__pay-btn,
+.tuki_cart__checkout .btn-primary.login-link-pay {
+  background: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  border-color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  color: var(--tuki-color-primary-contrast, #fff);
+}
+
+.tuki_cart__checkout .btn-primary.tuki_cart__pay-btn:hover,
+.tuki_cart__checkout .btn-primary.login-link-pay:hover {
+  filter: brightness(1.05);
+  color: var(--tuki-color-primary-contrast, #fff);
+}
+
+.tuki_cart__paypal-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.35rem 0;
+  margin-top: 0.25rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed rgba(15, 23, 42, 0.12);
+}
+
+.tuki_cart__paypal-img {
+  max-width: 100%;
+  height: auto;
+}
+
+.tuki_cart__cash-panel {
+  margin-top: 0.5rem !important;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.tuki_cart__cash-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 0 10px 10px 0;
+  font-weight: 600;
+}
+
+/* =============================================================================
+   ECOMMERCE — experiencia móvil / tablet (< 992px)
+   Todo el bloque está acotado por media queries: escritorio ≥992px intacto.
+   ============================================================================= */
+
+@media (max-width: 991.98px) {
+  .tuki_page.page-wrapper {
+    overflow-x: hidden;
+  }
+
+  main.tuki_main,
+  main.main {
+    max-width: 100%;
+  }
+
+  /* --- Cabecera: fila 1 (marca + acciones), fila 2 (búsqueda ancho completo) --- */
+  .tuki_storefront_header .header-middle .container {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 0.55rem;
+    column-gap: 0.45rem;
+  }
+
+  .tuki_storefront_header .header-left {
+    order: 1;
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .tuki_storefront_header .header-right {
+    order: 2;
+    flex: 0 0 auto;
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .tuki_storefront_header #header_bar {
+    order: 3;
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .tuki_storefront_header .logo {
+    max-width: min(132px, 36vw) !important;
+  }
+
+  .tuki_storefront_header .logo img {
+    max-height: 36px;
+  }
+
+  /* Evita zoom iOS en foco de búsqueda */
+  .tuki_storefront_header .ecom-search .search_input {
+    font-size: 16px;
+  }
+
+  .tuki_storefront_header .tuki_header_cart > .dropdown-toggle {
+    min-width: 44px;
+    height: 44px !important;
+    padding: 0 10px !important;
+  }
+
+  .tuki_storefront_header .mobile-menu-toggler {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+
+  .tuki_storefront_header .tuki_header_account > .dropdown-toggle {
+    width: 44px;
+    height: 44px !important;
+    flex-shrink: 0;
+  }
+
+  /*
+   * Bloque “Atención / WhatsApp”: el shim define display:inline-flex en escritorio;
+   * en <992px debe ocultarse (como el blade original) para no comprimir iconos táctiles.
+   */
+  .tuki_storefront_header .header-contact:not(.login-link) {
+    display: none !important;
+  }
+
+  /* --- Home / catálogo --- (no pisar .tuki_product_page__container: la PDP lleva su propio padding) */
+  .tuki_storefront .container:not(.tuki_product_page__container),
+  .tuki_storefront .tuki_hero__shell--wide {
+    padding-left: clamp(10px, 3vw, 15px);
+    padding-right: clamp(10px, 3vw, 15px);
+  }
+
+  .tuki_storefront .tuki_section--products {
+    padding-top: 1rem;
+    padding-bottom: 1.65rem;
+  }
+
+  .tuki_storefront .tuki_section_head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+  }
+
+  .tuki_storefront .ecom-products-grid > [class*="col-"] {
+    margin-bottom: 0.7rem;
+  }
+
+  .tuki_storefront .tuki_product_tile__content {
+    padding: 0.7rem 10px 12px !important;
+  }
+
+  .tuki_storefront .ecom-category-chip {
+    min-height: 44px;
+  }
+
+  /* PDP (ficha): reglas en bloque “PDP — tablet y móvil” más arriba (≤1023px) */
+
+  .tuki_storefront--product .tuki_related_strip .product-action .add-cart.tuki_add_cart_btn {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .tuki_storefront--product .tuki_featured_below {
+    margin-top: 1.35rem;
+    padding-top: 1.1rem;
+    padding-bottom: 1.5rem;
+  }
+
+  /* --- Carrito: columna lateral separada del listado --- */
+  .tuki_storefront--cart .tuki_cart__col-aside {
+    margin-top: 1.15rem;
+  }
+
+  .tuki_cart__grid {
+    --tuki-cart-gap: 1rem;
+  }
+
+  .tuki_cart__checkout .tuki_cart__pay-btn,
+  .tuki_cart__checkout .login-link-pay {
+    min-height: 48px;
+    font-size: 0.95rem;
+  }
+
+  .tuki_cart__field.tuki_cart__select,
+  .tuki_cart__input-wrap .tuki_cart__field {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* --- Mini carrito --- */
+  .tuki_header_cart .tuki_mini_cart__btn {
+    min-height: 46px;
+    font-size: 0.9rem;
+  }
+
+  /* --- Modales Magnific (solo storefront) --- */
+  body.tuki_body .mfp-wrap .mfp-content {
+    max-width: calc(100vw - 1rem) !important;
+  }
+
+  /* --- Footer: stack legible --- */
+  .footer .tuki_footer__heading,
+  .footer .tuki_footer__heading--center-lg,
+  .footer .tuki_footer__heading--end-lg {
+    text-align: center;
+  }
+
+  .footer .tuki_footer__panel--links .tuki_footer__links {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    max-width: 100%;
+  }
+
+  .footer .tuki_footer__panel--links .tuki_footer__links a {
+    justify-content: center;
+  }
+
+  .footer .tuki_footer__panel--social .tuki_footer__socials {
+    justify-content: center;
+  }
+
+  .footer .footer-middle.tuki_footer__middle {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .footer .tuki_footer__social-btn {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .footer .tuki_footer__legal-inner {
+    padding-top: 1.1rem;
+  }
+
+  /* Paginación */
+  .tuki_storefront .ecom-pagination {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  /* Header más bajo y legible en móviles estrechos */
+  .tuki_storefront_header .header-middle {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .tuki_storefront_header .header-middle .container {
+    row-gap: 0.4rem;
+    column-gap: 0.35rem;
+    padding-left: max(0.65rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.65rem, env(safe-area-inset-right, 0px));
+  }
+
+  .tuki_storefront_header .logo {
+    max-width: min(118px, 44vw) !important;
+  }
+
+  .tuki_storefront_header .logo img {
+    max-height: 32px;
+  }
+
+  .tuki_storefront_header .header-right {
+    gap: 0.28rem;
+  }
+
+  .tuki_storefront_header .ecom-search .search_input.form-control-lg,
+  .tuki_storefront_header .ecom-search .search_input {
+    height: 42px !important;
+    min-height: 42px;
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.4rem !important;
+    line-height: 1.25;
+  }
+
+  .tuki_storefront_header .tuki_login_trigger__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .tuki_storefront_header .tuki_login_trigger {
+    width: 44px;
+    height: 44px !important;
+    padding: 0 !important;
+    border-radius: 12px !important;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .tuki_storefront_header .tuki_header_account {
+    margin-left: 0.15rem !important;
+  }
+
+  .banner-slider-wrapper .banner-nav-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    padding: 0;
+  }
+
+  .banner-slider-wrapper .banner-nav-btn svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .tuki_storefront .product-title-ecommerce {
+    min-height: 0 !important;
+  }
+
+  .tuki_cart__line {
+    padding: 0.95rem 0.75rem 1rem;
+    padding-right: 2.45rem;
+  }
+
+  .tuki_cart__card-header {
+    padding: 0.85rem 1rem;
+  }
+
+  .tuki_cart__cash-panel .input-group {
+    flex-wrap: wrap;
+  }
+
+  .tuki_cart__cash-panel .input-group-prepend,
+  .tuki_cart__cash-panel .input-group-append {
+    width: 100%;
+  }
+
+  .tuki_cart__cash-panel .input-group > .form-control {
+    width: 100%;
+    flex: 1 1 100%;
+    min-width: 0;
+    border-radius: 0 0 0 0;
+  }
+
+  .tuki_cart__cash-panel .input-group-append .tuki_cart__cash-ok {
+    width: 100%;
+    justify-content: center;
+    border-radius: 0 0 10px 10px;
+  }
+
+  .banner-cat .banner-title {
+    font-size: clamp(1.35rem, 6vw, 1.85rem);
+  }
+}
+
+/* Teléfonos muy estrechos (p. ej. 320–360px): header aún más compacto */
+@media (max-width: 399.98px) {
+  .tuki_storefront_header .header-middle .container {
+    row-gap: 0.32rem;
+    column-gap: 0.25rem;
+  }
+
+  .tuki_storefront_header .logo {
+    max-width: min(104px, 48vw) !important;
+  }
+
+  .tuki_storefront_header .logo img {
+    max-height: 28px;
+  }
+
+  .tuki_storefront_header .ecom-search .search_input {
+    padding-left: 38px !important;
+    padding-right: 38px !important;
+  }
+
+  .tuki_storefront_header .ecom-search .search-icon {
+    left: 8px;
+  }
+
+  .tuki_storefront_header .ecom-search .clear-icon {
+    right: 8px;
+  }
+}
+
+/* =============================================================================
+   PDP — overrides finales vs ecommerce_taukifac.css
+   (taukifac fuerza 1.35rem en categoría/stock y márgenes; carga ANTES que el shim).
+   Cola del archivo: gana en cascada. Solo ≤1023px.
+   ============================================================================= */
+
+@media (max-width: 1023.98px) {
+  body.tuki_body .tuki_storefront--product .tuki_product_page .product-single-default .product-single-details.tuki_product_page__details {
+    padding-left: max(1.1rem, calc(0.55rem + env(safe-area-inset-left, 0px))) !important;
+    padding-right: max(1.1rem, calc(0.55rem + env(safe-area-inset-right, 0px))) !important;
+    box-sizing: border-box;
+  }
+
+  body.tuki_body.loaded .tuki_storefront--product .tuki_product_page .product-single-details .product-category,
+  body.tuki_body .tuki_storefront--product .tuki_product_page .product-single-default .product-single-details .product-category {
+    font-family: inherit !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    line-height: 1.45 !important;
+    margin: 0 0 0.4rem !important;
+  }
+
+  body.tuki_body.loaded .tuki_storefront--product .tuki_product_page .product-single-details .product-category span,
+  body.tuki_body .tuki_storefront--product .tuki_product_page .product-single-default .product-single-details .product-category span {
+    font-family: inherit !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    line-height: 1.45 !important;
+  }
+
+  body.tuki_body.loaded .tuki_storefront--product .tuki_product_page .product-single-details .product-stock,
+  body.tuki_body .tuki_storefront--product .tuki_product_page .product-single-default .product-single-details .product-stock {
+    font-family: inherit !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    line-height: 1.45 !important;
+  }
+
+  body.tuki_body.loaded .tuki_storefront--product .tuki_product_page .product-single-details .product-stock span,
+  body.tuki_body .tuki_storefront--product .tuki_product_page .product-single-default .product-single-details .product-stock span {
+    font-family: inherit !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    line-height: 1.45 !important;
+  }
+
+  body.tuki_body .tuki_storefront--product .tuki_product_page h1.product-title.tuki_product_page__title {
+    font-size: clamp(0.98rem, 2.6vw + 0.35rem, 1.28rem) !important;
+    line-height: 1.22 !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.01em !important;
+    text-transform: none !important;
+    margin: 0 0 0.5rem !important;
+    max-width: 100%;
+  }
+
+  body.tuki_body .tuki_storefront--product .tuki_product_page .product-single-details .product-desc.tuki_product_page__desc {
+    font-size: 0.875rem !important;
+    line-height: 1.48 !important;
+  }
+
+  body.tuki_body .tuki_storefront--product .tuki_product_page .product-single-details .product-desc.tuki_product_page__desc p {
+    margin-bottom: 0.35rem;
+  }
+
+  body.tuki_body .tuki_storefront--product .tuki_product_page .product-single-details .price-box.tuki_product_page__price {
+    margin-bottom: 0.55rem !important;
+  }
+
+  body.tuki_body .tuki_storefront--product .tuki_product_page .product-single-details .add-cart.tuki_product_page__add-cart {
+    height: auto !important;
+    min-height: 48px !important;
+    max-height: none !important;
+  }
+
+  body.tuki_body .tuki_storefront--product .tuki_product_page .product-single-details .add-cart.tuki_product_page__add-cart span {
+    font-size: 0.88rem !important;
+    line-height: 1.2 !important;
+    display: inline !important;
+  }
+}
+
+@media (max-width: 575.98px) {
+  body.tuki_body .tuki_storefront--product .tuki_product_page .product-single-default .product-single-details.tuki_product_page__details {
+    padding-left: max(1.05rem, calc(0.45rem + env(safe-area-inset-left, 0px))) !important;
+    padding-right: max(1.05rem, calc(0.45rem + env(safe-area-inset-right, 0px))) !important;
+  }
+
+  body.tuki_body.loaded .tuki_storefront--product .tuki_product_page .product-single-details .product-category,
+  body.tuki_body.loaded .tuki_storefront--product .tuki_product_page .product-single-details .product-category span,
+  body.tuki_body.loaded .tuki_storefront--product .tuki_product_page .product-single-details .product-stock,
+  body.tuki_body.loaded .tuki_storefront--product .tuki_product_page .product-single-details .product-stock span {
+    font-size: 0.8125rem !important;
+  }
+
+  body.tuki_body .tuki_storefront--product .tuki_product_page h1.product-title.tuki_product_page__title {
+    font-size: clamp(0.9rem, 4vw + 0.2rem, 1.08rem) !important;
+  }
+}
+
+@media (max-width: 374.98px) {
+  body.tuki_body .tuki_storefront--product .tuki_product_page .product-single-default .product-single-details.tuki_product_page__details {
+    padding-left: max(0.85rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(0.85rem, env(safe-area-inset-right, 0px)) !important;
+  }
+}

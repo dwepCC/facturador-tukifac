@@ -1,4 +1,14 @@
 @extends('ecommerce::layouts.layout_ecommerce_cart.index')
+
+@push('tuki_extra_styles')
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+@endpush
+
+@push('tuki_vendor_scripts')
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://unpkg.com/element-ui/lib/umd/locale/es.js"></script>
+@endpush
+
 @section('content')
 <style>
 

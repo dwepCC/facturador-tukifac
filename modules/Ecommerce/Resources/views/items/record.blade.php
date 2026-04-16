@@ -1,5 +1,38 @@
 @extends('ecommerce::layouts.layout_ecommerce_item.record')
 
+@section('title', strip_tags($record->description ?? 'Producto'))
+
+@section('breadcrumb')
+    <nav aria-label="Migas de pan" class="breadcrumb-nav tuki_breadcrumb">
+        <div class="container">
+            <ol class="breadcrumb tuki_breadcrumb__list">
+                <li class="breadcrumb-item">
+                    <a href="{{ route('tenant.ecommerce.index') }}" class="tuki_breadcrumb__link"><i class="fas fa-home" aria-hidden="true"></i><span class="sr-only">Inicio</span></a>
+                </li>
+                @if(!empty($record->category))
+                    @php
+                        $ecomCategoryBreadcrumbHref = null;
+                        if (!empty($record->category->id)) {
+                            $ecomCategoryBreadcrumbHref = route('tenant.ecommerce.category', ['category' => $record->category->id]);
+                        } elseif (!empty($record->category->name)) {
+                            $ecomCategorySlug = \Illuminate\Support\Str::slug($record->category->name, '-');
+                            if ($ecomCategorySlug !== '') {
+                                $ecomCategoryBreadcrumbHref = route('tenant.ecommerce.category', ['category' => $ecomCategorySlug]);
+                            }
+                        }
+                    @endphp
+                    @if(!empty($ecomCategoryBreadcrumbHref))
+                        <li class="breadcrumb-item">
+                            <a href="{{ $ecomCategoryBreadcrumbHref }}" class="tuki_breadcrumb__link">{{ $record->category->name }}</a>
+                        </li>
+                    @endif
+                @endif
+                <li class="breadcrumb-item active" aria-current="page">{{ \Illuminate\Support\Str::limit(strip_tags($record->description), 52) }}</li>
+            </ol>
+        </div>
+    </nav>
+@endsection
+
 @section('content')
 
 @php
@@ -15,9 +48,11 @@
         : $defaultImagePath;
 @endphp
 
-<div class="product-single-container product-single-default">
-    <div class="row">
-        <div class="col-lg-7 col-md-6 product-single-gallery">
+<div class="tuki_product_page">
+<div class="product-single-container product-single-default tuki_product_page__shell">
+    <div class="row tuki_product_page__hero-row g-2 g-lg-3">
+        <div class="col-12 col-lg-7 col-md-6 product-single-gallery tuki_product_page__gallery">
+            <div class="tuki_product_page__gallery-card">
             <div class="product-slider-container product-item">
                 <div class="product-single-carousel owl-carousel owl-theme">
                     <div class="product-item">
@@ -52,11 +87,12 @@
                     </div>-->
                 </div>
                 <!-- End .product-single-carousel -->
-                <span class="prod-full-screen">
-                    <i class="icon-plus"></i>
-                </span>
+                <button type="button" class="prod-full-screen tuki_product_page__zoom" title="Ver imagen en grande" aria-label="Ver imagen en grande">
+                    <span class="tuki_product_page__zoom-ic fas fa-search-plus" aria-hidden="true"></span>
+                    <span class="tuki_product_page__zoom-txt">Ver en grande</span>
+                </button>
             </div>
-            <div class="prod-thumbnail row owl-dots" id='carousel-custom-dots'>
+            <div class="prod-thumbnail row owl-dots tuki_product_page__thumbs" id='carousel-custom-dots'>
                 <div class="col-3 owl-dot">
                     <img src="{{ $mainImagePath }}" alt="{{ $record->description }}" />
                 </div>
@@ -80,65 +116,63 @@
                     <img src="assets/images/products/zoom/product-4.jpg" />
                 </div> -->
             </div>
+            </div>
         </div><!-- End .col-lg-7 -->
 
-        <div class="col-lg-5 col-md-6">
-            <div class="product-single-details">
-                <h1 class="product-title">{{$record->description}}</h1>
+        <div class="col-12 col-lg-5 col-md-6 tuki_product_page__info">
+            <div class="product-single-details tuki_product_page__details">
+                <h1 class="product-title tuki_product_page__title">{{ $record->description }}</h1>
 
-
-
-                <div class="ratings-container">
-                    <div class="product-ratings">
-                        <span class="ratings" style="width:60%"></span><!-- End .ratings -->
-                    </div><!-- End .product-ratings -->
-
-                    <a href="#" class="rating-link">( 6 vistas )</a>
-                </div><!-- End .product-container -->
-
-                <div class="price-box">
-                    <span class="old-price">{{ $record->currency_type['symbol'] }} {{ number_format( ($record->sale_unit_price * 1.2 ) , 2 ) }}</span>
-                    <span class="product-price">{{ $record->currency_type['symbol'] }} {{ number_format($record->sale_unit_price, 2) }}</span>
-                </div><!-- End .price-box -->
-
-                <div class="product-desc">
-                    <p class="product-category">Categoría: <span> {{$record->category->name}} </span></p>
-                <p class="product-stock">Disponible: <span>{{number_format(($record->stock), 0)}} </span>
-                <?php
-                if($record->stock > 0){?>
-                    <span 
-                    class="alert-stock" role="alert">En stock</span>
-                <?php
-                }else{?>
-                    <span 
-                    class="alert-sin-stock" 
-                    role="alert">Sin stock</span> 
-                <?php
-                }
-                ?>
-                </p>
-                    <p>{{ $record->name }}</p>
-                </div><!-- End .product-desc -->
-
-                <div>
-                @foreach($record->attributes as $at)
-                   <small> {{$at->description}}: {{$at->value}} </small> <br>
-                @endforeach
+                <div class="tuki_product_page__meta">
+                    <div class="ratings-container tuki_product_page__ratings">
+                        <div class="product-ratings">
+                            <span class="ratings" style="width:60%" aria-hidden="true"></span>
+                        </div>
+                        <a href="#product-reviews-content" class="rating-link tuki_product_page__reviews-link" role="button"
+                            onclick="if (window.jQuery && jQuery.fn.tab) { jQuery('#product-tab-reviews').tab('show'); } if (typeof getRating === 'function') { getRating('{{ $record->id }}'); } return false;">Valoraciones</a>
+                    </div>
                 </div>
+
+                <div class="tuki_product_page__price price-box">
+                    @include('ecommerce::layouts.partials_ecommerce.tuki_price_display', ['model' => $record, 'inline' => false])
+                </div>
+
+                <div class="product-desc tuki_product_page__desc">
+                    @if(!empty($record->category))
+                        <p class="product-category tuki_product_page__category">Categoría: <span>{{ $record->category->name }}</span></p>
+                    @endif
+                    <p class="product-stock tuki_product_page__stock">
+                        Disponible: <strong>{{ number_format($record->stock, 0) }}</strong>
+                        @if($record->stock > 0)
+                            <span class="tuki_product_page__badge tuki_product_page__badge--ok" role="status">En stock</span>
+                        @else
+                            <span class="tuki_product_page__badge tuki_product_page__badge--out" role="alert">Sin stock</span>
+                        @endif
+                    </p>
+                    @if(filled($record->name))
+                        <p class="tuki_product_page__lead">{{ $record->name }}</p>
+                    @endif
+                </div>
+
+                @if($record->attributes && count($record->attributes))
+                    <dl class="tuki_product_page__attrs">
+                        @foreach($record->attributes as $at)
+                            <div class="tuki_product_page__attr-row">
+                                <dt>{{ $at->description }}</dt>
+                                <dd>{{ $at->value }}</dd>
+                            </div>
+                        @endforeach
+                    </dl>
+                @endif
 
                 <div class="product-filters-container">
 
-                </div><!-- End .product-filters-container -->
+                </div>
 
-                <div class="product-action product-all-icons">
-                    <!--<div class="product-single-qty">
-                        <input class="horizontal-quantity form-control" type="text">
-                    </div>-->
-                    <!-- End .product-single-qty -->
-
-                    <a href="#" class="paction add-cart" data-product="{{ json_encode( $record ) }}"
-                        title="Add to Cart">
-                        <span>Agregar a Carrito</span>
+                <div class="product-action product-all-icons tuki_product_page__actions">
+                    <a href="#" class="paction add-cart tuki_add_cart_btn tuki_product_page__add-cart" data-product='@json($record)' title="Agregar al carrito" aria-label="Agregar al carrito">
+                        <i class="fas fa-cart-plus" aria-hidden="true"></i>
+                        <span>Agregar al carrito</span>
                     </a>
 
                     @php
@@ -148,34 +182,26 @@
                         @php
                             $waPhoneRaw = preg_replace('/\D+/', '', $phoneWhatsapp);
                             $waPhone = (strlen($waPhoneRaw) == 9 && str_starts_with($waPhoneRaw, '9')) ? '51'.$waPhoneRaw : $waPhoneRaw;
-                            $waText = rawurlencode("Buenas, deseo consultar acerca del producto *{$record->description}*, con precio de {$record->currency_type['symbol']}{$record->sale_unit_price}. ¿Podrían brindarme más información?");
+                            $waSym = $record->currency_type_symbol ?? data_get($record->currency_type, 'symbol', 'S/');
+                            $waText = rawurlencode("Buenas, deseo consultar acerca del producto *{$record->description}*, con precio de {$waSym}{$record->sale_unit_price}. ¿Podrían brindarme más información?");
                             $waLink = "https://wa.me/{$waPhone}?text={$waText}";
                         @endphp
-                        <a href="{{ $waLink }}" class="btn-whatsapp" target="_blank" rel="noopener" title="Consultar por WhatsApp">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brand-whatsapp" style="margin-top: -3px"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" /><path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" /></svg>
-                            <span>Consultar por WhatsApp</span>
+                        <a href="{{ $waLink }}" class="btn-whatsapp tuki_product_page__wa" target="_blank" rel="noopener" title="Consultar por WhatsApp">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" /><path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" /></svg>
+                            <span>WhatsApp</span>
                         </a>
                     @endif
-                    
-                    <!-- <a href="#" class="paction add-wishlist" title="Add to Wishlist">
-                        <span>Add to Wishlist</span>
-                    </a>
-                    <a href="#" class="paction add-compare" title="Add to Compare">
-                        <span>Add to Compare</span>
-                    </a> -->
-                </div><!-- End .product-action -->
+                </div>
 
-                <div class="product-single-share">
-                    <!--<label>Share:</label> -->
-                    <!-- www.addthis.com share plugin-->
+                <div class="product-single-share tuki_product_page__share">
                     <div class="addthis_inline_share_toolbox"></div>
-                </div><!-- End .product single-share -->
-            </div><!-- End .product-single-details -->
-        </div><!-- End .col-lg-5 -->
-    </div><!-- End .row -->
-</div><!-- End .product-single-container -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-<div class="product-single-tabs">
+<div class="product-single-tabs tuki_product_page__tabs">
     <ul class="nav nav-tabs" role="tablist">
         <li class="nav-item">
             <a class="nav-link active"  id="product-tab-desc" data-toggle="tab" href="#product-desc-content" role="tab"
@@ -265,5 +291,31 @@
         </div><!-- End .tab-pane -->
     </div>
 </div>
+
+</div>
+
+@push('scripts')
+<script>
+(function ($) {
+    function tukiPdpTeardownElevateZoom() {
+        var $root = $('.tuki_product_page');
+        if (!$root.length) {
+            return;
+        }
+        $root.find('.product-single-carousel img.product-single-image').each(function () {
+            $(this).removeData('elevateZoom');
+        });
+        $root.find('.zoomContainer').remove();
+    }
+    $(function () {
+        setTimeout(tukiPdpTeardownElevateZoom, 0);
+        setTimeout(tukiPdpTeardownElevateZoom, 400);
+    });
+    $(document).on('initialized.owl.carousel refreshed.owl.carousel', '.tuki_product_page .product-single-carousel', function () {
+        setTimeout(tukiPdpTeardownElevateZoom, 50);
+    });
+})(jQuery);
+</script>
+@endpush
 
 @endsection

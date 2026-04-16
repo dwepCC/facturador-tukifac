@@ -1,6 +1,6 @@
  <div class="col-sm-6 col-md-4">
      <div class="feature-box feature-box-simple text-center">
-         <i class="icon-star"></i>
+         <i class="fas fa-star"></i>
 
          <div class="feature-box-content">
              <h3>Dedicated Service</h3>
@@ -12,7 +12,7 @@
 
  <div class="col-sm-6 col-md-4">
      <div class="feature-box feature-box-simple text-center">
-         <i class="icon-reply"></i>
+         <i class="fas fa-reply"></i>
 
          <div class="feature-box-content">
              <h3>Free Returns</h3>
@@ -24,7 +24,7 @@
 
  <div class="col-sm-6 col-md-4">
      <div class="feature-box feature-box-simple text-center">
-         <i class="icon-paper-plane"></i>
+         <i class="fas fa-paper-plane"></i>
 
          <div class="feature-box-content">
              <h3>International Shipping</h3>

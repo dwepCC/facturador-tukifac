@@ -18,6 +18,7 @@ import 'element-ui/lib/theme-chalk/index.css';
 import SystemSupportConfiguration from './views/system/configuration/supportConfiguration.vue';
 import SystemConfigurationQrApi from './views/system/configuration/qrApiConfiguration.vue'
 import SystemClientsIndex from './views/system/clients/index.vue';
+import SystemClientsIndexCentralMetrics from './views/system/clients/index_central_metrics.vue';
 import SystemClientsForm from './views/system/clients/form.vue';
 import SystemUsersform from './views/system/users/form.vue';
 import SystemUsersTokenUser from './views/system/users/token-user.vue';
@@ -64,6 +65,7 @@ Vue.prototype.$eventHub = new Vue()
 Vue.component('system-support-configuration', SystemSupportConfiguration);
 
 Vue.component('system-clients-index', SystemClientsIndex);
+Vue.component('system-clients-index-central-metrics', SystemClientsIndexCentralMetrics);
 Vue.component('system-qrapi-configuration', SystemConfigurationQrApi);
 Vue.component('system-clients-form', SystemClientsForm);
 Vue.component('system-users-form', SystemUsersform);
