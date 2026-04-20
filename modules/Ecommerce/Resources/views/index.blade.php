@@ -2,7 +2,7 @@
 
 @section('content')
 @php
-    $categorySlug = Request::segment(3);
+    $categorySlug = isset($activeCategorySlug) && $activeCategorySlug !== '' ? $activeCategorySlug : null;
     $isStoreHome = !$categorySlug;
     $heroFull = $isStoreHome && isset($full_width_banner) && $full_width_banner;
 @endphp

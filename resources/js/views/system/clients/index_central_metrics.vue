@@ -104,36 +104,108 @@
 
                 <div ref="tableScroll" class="table-responsive central-table-scroll" @scroll="onTableScroll">
                     <table class="table table-sm table-striped table-hover table-bordered mb-0 central-metrics-table">
-                        <thead class="thead-light">
+                        <thead class="thead-light central-thead-sticky">
                             <tr>
-                                <th scope="col" class="text-center text-muted">#</th>
-                                <th scope="col" class="sticky-column" :class="{ 'scroll-active': tableScrollActive }">Hostname</th>
-                                <th v-if="columns.bloquear_cuenta.visible" scope="col" class="text-center">Bloquear cuenta</th>
-                                <th v-if="columns.nombre.visible" scope="col">Nombre</th>
-                                <th v-if="columns.ruc.visible" scope="col">RUC</th>
-                                <th v-if="columns.plan.visible" scope="col">Plan</th>
-                                <th v-if="columns.correo.visible" scope="col">Correo</th>
-                                <th v-if="columns.entorno.visible" scope="col">Entorno</th>
-                                <th v-if="columns.total_comprobantes.visible" scope="col" class="text-center">Total comprobantes</th>
-                                <th v-if="columns.notificaciones.visible" scope="col" class="text-center">Notificaciones</th>
-                                <th v-if="columns.otras_notificaciones.visible" scope="col" class="text-center">Otras notif.</th>
-                                <th v-if="columns.inicio_ciclo.visible" scope="col" class="text-center">Inicio ciclo fact.</th>
-                                <th v-if="columns.comprobantes_ciclo.visible" scope="col" class="text-center">Comp. ciclo / límite</th>
-                                <th v-if="columns.usuarios.visible" scope="col" class="text-center">Usuarios</th>
-                                <th v-if="columns.sucursales.visible" scope="col" class="text-center">Sucursales</th>
-                                <th v-if="columns.ventas_mes.visible" scope="col" class="text-center">Ventas (mes)</th>
-                                <th v-if="columns.fecha_creacion.visible" scope="col">F. creación</th>
-                                <th v-if="columns.consultas_api.visible" scope="col" class="text-center">Consultas API (mes)</th>
-                                <th v-if="columns.notas_venta.visible" scope="col" class="text-center">Cant. NV</th>
-                                <th v-if="columns.total_mes.visible" scope="col" class="text-center">Comp. / mes</th>
-                                <th v-if="columns.total_pse.visible" scope="col" class="text-center">Comp. PSE</th>
-                                <th v-if="columns.total_notas.visible" scope="col" class="text-center">Docs+NV ciclo</th>
-                                <th v-if="columns.limitar_doc.visible" scope="col" class="text-center">Limitar doc.</th>
-                                <th v-if="columns.limitar_usuarios.visible" scope="col" class="text-center">Limitar usuarios</th>
-                                <th v-if="columns.limitar_sucursales.visible" scope="col" class="text-center">Limitar sucursales</th>
-                                <th v-if="columns.limitar_ventas.visible" scope="col" class="text-center">Limitar ventas</th>
-                                <th scope="col">Últ. sync central</th>
-                                <th scope="col" class="text-center">Acciones</th>
+                                <th scope="col" class="text-center text-muted central-th-sticky-top">#</th>
+                                <th
+                                    scope="col"
+                                    class="sticky-column central-th-sticky-top central-th-sticky-corner"
+                                    :class="{ 'scroll-active': tableScrollActive }"
+                                >
+                                    Hostname
+                                </th>
+                                <th v-if="columns.bloquear_cuenta.visible" scope="col" class="text-center central-th-sticky-top">Bloquear cuenta</th>
+                                <th v-if="columns.nombre.visible" scope="col" class="central-th-sticky-top">Nombre</th>
+                                <th v-if="columns.ruc.visible" scope="col" class="central-th-sticky-top">RUC</th>
+                                <th v-if="columns.plan.visible" scope="col" class="central-th-sticky-top">Plan</th>
+                                <th v-if="columns.correo.visible" scope="col" class="central-th-sticky-top">Correo</th>
+                                <th v-if="columns.entorno.visible" scope="col" class="central-th-sticky-top">Entorno</th>
+                                <th
+                                    v-if="columns.total_comprobantes.visible"
+                                    scope="col"
+                                    class="text-center central-metric-sortable central-th-sticky-top"
+                                    title="Clic para ordenar por total de comprobantes (índice central)"
+                                    @click="toggleSort('total_comprobantes')"
+                                >
+                                    <span class="central-metric-th-inner">
+                                        Total comprobantes
+                                        <i class="central-metric-sort-icon" :class="sortIconClass('total_comprobantes')" aria-hidden="true" />
+                                    </span>
+                                </th>
+                                <th
+                                    v-if="columns.notificaciones.visible"
+                                    scope="col"
+                                    class="text-center central-metric-sortable central-th-sticky-top"
+                                    title="Clic para ordenar por suma de pendientes (por enviar + rectificación + por anular)"
+                                    @click="toggleSort('notificaciones')"
+                                >
+                                    <span class="central-metric-th-inner">
+                                        Notificaciones
+                                        <i class="central-metric-sort-icon" :class="sortIconClass('notificaciones')" aria-hidden="true" />
+                                    </span>
+                                </th>
+                                <th v-if="columns.otras_notificaciones.visible" scope="col" class="text-center central-th-sticky-top">Otras notif.</th>
+                                <th v-if="columns.inicio_ciclo.visible" scope="col" class="text-center central-th-sticky-top">Inicio ciclo fact.</th>
+                                <th
+                                    v-if="columns.comprobantes_ciclo.visible"
+                                    scope="col"
+                                    class="text-center central-metric-sortable central-th-sticky-top"
+                                    title="Clic para ordenar por comprobantes del mes (métrica central)"
+                                    @click="toggleSort('comp_ciclo')"
+                                >
+                                    <span class="central-metric-th-inner">
+                                        Comp. ciclo / límite
+                                        <i class="central-metric-sort-icon" :class="sortIconClass('comp_ciclo')" aria-hidden="true" />
+                                    </span>
+                                </th>
+                                <th
+                                    v-if="columns.usuarios.visible"
+                                    scope="col"
+                                    class="text-center central-metric-sortable central-th-sticky-top"
+                                    title="Clic para ordenar por cantidad de usuarios"
+                                    @click="toggleSort('usuarios')"
+                                >
+                                    <span class="central-metric-th-inner">
+                                        Usuarios
+                                        <i class="central-metric-sort-icon" :class="sortIconClass('usuarios')" aria-hidden="true" />
+                                    </span>
+                                </th>
+                                <th
+                                    v-if="columns.sucursales.visible"
+                                    scope="col"
+                                    class="text-center central-metric-sortable central-th-sticky-top"
+                                    title="Clic para ordenar por cantidad de sucursales"
+                                    @click="toggleSort('sucursales')"
+                                >
+                                    <span class="central-metric-th-inner">
+                                        Sucursales
+                                        <i class="central-metric-sort-icon" :class="sortIconClass('sucursales')" aria-hidden="true" />
+                                    </span>
+                                </th>
+                                <th
+                                    v-if="columns.ventas_mes.visible"
+                                    scope="col"
+                                    class="text-center central-metric-sortable central-th-sticky-top"
+                                    title="Clic para ordenar por ventas del mes (total PEN aprox., métrica central)"
+                                    @click="toggleSort('ventas_mes')"
+                                >
+                                    <span class="central-metric-th-inner">
+                                        Ventas (mes)
+                                        <i class="central-metric-sort-icon" :class="sortIconClass('ventas_mes')" aria-hidden="true" />
+                                    </span>
+                                </th>
+                                <th v-if="columns.fecha_creacion.visible" scope="col" class="central-th-sticky-top">F. creación</th>
+                                <th v-if="columns.consultas_api.visible" scope="col" class="text-center central-th-sticky-top">Consultas API (mes)</th>
+                                <th v-if="columns.notas_venta.visible" scope="col" class="text-center central-th-sticky-top">Cant. NV</th>
+                                <th v-if="columns.total_mes.visible" scope="col" class="text-center central-th-sticky-top">Comp. / mes</th>
+                                <th v-if="columns.total_pse.visible" scope="col" class="text-center central-th-sticky-top">Comp. PSE</th>
+                                <th v-if="columns.total_notas.visible" scope="col" class="text-center central-th-sticky-top">Docs+NV ciclo</th>
+                                <th v-if="columns.limitar_doc.visible" scope="col" class="text-center central-th-sticky-top">Limitar doc.</th>
+                                <th v-if="columns.limitar_usuarios.visible" scope="col" class="text-center central-th-sticky-top">Limitar usuarios</th>
+                                <th v-if="columns.limitar_sucursales.visible" scope="col" class="text-center central-th-sticky-top">Limitar sucursales</th>
+                                <th v-if="columns.limitar_ventas.visible" scope="col" class="text-center central-th-sticky-top">Limitar ventas</th>
+                                <th scope="col" class="central-th-sticky-top">Últ. sync central</th>
+                                <th scope="col" class="text-center central-th-sticky-top">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -519,6 +591,9 @@ export default {
                 locked_tenant: null,
                 dateRange: null,
             },
+            /** Orden del listado central (servidor): null = fecha creación cliente */
+            sortBy: null,
+            sortDir: 'desc',
             columns: defaultColumnsState(),
             showDialog: false,
             showDialogPayments: false,
@@ -678,10 +753,27 @@ export default {
             const m = { '01': 'Demo', '02': 'Producción', '03': 'Interno' };
             return m[String(soap)] || soap || '—';
         },
+        /** Icono siempre visible en columnas ordenables: fa-sort inactivo; activo muestra dirección. */
+        sortIconClass(columnKey) {
+            if (this.sortBy !== columnKey) {
+                return 'fas fa-sort central-sort-idle';
+            }
+            return this.sortDir === 'desc' ? 'fas fa-sort-amount-down text-primary' : 'fas fa-sort-amount-up text-primary';
+        },
         onReloadData() {
             this.fetch();
         },
         onDateChange() {
+            this.meta.current_page = 1;
+            this.fetch();
+        },
+        toggleSort(columnKey) {
+            if (this.sortBy !== columnKey) {
+                this.sortBy = columnKey;
+                this.sortDir = 'desc';
+            } else {
+                this.sortDir = this.sortDir === 'desc' ? 'asc' : 'desc';
+            }
             this.meta.current_page = 1;
             this.fetch();
         },
@@ -722,6 +814,10 @@ export default {
             if (this.filters.dateRange && this.filters.dateRange.length === 2) {
                 params.documents_date_start = this.filters.dateRange[0];
                 params.documents_date_end = this.filters.dateRange[1];
+            }
+            if (this.sortBy) {
+                params.sort_by = this.sortBy;
+                params.sort_direction = this.sortDir;
             }
             this.$http
                 .get(`/${this.listResource}/records`, { params })
@@ -937,6 +1033,10 @@ export default {
     max-height: min(560px, calc(100vh - 280px));
     overflow: auto;
 }
+.central-metrics-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
 .central-metrics-table.table th,
 .central-metrics-table.table td {
     white-space: nowrap;
@@ -949,6 +1049,50 @@ export default {
     font-weight: 600;
     color: #5c636a;
     border-bottom-width: 2px;
+}
+/* Cabecera fija al hacer scroll vertical dentro de .central-table-scroll */
+.central-metrics-table thead th.central-th-sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background-color: #e9ecef !important;
+    box-shadow: inset 0 -1px 0 #dee2e6;
+}
+.central-metrics-table thead th.sticky-column.central-th-sticky-corner {
+    left: 0;
+    z-index: 15;
+    top: 0;
+    background-color: #e9ecef !important;
+}
+.central-metric-th-inner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    flex-wrap: nowrap;
+    max-width: 100%;
+}
+.central-metric-sort-icon {
+    font-size: 0.72rem;
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+.central-sort-idle {
+    color: #868e96 !important;
+    opacity: 0.75;
+}
+.central-metric-sortable:hover .central-sort-idle {
+    opacity: 1;
+    color: #495057 !important;
+}
+.central-metric-sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+.central-metric-sortable:hover {
+    color: #0d6efd;
+    background-color: #dde7f7 !important;
 }
 th.sticky-column,
 td.sticky-column {

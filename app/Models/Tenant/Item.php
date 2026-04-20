@@ -2449,9 +2449,11 @@ class Item extends ModelTenant
      */
     public function scopeCategory($query, $id = null)
     {
-        if($id){
+        if ($id) {
             return $query->where('category_id', $id);
         }
+
+        return $query;
     }
 
     public function scopeWhereStockMin($query)

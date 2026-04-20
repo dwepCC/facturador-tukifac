@@ -18,13 +18,13 @@ class CentralClientMetricsQueryService
 {
     public function paginateClients(Request $request): LengthAwarePaginator
     {
-        $q = Client::query()->with(['hostname', 'plan']);
+        $q = Client::query()->select('clients.*')->with(['hostname', 'plan']);
 
         if ($search = $request->input('search')) {
             $q->where(function ($sub) use ($search) {
-                $sub->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('number', 'like', '%' . $search . '%')
-                    ->orWhere('email', 'like', '%' . $search . '%')
+                $sub->where('clients.name', 'like', '%' . $search . '%')
+                    ->orWhere('clients.number', 'like', '%' . $search . '%')
+                    ->orWhere('clients.email', 'like', '%' . $search . '%')
                     ->orWhereHas('hostname', function ($h) use ($search) {
                         $h->where('fqdn', 'like', '%' . $search . '%');
                     });
@@ -32,11 +32,11 @@ class CentralClientMetricsQueryService
         }
 
         if ($request->filled('plan_id')) {
-            $q->where('plan_id', (int) $request->input('plan_id'));
+            $q->where('clients.plan_id', (int) $request->input('plan_id'));
         }
 
         if ($request->has('locked_tenant') && $request->input('locked_tenant') !== '' && $request->input('locked_tenant') !== null) {
-            $q->where('locked_tenant', (int) $request->input('locked_tenant') === 1);
+            $q->where('clients.locked_tenant', (int) $request->input('locked_tenant') === 1);
         }
 
         if ($request->filled('soap_type')) {
@@ -49,9 +49,49 @@ class CentralClientMetricsQueryService
             });
         }
 
+        $sortBy = $request->input('sort_by');
+        $sortDir = strtolower((string) $request->input('sort_direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+        $allowedSorts = [
+            'total_comprobantes',
+            'notificaciones',
+            'comp_ciclo',
+            'usuarios',
+            'sucursales',
+            'ventas_mes',
+        ];
+
+        if ($sortBy && in_array($sortBy, $allowedSorts, true)) {
+            $q->leftJoin('tenant_metrics_current as tmc_sort', 'tmc_sort.client_id', '=', 'clients.id');
+            switch ($sortBy) {
+                case 'total_comprobantes':
+                    $q->orderByRaw('COALESCE(tmc_sort.total_documents, 0) ' . $sortDir);
+                    break;
+                case 'notificaciones':
+                    $q->orderByRaw(
+                        '(COALESCE(tmc_sort.pending_not_sent, 0) + COALESCE(tmc_sort.pending_regularize_shipping, 0) + COALESCE(tmc_sort.pending_to_be_canceled, 0)) ' . $sortDir
+                    );
+                    break;
+                case 'comp_ciclo':
+                    $q->orderByRaw('COALESCE(tmc_sort.current_month_documents, 0) ' . $sortDir);
+                    break;
+                case 'usuarios':
+                    $q->orderByRaw('COALESCE(tmc_sort.total_users, 0) ' . $sortDir);
+                    break;
+                case 'sucursales':
+                    $q->orderByRaw('COALESCE(tmc_sort.total_establishments, 0) ' . $sortDir);
+                    break;
+                case 'ventas_mes':
+                    $q->orderByRaw('COALESCE(tmc_sort.monthly_sales_total_cached, 0) ' . $sortDir);
+                    break;
+            }
+            $q->orderBy('clients.id', 'desc');
+        } else {
+            $q->orderBy('clients.created_at', 'desc');
+        }
+
         $perPage = min(max((int) $request->input('per_page', 25), 5), 100);
 
-        return $q->latest()->paginate($perPage);
+        return $q->paginate($perPage);
     }
 
     public function buildPayload(LengthAwarePaginator $paginator, Request $request): array

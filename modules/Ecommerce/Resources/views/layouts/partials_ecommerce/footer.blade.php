@@ -217,38 +217,24 @@
                                     <p id="msg_register_p"></p>
                                 </div>
                                 <div class="form-group">
-                                    <label for="ruc">Tipo de Documento:</label>
-                                    <div class="document-selector-container">
-                                        <select class="form-select select-ruc-dni" id="selectDocument">
-                                            <option value="dni" selected>DNI (8 dígitos)</option>
-                                            <option value="ruc">RUC (11 dígitos)</option>
-                                        </select>
-                                    </div>
-                                    <div class="document-input-container">
-                                        <input type="number" oninput="inputDocument()" required autocomplete="off" maxlength="11" class="form-control" id="ruc_reg"
-                                            placeholder="Ingrese su número de documento" name="ruc">
-                                        <span id="counter" class="text-center">0/8</span>
-                                    </div>                                    
+                                    <label for="name_reg">Nombres o razón social:</label>
+                                    <input type="text" required autocomplete="name" class="form-control" id="name_reg"
+                                        placeholder="Ej. Juan Pérez" name="name" minlength="2" maxlength="255">
                                 </div>
                                 <div class="form-group">
-                                    <label for="email">Nombres:</label>
-                                    <input type="text" required autocomplete="off" class="form-control" id="name_reg"
-                                        placeholder="Enter name" name="name">
+                                    <label for="email_reg">Correo electrónico:</label>
+                                    <input type="email" required autocomplete="email" class="form-control" id="email_reg"
+                                        placeholder="correo@ejemplo.com" name="email">
                                 </div>
                                 <div class="form-group">
-                                    <label for="email">Correo Electronico:</label>
-                                    <input type="email" required autocomplete="off" class="form-control" id="email_reg"
-                                        placeholder="Enter email" name="email">
+                                    <label for="pwd_reg">Contraseña:</label>
+                                    <input type="password" required autocomplete="new-password" class="form-control" id="pwd_reg"
+                                        placeholder="Mínimo 6 caracteres" name="pswd" minlength="6">
                                 </div>
                                 <div class="form-group">
-                                    <label for="pwd">Contraseña:</label>
-                                    <input type="password" required autocomplete="off" class="form-control" id="pwd_reg"
-                                        placeholder="Ingrese contraseña" name="pswd">
-                                </div>
-                                <div class="form-group">
-                                    <label for="pwd">Repita la Contraseña:</label>
-                                    <input type="password" required autocomplete="off" class="form-control"
-                                        id="pwd_repeat_reg" placeholder="Repita contraseña" name="pswd_rpt">
+                                    <label for="pwd_repeat_reg">Repita la contraseña:</label>
+                                    <input type="password" required autocomplete="new-password" class="form-control"
+                                        id="pwd_repeat_reg" placeholder="Repita contraseña" name="pswd_rpt" minlength="6">
                                 </div>
                                 <button type="submit" class="btn btn-primary">Registrarse</button>
                             </form>
@@ -274,44 +260,21 @@
 
 </div>
 <script>
-function setDocumentsCounter() {
-    let select = document.getElementById('selectDocument');
-    let counter = document.getElementById('counter');
-    let ruc_reg = document.getElementById('ruc_reg');
-    if (select && counter && ruc_reg) {
-        // Limpiar el input y remover clases del contador
-        ruc_reg.value = '';
-        counter.classList.remove('warning', 'success', 'error');
-        if (select.value === 'dni') {
-            ruc_reg.setAttribute('maxlength', '8');
-            ruc_reg.setAttribute('placeholder', 'Ingrese su DNI (8 dígitos)');
-            counter.textContent = '0/8';
-        } else if (select.value === 'ruc') {
-            ruc_reg.setAttribute('maxlength', '11');
-            ruc_reg.setAttribute('placeholder', 'Ingrese su RUC (11 dígitos)');
-            counter.textContent = '0/11';
-        }
-    }
-}
-    
 document.addEventListener("DOMContentLoaded", () => {
     const firstColumn = document.getElementById("contenedor-form");
-
     const btnIniciarSesion = document.getElementById("iniciar-sesion");
-
     const btnRegistrarse = document.getElementById("registrarse");
-
-    btnIniciarSesion.addEventListener("click", () => {
-        firstColumn.classList.remove("active");
-
-    });
-    btnRegistrarse.addEventListener("click", () => {
-        firstColumn.classList.add("active");
-
-    });
-    setDocumentsCounter();
+    if (btnIniciarSesion && firstColumn) {
+        btnIniciarSesion.addEventListener("click", () => {
+            firstColumn.classList.remove("active");
+        });
+    }
+    if (btnRegistrarse && firstColumn) {
+        btnRegistrarse.addEventListener("click", () => {
+            firstColumn.classList.add("active");
+        });
+    }
 });
-
 </script>
 
 
@@ -322,7 +285,6 @@ document.addEventListener("DOMContentLoaded", () => {
     matchPassword();
     submitLogin();
     submitRegister();
-    changeDocument();
 
     function matchPassword() {
         var password = document.getElementById("pwd_reg"),
@@ -395,53 +357,5 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         })
     }
-    function changeDocument(){
-        let select = document.getElementById('selectDocument');
-
-        if (select) {
-            select.addEventListener('change', function() {
-                setDocumentsCounter();
-            });
-        }
-    }
-    function inputDocument(){
-        let ruc_reg = document.getElementById('ruc_reg');
-        let counter = document.getElementById('counter');
-
-        if (ruc_reg) {
-            ruc_reg.addEventListener('input', function() {
-                const currentLength = ruc_reg.value.length;
-                const maxLength = parseInt(ruc_reg.getAttribute('maxlength'));
-                
-                // Actualizar el texto del contador
-                counter.textContent = `${currentLength}/${maxLength}`;
-                
-                // Remover clases previas
-                counter.classList.remove('warning', 'success', 'error');
-                
-                // Agregar clase según el estado
-                if (currentLength === 0) {
-                    // Sin clase adicional para estado inicial
-                } else if (currentLength < maxLength * 0.5) {
-                    // Menos del 50% - sin clase especial
-                } else if (currentLength < maxLength) {
-                    counter.classList.add('warning');
-                } else if (currentLength === maxLength) {
-                    counter.classList.add('success');
-                } else {
-                    counter.classList.add('error');
-                }
-
-                // Limitar la longitud si excede el máximo
-                if (currentLength > maxLength) {
-                    ruc_reg.value = ruc_reg.value.slice(0, maxLength);
-                    counter.textContent = `${maxLength}/${maxLength}`;
-                    counter.classList.remove('error');
-                    counter.classList.add('success');
-                }
-            });
-        }
-    }
-
 </script>
 @endpush

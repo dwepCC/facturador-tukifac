@@ -80,14 +80,14 @@
     "src": "resources/js/app.js"
   },
   "resources/js/system.css": {
-    "file": "assets/system-95b71fb9.css",
+    "file": "assets/system-f32a73a1.css",
     "src": "resources/js/system.css"
   },
   "resources/js/system.js": {
     "css": [
-      "assets/system-95b71fb9.css"
+      "assets/system-f32a73a1.css"
     ],
-    "file": "js/system-d673bc9e.js",
+    "file": "js/system-76c94dcf.js",
     "imports": [
       "_vue-clipboard-4f84963f.js"
     ],

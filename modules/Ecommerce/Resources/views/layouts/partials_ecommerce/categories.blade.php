@@ -1,7 +1,6 @@
 @php
     use Illuminate\Support\Str;
-    $path = explode('/', request()->path());
-    $activeSlug = isset($path[1]) ? $path[1] : '';
+    $activeSlug = isset($activeCategorySlug) && $activeCategorySlug !== '' ? $activeCategorySlug : '';
 @endphp
 <div class="container tuki_category_strip">
     <div class="tuki_categories ecom-categories">
@@ -15,7 +14,7 @@
                 @php
                     $slug = Str::slug($category->name, '-');
                 @endphp
-                <a class="ecom-category-chip {{ $activeSlug === $slug ? 'is-active' : '' }}" href="{{ route('tenant.ecommerce.index', $slug) }}" draggable="false">
+                <a class="ecom-category-chip {{ $activeSlug === $slug ? 'is-active' : '' }}" href="{{ route('tenant.ecommerce.category', ['category' => $slug]) }}" draggable="false">
                     <span class="ecom-category-chip__img">
                         <img src="{{ asset('storage/uploads/categories/'. $category->image) }}" alt="{{ $category->name }}" loading="lazy" draggable="false">
                     </span>
@@ -78,34 +77,41 @@
             true
         );
 
+        /* Nunca setPointerCapture en pointerdown: roba el pointerup al <a> y el chip no navega.
+           Solo capturamos cuando el gesto ya es claramente un arrastre (> THRESHOLD px). */
         el.addEventListener(
             'pointerdown',
             function (e) {
                 if (e.pointerType === 'mouse' && e.button !== 0) return;
+                if (!el.contains(e.target)) return;
                 active = true;
                 dragActive = false;
                 startX = e.clientX;
                 startScroll = el.scrollLeft;
                 pointerId = e.pointerId;
-                try {
-                    el.setPointerCapture(e.pointerId);
-                } catch (err) { /* noop */ }
             },
             true
         );
 
-        el.addEventListener('pointermove', function (e) {
-            if (!active || e.pointerId !== pointerId) return;
-            var dx = e.clientX - startX;
-            if (!dragActive && Math.abs(dx) > THRESHOLD) {
-                dragActive = true;
-                el.classList.add('is-dragging');
-            }
-            if (dragActive) {
-                el.scrollLeft = startScroll - dx;
-                e.preventDefault();
-            }
-        }, { passive: false });
+        el.addEventListener(
+            'pointermove',
+            function (e) {
+                if (!active || e.pointerId !== pointerId) return;
+                var dx = e.clientX - startX;
+                if (!dragActive && Math.abs(dx) > THRESHOLD) {
+                    dragActive = true;
+                    el.classList.add('is-dragging');
+                    try {
+                        el.setPointerCapture(pointerId);
+                    } catch (err) { /* noop */ }
+                }
+                if (dragActive) {
+                    el.scrollLeft = startScroll - dx;
+                    e.preventDefault();
+                }
+            },
+            { passive: false, capture: true }
+        );
 
         function endPointer(e) {
             if (!active || e.pointerId !== pointerId) return;

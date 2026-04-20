@@ -47,12 +47,20 @@ class EcommerceController extends Controller
     // }
     public function index($name = null)
     {
-        if ($name) {
-            $name = str_replace('-', ' ', $name);
+        $categories = Category::orderBy('name')->get();
+
+        $category = null;
+        $activeCategorySlug = null;
+        if ($name !== null && $name !== '') {
+            $needle = Str::slug((string) $name, '-');
+            $category = $categories->first(function ($row) use ($needle) {
+                return Str::slug($row->name, '-') === $needle;
+            });
+            if ($category) {
+                $activeCategorySlug = Str::slug($category->name, '-');
+            }
         }
 
-        $category = Category::where('name', $name)->first();
-        
         // Obtener preferencias de configuración
         $configEcommerce = ConfigurationEcommerce::first();
         $preferences = $configEcommerce && $configEcommerce->preferences 
@@ -66,13 +74,16 @@ class EcommerceController extends Controller
         if (isset($preferences['only_available_products']) && $preferences['only_available_products'] == 1) {
             $query->where('stock', '>', 0);
         }
+
+        if ($name !== null && $name !== '' && $category === null) {
+            $query->whereRaw('1 = 0');
+        }
         
         $dataPaginate = $query->orderBy('created_at', 'DESC')
             ->category($category ? $category->id : null)
             ->paginate(12);
             
         $configuration = InventoryConfiguration::first();
-        $categories = Category::get();
         
         // Obtener los anuncios publicitarios (spots) activos
         $spots = Promotion::where('apply_restaurant', 0)
@@ -86,7 +97,8 @@ class EcommerceController extends Controller
             'dataPaginate' => $dataPaginate,
             'configuration' => $configuration->stock_control,
             'spots' => $spots,
-            'preferences' => $preferences
+            'preferences' => $preferences,
+            'activeCategorySlug' => $activeCategorySlug,
         ])->with('categories', $categories);
     }
     
@@ -381,90 +393,81 @@ class EcommerceController extends Controller
 
     public function storeUser(Request $request)
     {
-        try{
+        try {
 
             $validator = Validator::make($request->all(), [
                 'email' => 'required|email',
-                'ruc' => 'required|string|min:8|max:11',
-                'name' => 'nullable|string|max:255',
+                'name' => 'required|string|min:2|max:255',
                 'pswd' => 'required|string|min:6',
             ]);
 
             if ($validator->fails()) {
                 return [
                     'success' => false,
-                    'message' => $validator->errors()->first()
+                    'message' => $validator->errors()->first(),
                 ];
             }
 
-            $verify = Person::where('email', $request->email)
-                        ->orWhere('number', $request->ruc)
-                        ->first();
-            if($verify)
-            {
+            if (Person::where('email', $request->email)->exists()) {
                 return [
                     'success' => false,
-                    'message' => 'Email o RUC/DNI no disponible'
+                    'message' => 'El correo electrónico ya está registrado',
                 ];
             }
 
-            $type = (strlen($request->ruc)==8) ? 'dni' : 'ruc';
-            $name = $request->name;
-            $identity_document_type_id = (strlen($request->ruc)==8) ? 1 : 6;
-            $address = null;
-            $department_id = null;
-            $province_id = null;
-            $district_id = null;
+            $documentNumber = $this->generateUniqueEcommerceCustomerDocumentNumber();
 
-            $dataDocument = $this->searchDocument($type,$request->ruc);
-
-
-            if($dataDocument["success"]){
-                $name = $dataDocument["data"]["name"];
-                if($type==='ruc'){
-                    $address = $dataDocument['data']['address'];
-                    $departmentId = $dataDocument['data']['location_id'][0] ?? null;
-                    $provinceId = $dataDocument['data']['location_id'][1] ?? null;
-                    $districtId = $dataDocument['data']['location_id'][2] ?? null;
-                }
-            }
-            
-            if(!($dataDocument["success"]) && $type==='dni'){
-                $identity_document_type_id = 0;
-            }
-            
             $person = new Person();
             $person->type = 'customers';
-            $person->identity_document_type_id = $identity_document_type_id;
-            $person->number = $request->ruc;
-            $person->name = $name;
+            $person->identity_document_type_id = '0';
+            $person->number = $documentNumber;
+            $person->name = trim($request->name);
             $person->country_id = 'PE';
             $person->nationality_id = 'PE';
-            $person->department_id = $department_id;
-            $person->province_id = $province_id;
-            $person->district_id = $district_id;
-            $person->address = $address;
+            $person->department_id = null;
+            $person->province_id = null;
+            $person->district_id = null;
+            $person->address = null;
             $person->establishment_code = '0000';
             $person->email = $request->email;
             $person->password = bcrypt($request->pswd);
-            
+
             $person->save();
 
-            $credentials = [ 'email' => $person->email, 'password' => $request->pswd ];
+            $credentials = ['email' => $person->email, 'password' => $request->pswd];
             Auth::guard('ecommerce')->attempt($credentials);
+
             return [
                 'success' => true,
-                'message' => 'Usuario registrado'
+                'message' => 'Usuario registrado',
             ];
-
-        }catch(Exception $e)
-        {
+        } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' =>  $e->getMessage()
+                'message' => $e->getMessage(),
             ];
         }
+    }
 
+    /**
+     * Documento único para clientes ecommerce registrados en modo rápido (SUNAT tipo 0 — sin RUC).
+     */
+    protected function generateUniqueEcommerceCustomerDocumentNumber(): string
+    {
+        for ($i = 0; $i < 50; $i++) {
+            $n = (string) random_int(20000000, 99999999);
+            if (! Person::query()->where('number', $n)->exists()) {
+                return $n;
+            }
+        }
+        for ($i = 0; $i < 50; $i++) {
+            $n = (string) random_int(1000000000, 9999999999);
+            if (! Person::query()->where('number', $n)->exists()) {
+                return $n;
+            }
+        }
+
+        return (string) random_int(10000000000, 99999999999);
     }
 
     public function transactionFinally(Request $request)
