@@ -10,15 +10,15 @@ class AppVersionController extends Controller
     {
         return response()->json([
             "android" => [
-                "min_version" => "1.1.7",
-                "latest_version" => "1.1.8",
+                "min_version" => "1.1.8",
+                "latest_version" => "1.1.9",
                 "store_url" => "https://play.google.com/store/apps/details?id=com.tukifacapp",
                 "release_notes" => "Mejoras de seguridad y nuevas funciones. Es necesario actualizar."
             ],
             "windows" => [
-                "min_version" => "1.1.7",
-                "latest_version" => "1.1.8",
-                "download_url" => "https://drive.google.com/file/d/15TXs2mlWj6nk56GUi9FFTRudxQed4NAY/view?usp=drive_link",
+                "min_version" => "1.1.8",
+                "latest_version" => "1.1.9",
+                "download_url" => "https://drive.google.com/file/d/1eF5_aIlhZnYbl0BCOwqC4D_BHQOJ6oDE/view?usp=drive_link",
                 "release_notes" => "Correcciones críticas para Windows y nuevas funciones de impresión."
             ]
         ]);

@@ -1,5 +1,8 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+use Modules\Item\Http\Controllers\Api\ItemCatalogController;
+
 $hostname = app(Hyn\Tenancy\Contracts\CurrentHostname::class);
 
 if ($hostname)
@@ -12,6 +15,7 @@ if ($hostname)
 
                 // Route::post('update', 'Api\ItemController@update');
                 Route::get('export/stock', 'ItemController@ItemExportStock');
+                Route::get('catalog', [ItemCatalogController::class, 'index']);
 
             });
 
