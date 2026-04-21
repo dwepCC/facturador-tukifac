@@ -70,6 +70,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Modules\Item\Http\Controllers\EditorTagController;
 use Modules\Item\Models\TagTemplate;
+use Modules\Restaurant\Models\RestaurantPreparationArea;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ItemController extends Controller
 {
@@ -973,6 +976,144 @@ class ItemController extends Controller
         return [
             'success' => false,
             'message' =>  __('app.actions.upload.error'),
+        ];
+    }
+
+    public function exportRestaurantPreparationAreasFormat()
+    {
+        $items = Item::query()
+            ->where('apply_restaurant', 1)
+            ->whereNotNull('internal_id')
+            ->orderBy('internal_id')
+            ->get(['internal_id']);
+
+        $export = new class($items) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings {
+            use \Maatwebsite\Excel\Concerns\Exportable;
+
+            private $items;
+
+            public function __construct($items)
+            {
+                $this->items = $items;
+            }
+
+            public function headings(): array
+            {
+                return [
+                    'internal_id',
+                    'area_preparacion',
+                ];
+            }
+
+            public function collection()
+            {
+                return $this->items->map(function ($item) {
+                    return [
+                        'internal_id' => $item->internal_id,
+                        'area_preparacion' => null,
+                    ];
+                });
+            }
+        };
+
+        return $export->download('restaurant_areas_preparacion.xlsx', Excel::XLSX);
+    }
+
+    public function importRestaurantPreparationAreas(Request $request)
+    {
+        if ($request->hasFile('file')) {
+            DB::connection('tenant')->beginTransaction();
+            try {
+                $spreadsheet = IOFactory::load($request->file('file')->getPathname());
+                $sheet = $spreadsheet->getActiveSheet();
+
+                $highestRow = (int) $sheet->getHighestDataRow();
+                $highestColumn = $sheet->getHighestDataColumn();
+                $highestColumnIndex = Coordinate::columnIndexFromString($highestColumn);
+
+                $headerColumns = [];
+                for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                    $value = trim((string) $sheet->getCellByColumnAndRow($col, 1)->getValue());
+                    if ($value === '') {
+                        continue;
+                    }
+                    $headerColumns[strtolower($value)] = $col;
+                }
+
+                $internalIdColumn = $headerColumns['internal_id'] ?? 1;
+                $preparationAreaColumn = $headerColumns['area_preparacion'] ?? 2;
+
+                $updated = 0;
+                $areasCreated = 0;
+                $itemsNotFound = 0;
+                $rowsSkipped = 0;
+
+                for ($row = 2; $row <= $highestRow; $row++) {
+                    $internalId = trim((string) $sheet->getCellByColumnAndRow($internalIdColumn, $row)->getValue());
+                    $preparationAreaName = trim((string) $sheet->getCellByColumnAndRow($preparationAreaColumn, $row)->getValue());
+
+                    if ($internalId === '' && $preparationAreaName === '') {
+                        continue;
+                    }
+
+                    if ($internalId === '' || $preparationAreaName === '') {
+                        $rowsSkipped++;
+                        continue;
+                    }
+
+                    $item = Item::query()
+                        ->where('apply_restaurant', 1)
+                        ->where('internal_id', $internalId)
+                        ->first();
+
+                    if (!$item) {
+                        $itemsNotFound++;
+                        continue;
+                    }
+
+                    $preparationArea = RestaurantPreparationArea::whereRaw('LOWER(name) = ?', [strtolower($preparationAreaName)])->first();
+
+                    if (!$preparationArea) {
+                        $preparationArea = RestaurantPreparationArea::create([
+                            'name' => $preparationAreaName,
+                            'printer' => 'web',
+                        ]);
+                        $areasCreated++;
+                    } elseif (empty($preparationArea->printer)) {
+                        $preparationArea->printer = 'web';
+                        $preparationArea->save();
+                    }
+
+                    $item->preparation_area_id = $preparationArea->id;
+                    $item->save();
+
+                    $updated++;
+                }
+
+                DB::connection('tenant')->commit();
+
+                return [
+                    'success' => true,
+                    'message' => __('app.actions.upload.success'),
+                    'data' => [
+                        'updated' => $updated,
+                        'areas_created' => $areasCreated,
+                        'items_not_found' => $itemsNotFound,
+                        'rows_skipped' => $rowsSkipped,
+                    ],
+                ];
+            } catch (Exception $e) {
+                DB::connection('tenant')->rollBack();
+                return [
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ];
+            }
+        }
+
+        return [
+            'success' => false,
+            'message' => __('app.actions.upload.error'),
         ];
     }
 

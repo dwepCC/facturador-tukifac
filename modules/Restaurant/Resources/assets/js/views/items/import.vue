@@ -3,7 +3,7 @@
         <form autocomplete="off" @submit.prevent="submit">
             <div class="form-body">
                 <div class="row">
-                    <div class="col-12 form-group" :class="{'has-danger': errors.warehouse_id}">
+                    <div v-if="requiresWarehouse" class="col-12 form-group" :class="{'has-danger': errors.warehouse_id}">
                         <label for="warehouse">Almacén</label>
                         <el-select v-model="form.warehouse_id">
                             <el-option v-for="w in warehouses" :key="w.id" :label="w.description" :value="w.id"></el-option>
@@ -14,7 +14,7 @@
                         <el-upload
                                 ref="upload"
                                 :headers="headers"
-                                action="/items/import/restaurant"
+                                :action="actionsUrl"
                                 :show-file-list="true"
                                 :auto-upload="false"
                                 :multiple="false"
@@ -28,10 +28,18 @@
                         <small class="form-control-feedback" v-if="errors.file" v-text="errors.file[0]"></small>
                     </div>
                     <div class="col-12 mt-4 mb-2">
-                        <a class="text-dark mr-auto" href="/formats/items_restaurant.xlsx" target="_new">
-                            <span class="mr-2">Descargar formato de ejemplo para importar</span>
-                            <i class="fa fa-download"></i>
-                        </a>
+                        <template v-if="mode === 'items'">
+                            <a class="text-dark mr-auto" href="/formats/items_restaurant.xlsx" target="_new">
+                                <span class="mr-2">Descargar formato de ejemplo para importar</span>
+                                <i class="fa fa-download"></i>
+                            </a>
+                        </template>
+                        <template v-else>
+                            <a class="text-dark mr-auto" @click.prevent="downloadFormat()" href="#">
+                                <span class="mr-2">Descargar formato de ejemplo para importar</span>
+                                <i class="fa fa-download"></i>
+                            </a>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -46,7 +54,16 @@
 <script>
 
     export default {
-        props: ['showDialog'],
+        props: {
+            showDialog: {
+                type: Boolean,
+                required: true
+            },
+            mode: {
+                type: String,
+                default: 'items'
+            }
+        },
         data() {
             return {
                 loading_submit: false,
@@ -58,9 +75,22 @@
                 warehouses: []
             }
         },
+        computed: {
+            requiresWarehouse() {
+                return this.mode === 'items'
+            },
+            actionsUrl() {
+                if (this.mode === 'preparation_areas') {
+                    return '/items/import/restaurant-preparation-areas'
+                }
+                return '/items/import/restaurant'
+            }
+        },
         async created() {
             this.initForm();
-            await this.onFetchTables();
+            if (this.requiresWarehouse) {
+                await this.onFetchTables();
+            }
         },
         methods: {
             onBeforeUpload(file) {},
@@ -77,10 +107,12 @@
                 }
             },
             create() {
-                this.titleDialog = 'Importar Productos'
+                this.titleDialog = this.mode === 'preparation_areas'
+                    ? 'Importar Áreas de Preparación (por producto)'
+                    : 'Importar Productos'
             },
             async submit() {
-                if (! this.form.warehouse_id) {
+                if (this.requiresWarehouse && !this.form.warehouse_id) {
                     this.$message.warning('Seleccione un almacén para poder continuar');
                     return;
                 }
@@ -105,6 +137,9 @@
             },
             errorUpload(error) {
                 console.log(error)
+            },
+            downloadFormat() {
+                window.open('/items/restaurant-preparation-areas-format/export', '_blank')
             }
         }
     }

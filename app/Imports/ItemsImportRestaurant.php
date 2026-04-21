@@ -17,6 +17,7 @@ use Modules\Inventory\Models\Inventory;
 use Exception;
 use Modules\Item\Models\ItemLotsGroup;
 use Modules\Finance\Helpers\UploadFileHelper;
+use Modules\Restaurant\Models\RestaurantPreparationArea;
 
 
 class ItemsImportRestaurant implements ToCollection
@@ -39,6 +40,7 @@ class ItemsImportRestaurant implements ToCollection
                 $currency_type_id = $row[3];
                 $sale_unit_price = $row[4];
                 $sale_affectation_igv_type_id = $row[5];
+                $preparation_area_name = isset($row[14]) ? trim((string) $row[14]) : null;
 
                 $affectation_igv_types_exonerated_unaffected = ['20','21','30','31','32','33','34','35','36','37'];
 
@@ -59,6 +61,22 @@ class ItemsImportRestaurant implements ToCollection
                 $category_name = $row[11];
                 $barcode = $row[12] ?? null;
                 $image_url = $row[13] ?? null;
+                $preparation_area_id = null;
+                if (!empty($preparation_area_name)) {
+                    $preparationArea = RestaurantPreparationArea::whereRaw('LOWER(name) = ?', [strtolower($preparation_area_name)])->first();
+
+                    if (!$preparationArea) {
+                        $preparationArea = RestaurantPreparationArea::create([
+                            'name' => $preparation_area_name,
+                            'printer' => 'web',
+                        ]);
+                    } elseif (empty($preparationArea->printer)) {
+                        $preparationArea->printer = 'web';
+                        $preparationArea->save();
+                    }
+
+                    $preparation_area_id = $preparationArea->id;
+                }
 
                 // image names
                 $file_name = 'imagen-no-disponible.jpg';
@@ -147,6 +165,7 @@ class ItemsImportRestaurant implements ToCollection
                         'image_medium' => $file_name_medium,
                         'image_small' => $file_name_small,
                         'apply_restaurant' => 1,
+                        'preparation_area_id' => $preparation_area_id,
                     ]);
 
                     $registered += 1;
@@ -173,6 +192,7 @@ class ItemsImportRestaurant implements ToCollection
                         'stock_min' => $stock_min,
                         'barcode' => $barcode,
                         'apply_restaurant' => 1,
+                        'preparation_area_id' => $preparation_area_id,
                     ]);
 
 

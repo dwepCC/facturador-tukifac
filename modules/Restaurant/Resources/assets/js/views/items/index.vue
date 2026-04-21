@@ -39,6 +39,13 @@
                     </button>
                     <button
                         type="button"
+                        class="btn btn-custom btn-sm  mt-2 me-2"
+                        @click.prevent="clickImportPreparationAreas()"
+                    >
+                        <i class="fa fa-upload"></i> Imp. Áreas de preparación
+                    </button>
+                    <button
+                        type="button"
                         class="btn btn-custom btn-sm mt-2 me-2"
                         @click.prevent="clickCreate()"
                     >
@@ -180,6 +187,11 @@
 
             <items-import :showDialog.sync="showImportDialog"></items-import>
 
+            <items-import
+                :showDialog.sync="showImportPreparationAreasDialog"
+                mode="preparation_areas"
+            ></items-import>
+
             <warehouses-detail
                 :showDialog.sync="showWarehousesDetail"
                 :warehouses="warehousesDetail"
@@ -264,6 +276,7 @@ export default {
         return {
             showDialog: false,
             showImportDialog: false,
+            showImportPreparationAreasDialog: false,
             showWarehousesDetail: false,
             showImageDetail: false,
             resource: "restaurant",
@@ -337,6 +350,9 @@ export default {
         },
         clickImport() {
             this.showImportDialog = true;
+        },
+        clickImportPreparationAreas() {
+            this.showImportPreparationAreasDialog = true;
         },
         clickDelete(id) {
             this.destroy(`/items/${id}`).then(() =>
