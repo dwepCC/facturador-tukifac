@@ -234,7 +234,7 @@
             </td>
             
             <td class="text-center border-left align-top">{{ $row->item->unit_type_id }}</td>
-            <td class="text-center border-left align-top">{{ $row->item->internal_id }}</td>
+            <td class="text-center border-left align-top">{{ $internal_id }}</td>
             <td class="text-left border-left align-top">{{ $row->item->description }}{!!$row->name_product_pdf!!}
                 @if($row->attributes)
             @foreach($row->attributes as $attr)
