@@ -85,6 +85,7 @@ class DocumentInput
             'group_id' => $inputs['group_id'],
             'user_id' => auth()->id(),
             'external_id' => Str::uuid()->toString(),
+            'platform' => Functions::valueKeyInArray($inputs, 'platform', 'web'),
             'establishment_id' => $inputs['establishment_id'],
             'establishment' => $establishment,
             'soap_type_id' => $soap_type_id,

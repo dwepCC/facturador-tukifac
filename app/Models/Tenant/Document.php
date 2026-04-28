@@ -165,6 +165,7 @@ class Document extends ModelTenant
     protected $fillable = [
         'user_id',
         'external_id',
+        'platform',
         'establishment_id',
         'establishment',
         'soap_type_id',
@@ -297,6 +298,9 @@ class Document extends ModelTenant
         parent::boot();
         static::creating(function (self $model) {
             self::adjustSellerIdField($model);
+            if (!$model->platform) {
+                $model->platform = 'web';
+            }
         });
 
     }

@@ -180,6 +180,7 @@ class CashController extends Controller
             ->map(function($cash) { 
                 return [
                     'id' => $cash->id,
+                    'user_id' => $cash->user_id,
                     'description' => $cash->reference_number . " " . $cash->date_opening . " (" . $cash->user->name . ")",
                 ];
             });

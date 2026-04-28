@@ -257,6 +257,7 @@
                             class="text-end"
                             v-if="typeUser != 'integrator'"
                         ></th>
+                        <th class="text-center">Plataforma</th>
                     </tr>
                     <tr
                         slot-scope="{ index, row }"
@@ -833,6 +834,7 @@
                                 C. Detracción
                             </button> -->
                         </td>
+                        <td class="text-center">{{ row.platform }}</td>
                     </tr>
                 </data-table>
             </div>

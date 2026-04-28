@@ -22,6 +22,7 @@ class DocumentTransform
         $inputs_transform = [
             'series' => Functions::valueKeyInArray($inputs, 'serie_documento'),
             'number' => Functions::valueKeyInArray($inputs, 'numero_documento'),
+            'platform' => Functions::valueKeyInArray($inputs, 'platform', 'web'),
             'consigned_id' => Functions::valueKeyInArray($inputs, 'codigo_consignado'),
             'consigned_address_id' => Functions::valueKeyInArray($inputs, 'codigo_direccion_consignado'),
             'consigned_ubigeo' => Functions::valueKeyInArray($inputs, 'consignado_ubigeo'),

@@ -214,6 +214,7 @@ class DocumentCollection extends ResourceCollection
                 'user_name' => ($row->user) ? $row->user->name : '',
                 'user_email' => ($row->user) ? $row->user->email : '',
                 'user_id' => $row->user_id,
+                'platform' => $row->platform,
                 'email_send_it' => $email_send_it,
                 'email_send_it_array' => $email_send_it_array,
                 'external_id' => $row->external_id,
