@@ -138,7 +138,17 @@ class DocumentController extends Controller
     {
         $records = Document::filterRecordsAppApi($request);
 
-        return new DocumentCollection($records->latest()->take(config('tenant.items_per_page'))->get());
+        $per_page = (int) $request->get('per_page', config('tenant.items_per_page'));
+        if ($per_page <= 0) {
+            $per_page = (int) config('tenant.items_per_page');
+        }
+        if ($per_page > 100) {
+            $per_page = 100;
+        }
+
+        return new DocumentCollection(
+            $records->latest()->paginate($per_page)
+        );
     }
 
     /**

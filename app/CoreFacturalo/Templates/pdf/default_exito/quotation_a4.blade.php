@@ -219,7 +219,7 @@
     <tbody>
     @foreach($document->items as $row)
         <tr>
-            <td class="text-center align-top">{{ $row->item->internal_id }}</td>
+            <td class="text-center align-top">{{ data_get($row, 'item.internal_id') }}</td>
             <td class="text-center align-top">
                 @if(((int)$row->quantity != $row->quantity))
                     {{ $row->quantity }}
@@ -258,7 +258,7 @@
                     @endforeach
                 @endif
 
-                @if($row->item->is_set == 1)
+                @if(data_get($row, 'item.is_set') == 1)
                     <br>
                     @inject('itemSet', 'App\Services\ItemSetService')
                     @foreach ($itemSet->getItemsSet($row->item_id) as $item)

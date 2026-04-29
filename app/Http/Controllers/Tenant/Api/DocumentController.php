@@ -436,6 +436,7 @@ class DocumentController extends Controller
             'date_of_issue' => $date,
             'issue_time' => $issueTime,
             'due_date' => $dueDate,
+            'observations' => $document->additional_information ?? ($document->observation ?? null),
             'customer' => $customer,
             'items' => $items,
 

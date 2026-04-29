@@ -25,6 +25,7 @@ if ($hostname) {
             Route::post('sale-note', 'Tenant\Api\SaleNoteController@store');
             Route::get('sale-note/series', 'Tenant\Api\SaleNoteController@series');
             Route::get('sale-note/lists', 'Tenant\Api\SaleNoteController@lists');
+            Route::get('sale-note/records', 'Tenant\Api\SaleNoteController@records');
             Route::post('item', 'Tenant\Api\MobileController@item');
             Route::post('items/{id}/update', 'Tenant\Api\MobileController@updateItem');
             Route::get('configuration-web', 'Tenant\Api\MobileController@configWeb');
@@ -75,6 +76,7 @@ if ($hostname) {
 
             // Cotizaciones
             Route::get('quotations/list', 'Tenant\Api\QuotationController@list');
+            Route::get('quotations/records', 'Tenant\Api\QuotationController@records');
             Route::post('quotations', 'Tenant\Api\QuotationController@store');
             Route::post('quotations/email', 'Tenant\Api\QuotationController@email');
             Route::get('quotations/tables', 'Tenant\Api\QuotationController@tables');

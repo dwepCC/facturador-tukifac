@@ -1588,18 +1588,54 @@ class Document extends ModelTenant
     {
 
         $state_type_id = $request->state_type_id ?? 'all';
+        $document_type_id = $request->document_type_id;
+        $d_start = $request->d_start;
+        $d_end = $request->d_end;
+        $date_of_issue = $request->date_of_issue;
+        $number = $request->number;
+        $series = $request->series;
+        $customer_id = $request->customer_id;
+        $pending_payment = ($request->pending_payment == "true") ? true : false;
+
+        if ($d_start && $d_end) {
+            $query->whereBetween('date_of_issue', [$d_start, $d_end]);
+        }
+
+        if ($date_of_issue) {
+            $query->where('date_of_issue', 'like', '%' . $date_of_issue . '%');
+        }
 
         $query->whereTypeUser()
             ->where(function ($q) use ($request) {
-                $q->where('series', 'like', "%{$request->input}%")
-                    ->orWhere('number', 'like', "%{$request->input}%");
-            })
-            ->where('document_type_id', $request->document_type_id);
+                $search_input = $request->input ?? '';
+                $q->where('series', 'like', "%{$search_input}%")
+                    ->orWhere('number', 'like', "%{$search_input}%");
+            });
+
+        if (!is_null($document_type_id) && $document_type_id !== '') {
+            $query->where('document_type_id', $document_type_id);
+        }
+
+        if (!is_null($series) && $series !== '') {
+            $query->where('series', 'like', '%' . $series . '%');
+        }
+
+        if (!is_null($number) && $number !== '') {
+            $query->where('number', $number);
+        }
 
 
         if ($state_type_id !== 'all') {
             $query->where('state_type_id', $request->state_type_id);
         }
+        if ($pending_payment) {
+            $query->where('total_canceled', false);
+        }
+
+        if (!is_null($customer_id) && $customer_id !== '') {
+            $query->where('customer_id', $customer_id);
+        }
+
 
         return $query;
     }

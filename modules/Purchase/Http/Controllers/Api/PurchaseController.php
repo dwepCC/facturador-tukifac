@@ -55,15 +55,23 @@ class PurchaseController extends Controller
 
     public function records(Request $request)
     {
-        $records = Purchase::where(function($q) use($request){
-                                $q->where('series', 'like', "%{$request->input}%" )
-                                    ->orWhere('number','like', "%{$request->input}%");
-                            })
-                            ->latest()
-                            ->take(config('tenant.items_per_page'))
-                            ->get();
+        $input = (string) $request->get('input', '');
+        $per_page = (int) $request->get('per_page', 10);
 
-        return new PurchaseCollection($records);
+        if ($per_page <= 0) {
+            $per_page = 10;
+        }
+
+        if ($per_page > 100) {
+            $per_page = 100;
+        }
+
+        $records = Purchase::where(function ($q) use ($input) {
+            $q->where('series', 'like', "%{$input}%")
+                ->orWhere('number', 'like', "%{$input}%");
+        })->latest();
+
+        return new PurchaseCollection($records->paginate($per_page));
     }
 
     public function tables()

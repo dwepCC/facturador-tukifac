@@ -33,6 +33,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Requests\Tenant\SaleNoteRequest;
 use App\Http\Resources\Tenant\SaleNoteCollection;
+use App\Http\Resources\Tenant\SaleNoteLightCollection;
 use App\CoreFacturalo\Helpers\Number\NumberLetter;
 use App\CoreFacturalo\Helpers\Storage\StorageDocument;
 use App\CoreFacturalo\Requests\Inputs\Common\PersonInput;
@@ -67,6 +68,100 @@ class SaleNoteController extends Controller
         $records = new SaleNoteCollection($record);
 
         return $records;
+    }
+
+    public function records(Request $request)
+    {
+        $per_page = (int) $request->get('per_page', 10);
+        if ($per_page < 1) {
+            $per_page = 10;
+        }
+        if ($per_page > 200) {
+            $per_page = 200;
+        }
+
+        $records = SaleNote::query()
+            ->whereFilterWithOutRelations()
+            ->whereTypeUser()
+            ->select([
+                'id',
+                'external_id',
+                'date_of_issue',
+                'series',
+                'number',
+                'customer_id',
+                'user_id',
+                'currency_type_id',
+                'total',
+                'state_type_id',
+                'paid',
+                'total_canceled',
+            ])
+            ->with([
+                'person:id,name,number',
+                'state_type:id,description',
+                'user:id,name',
+            ]);
+
+        $input = $request->get('input');
+        if (!is_null($input) && $input !== '') {
+            $records->where(function ($q) use ($input) {
+                $q->where('series', 'like', "%{$input}%")
+                    ->orWhere('number', 'like', "%{$input}%")
+                    ->orWhereHas('person', function ($personQuery) use ($input) {
+                        $personQuery->where('name', 'like', "%{$input}%")
+                            ->orWhere('number', 'like', "%{$input}%");
+                    });
+            });
+        }
+
+        $d_start = $request->get('d_start');
+        $d_end = $request->get('d_end');
+        if (!is_null($d_start) && $d_start !== '' && !is_null($d_end) && $d_end !== '') {
+            $records->whereBetween('date_of_issue', [$d_start, $d_end]);
+        }
+
+        $date_of_issue = $request->get('date_of_issue');
+        if (!is_null($date_of_issue) && $date_of_issue !== '') {
+            $records->whereDate('date_of_issue', $date_of_issue);
+        }
+
+        $series = $request->get('series');
+        if (!is_null($series) && $series !== '') {
+            $records->where('series', 'like', "%{$series}%");
+        }
+
+        $number = $request->get('number');
+        if (!is_null($number) && $number !== '') {
+            $records->where('number', 'like', "%{$number}%");
+        }
+
+        $customer_id = $request->get('customer_id');
+        if (!is_null($customer_id) && $customer_id !== '') {
+            $records->where('customer_id', $customer_id);
+        }
+
+        $state_type_id = $request->get('state_type_id');
+        if (!is_null($state_type_id) && $state_type_id !== '') {
+            $records->where('state_type_id', $state_type_id);
+        }
+
+        $paid = $request->get('paid');
+        if (!is_null($paid) && $paid !== '') {
+            $records->where('paid', (bool) $paid);
+        }
+
+        $total_canceled = $request->get('total_canceled');
+        if (!is_null($total_canceled) && $total_canceled !== '') {
+            $records->where('total_canceled', (bool) $total_canceled);
+        }
+
+        $observations = $request->get('observations');
+        if (!is_null($observations) && $observations !== '') {
+            $records->where('observation', 'like', "%{$observations}%");
+        }
+
+        return new SaleNoteLightCollection($records->latest('id')->paginate($per_page));
     }
 
     public function store(Request $request)
@@ -999,6 +1094,7 @@ class SaleNoteController extends Controller
             'date_of_issue' => $date,
             'issue_time' => $issueTime,
             'due_date' => $dueDate,
+            'observations' => $saleNote->observation ?? null,
             'customer' => $customer,
             'items' => $items,
             'currency_type_id' => $currencyCode,

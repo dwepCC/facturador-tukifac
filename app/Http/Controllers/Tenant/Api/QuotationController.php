@@ -38,6 +38,74 @@ class QuotationController extends Controller
         return new QuotationCollection($records);
     }
 
+    public function records(Request $request)
+    {
+        $per_page = (int) $request->get('per_page', 10);
+        if ($per_page < 1) {
+            $per_page = 10;
+        }
+        if ($per_page > 200) {
+            $per_page = 200;
+        }
+
+        $records = Quotation::query();
+
+        $user = auth()->user();
+        if ($user && $user->type === 'seller') {
+            $records->where('user_id', $user->id);
+        }
+
+        $input = $request->get('input');
+        if (!is_null($input) && $input !== '') {
+            $records->where(function ($q) use ($input) {
+                $q->where('id', 'like', "%{$input}%")
+                    ->orWhere('prefix', 'like', "%{$input}%")
+                    ->orWhereHas('person', function ($personQuery) use ($input) {
+                        $personQuery->where('name', 'like', "%{$input}%")
+                            ->orWhere('number', 'like', "%{$input}%");
+                    });
+            });
+        }
+
+        $d_start = $request->get('d_start');
+        $d_end = $request->get('d_end');
+        if (!is_null($d_start) && $d_start !== '' && !is_null($d_end) && $d_end !== '') {
+            $records->whereBetween('date_of_issue', [$d_start, $d_end]);
+        }
+
+        $date_of_issue = $request->get('date_of_issue');
+        if (!is_null($date_of_issue) && $date_of_issue !== '') {
+            $records->whereDate('date_of_issue', $date_of_issue);
+        }
+
+        $state_type_id = $request->get('state_type_id');
+        if (!is_null($state_type_id) && $state_type_id !== '') {
+            $records->where('state_type_id', $state_type_id);
+        }
+
+        $customer_id = $request->get('customer_id');
+        if (!is_null($customer_id) && $customer_id !== '') {
+            $records->where('customer_id', $customer_id);
+        }
+
+        $seller_id = $request->get('seller_id');
+        if (!is_null($seller_id) && $seller_id !== '') {
+            $records->where('seller_id', $seller_id);
+        }
+
+        $prefix = $request->get('prefix');
+        if (!is_null($prefix) && $prefix !== '') {
+            $records->where('prefix', 'like', "%{$prefix}%");
+        }
+
+        $number = $request->get('number');
+        if (!is_null($number) && $number !== '') {
+            $records->where('id', $number);
+        }
+
+        return new QuotationCollection($records->latest('id')->paginate($per_page));
+    }
+
 
     public function store(Request $request)
     {
