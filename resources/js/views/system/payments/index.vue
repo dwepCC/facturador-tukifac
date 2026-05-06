@@ -13,7 +13,7 @@
         </header>
         <!-- Cards -->
         <div class="col-md-12 container">
-            <div class="row">
+            <div class="row g-3">
                 
                 <template v-for="pay in sortedPayments">
                 <div class="col-12 col-sm-6 col-lg-3">
@@ -288,7 +288,7 @@
                                 </td>
                                 <td class="amount-column">
                                     <el-input
-                                        :disabled="record.order_state_id == 4 || record.order_state_id == 2"
+                                        :disabled="record.order_state_id == 4 || record.order_state_id == 2 || record.order_state_id == 5"
                                         v-model="record.amount"
                                         size="small"
                                         type="number"
@@ -300,7 +300,7 @@
                                 </td>
                                 <td class="datetime-column">
                                     <el-date-picker
-                                        :disabled="record.order_state_id == 4 || record.order_state_id == 2"
+                                        :disabled="record.order_state_id == 4 || record.order_state_id == 2 || record.order_state_id == 5"
                                         v-model="record.due_date"
                                         @change="updateTable(record.id)"    
                                         value-format="yyyy-MM-dd"
@@ -429,7 +429,7 @@ import EditClient from './partials/edit-client.vue'
               return this.clientPlans.find(client => client.id === this.filters.client_id) || {};
             },
             sortedPayments() {
-              const order = [2, 1, 3, 4];
+              const order = [2, 5, 1, 6, 3, 4];
               return this.payments_records.slice().sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
             },
             filtersChanged() {
@@ -437,7 +437,7 @@ import EditClient from './partials/edit-client.vue'
             },
             sortedClientPays() {
               if (!this.getClient?.pays) return [];
-              const order = [2, 1, 3, 4]; // Pagado, Pendiente, Vencido, Anulado
+              const order = [2, 5, 1, 6, 3, 4];
               return this.getClient.pays.slice().sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
             },
         },
@@ -462,17 +462,21 @@ import EditClient from './partials/edit-client.vue'
             },
             viewButtonPay(record)
             {
-                return record.order_state_id == 1  || record.order_state_id == 3
+                return record.order_state_id == 1  || record.order_state_id == 3 || record.order_state_id == 6
             },
             getClassState(state_order_id)
             {
                 switch(state_order_id) {
                     case 1:
                         return 'badge badge-warning'
+                    case 5:
+                        return 'badge badge-info'
                     case 2:
                         return 'badge badge-success'
                     case 3:
                         return 'badge badge-danger'
+                    case 6:
+                        return 'badge badge-secondary'
                     case 4:
                         return 'badge badge-dark'
                 }
@@ -482,10 +486,14 @@ import EditClient from './partials/edit-client.vue'
                 switch(state_order_id) {
                     case 1:
                         return 'var(--warning)'
+                    case 5:
+                        return '#0dcaf0'
                     case 2:
                         return 'var(--success)'
                     case 3:
                         return 'var(--danger)'
+                    case 6:
+                        return '#6c757d'
                     case 4:
                         return 'var(--muted)'
                 }
@@ -499,6 +507,10 @@ import EditClient from './partials/edit-client.vue'
                 case 3:
                   return 'text-danger'
                 case 4:
+                  return 'text-secondary'
+                case 5:
+                  return 'text-info'
+                case 6:
                   return 'text-secondary'
               }
             },
@@ -574,12 +586,18 @@ import EditClient from './partials/edit-client.vue'
                 case 1:
                   return `
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-clock-hour-4 icon-transparent"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 3.34a10 10 0 1 1 -15 8.66l.005 -.324a10 10 0 0 1 14.995 -8.336m-5 2.66a1 1 0 0 0 -1 1v5.026l.009 .105l.02 .107l.04 .129l.048 .102l.046 .078l.042 .06l.069 .08l.088 .083l.083 .062l3 2a1 1 0 1 0 1.11 -1.664l-2.555 -1.704v-4.464a1 1 0 0 0 -.883 -.993z" /></svg>`; // 💳 Tarjeta (ej. Pendiente)
+                case 5:
+                  return `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-eye icon-transparent"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 4c4.274 0 7.877 2.398 10 6c-2.123 3.602 -5.726 6 -10 6s-7.877 -2.398 -10 -6c2.123 -3.602 5.726 -6 10 -6zm0 3a3 3 0 1 0 0 6a3 3 0 0 0 0 -6z" /></svg>`;
                 case 2:
                   return `
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-circle-check icon-transparent"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-1.293 5.953a1 1 0 0 0 -1.32 -.083l-.094 .083l-3.293 3.292l-1.293 -1.292l-.094 -.083a1 1 0 0 0 -1.403 1.403l.083 .094l2 2l.094 .083a1 1 0 0 0 1.226 0l.094 -.083l4 -4l.083 -.094a1 1 0 0 0 -.083 -1.32z" /></svg>`; // ✅ Pagado
                 case 3:
                   return `
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-alert-triangle icon-transparent"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 1.67c.955 0 1.845 .467 2.39 1.247l.105 .16l8.114 13.548a2.914 2.914 0 0 1 -2.307 4.363l-.195 .008h-16.225a2.914 2.914 0 0 1 -2.582 -4.2l.099 -.185l8.11 -13.538a2.914 2.914 0 0 1 2.491 -1.403zm.01 13.33l-.127 .007a1 1 0 0 0 0 1.986l.117 .007l.127 -.007a1 1 0 0 0 0 -1.986l-.117 -.007zm-.01 -7a1 1 0 0 0 -.993 .883l-.007 .117v4l.007 .117a1 1 0 0 0 1.986 0l.007 -.117v-4l-.007 -.117a1 1 0 0 0 -.993 -.883z" /></svg>`; // ❌ Anulado o Error
+                case 6:
+                  return `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-circle-x icon-transparent"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 2a10 10 0 1 0 10 10a10 10 0 0 0 -10 -10zm3.707 7.293a1 1 0 0 1 0 1.414l-2.293 2.293l2.293 2.293a1 1 0 1 1 -1.414 1.414l-2.293 -2.293l-2.293 2.293a1 1 0 1 1 -1.414 -1.414l2.293 -2.293l-2.293 -2.293a1 1 0 0 1 1.414 -1.414l2.293 2.293l2.293 -2.293a1 1 0 0 1 1.414 0z" /></svg>`;
                 case 4:
                   return `
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-ban icon-transparent-ban"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M5.7 5.7l12.6 12.6" /></svg>`; // ⚪ Otro estado

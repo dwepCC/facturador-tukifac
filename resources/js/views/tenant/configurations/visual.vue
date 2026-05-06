@@ -380,8 +380,8 @@ export default {
         };
     },
     async created() {
-        await this.loadThemes();
-        await this.loadBlackThemes();
+        //await this.loadThemes();
+        //await this.loadBlackThemes();
         await this.initForm();
         await this.getRecords();
     },
@@ -415,22 +415,22 @@ export default {
           this.$message.error("Error al subir la imagen");
           console.error("Error upload:", err);
         },
-        async loadThemes() {
+        /*async loadThemes() {
             try {
                 const response = await fetch("/json/themes/themes.json");
                 this.themes = await response.json();
             } catch (error) {
                 console.error("Error loading themes:", error);
             }
-        },
-        async loadBlackThemes() {
+        },*/
+        /*async loadBlackThemes() {
             try {
                 const response = await fetch("/json/themes/black-themes.json");
                 this.blackThemes = await response.json();
             } catch (error) {
                 console.error("Error loading black themes:", error);
             }
-        },
+        },*/
         updateConfig() {
             this.$set(this.visuals, 'show_welcome_panel', this.showWelcome);
             this.submit();

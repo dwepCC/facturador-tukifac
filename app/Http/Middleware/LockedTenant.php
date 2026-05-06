@@ -24,7 +24,19 @@ class LockedTenant
         }
 
         if($configuration->isLockedTenant()){
+            $path = ltrim($request->path(), '/');
+            $allowed = [
+                'cuenta/payment_index',
+                'cuenta/payment_records',
+                'cuenta/info_plan',
+                'cuenta/payment_manual',
+                'cuenta/payment_culqui',
+                'cuenta/tables',
+            ];
+
+            if (!in_array($path, $allowed, true)) {
             abort(403);
+            }
         }
 
         UserControlHelper::checkActiveUser();

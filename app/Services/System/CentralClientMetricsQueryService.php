@@ -72,7 +72,31 @@ class CentralClientMetricsQueryService
                     );
                     break;
                 case 'comp_ciclo':
-                    $q->orderByRaw('COALESCE(tmc_sort.current_month_documents, 0) ' . $sortDir);
+                    $q->leftJoin('plans as plans_sort', 'plans_sort.id', '=', 'clients.plan_id');
+
+                    $docStart = $request->input('documents_date_start');
+                    $docEnd = $request->input('documents_date_end');
+
+                    if ($docStart && $docEnd) {
+                        $docsSub = '(SELECT COUNT(*) FROM client_central_documents ccd WHERE ccd.client_id = clients.id AND ccd.date_of_issue BETWEEN ? AND ?)';
+                        $snSub = '(SELECT COUNT(*) FROM client_central_sale_notes csn WHERE csn.client_id = clients.id AND csn.date_of_issue BETWEEN ? AND ?)';
+                        $q->orderByRaw(
+                            '(' . $docsSub . ' + (CASE WHEN COALESCE(plans_sort.include_sale_notes_limit_documents, 0) = 1 THEN ' . $snSub . ' ELSE 0 END)) ' . $sortDir,
+                            [$docStart, $docEnd, $docStart, $docEnd]
+                        );
+                        break;
+                    }
+
+                    $baseDate = "IF(DAY(CURDATE()) <= DAY(clients.start_billing_cycle), DATE_SUB(CURDATE(), INTERVAL 1 MONTH), CURDATE())";
+                    $cycleDay = "LEAST(DAY(clients.start_billing_cycle), DAY(LAST_DAY($baseDate)))";
+                    $cycleStart = "STR_TO_DATE(CONCAT(DATE_FORMAT($baseDate, '%Y-%m-'), LPAD($cycleDay, 2, '0')), '%Y-%m-%d')";
+                    $cycleStartExpr = "IF(clients.start_billing_cycle IS NULL, DATE_FORMAT(CURDATE(), '%Y-%m-01'), $cycleStart)";
+
+                    $docsSub = "(SELECT COUNT(*) FROM client_central_documents ccd WHERE ccd.client_id = clients.id AND ccd.date_of_issue BETWEEN $cycleStartExpr AND CURDATE())";
+                    $snSub = "(SELECT COUNT(*) FROM client_central_sale_notes csn WHERE csn.client_id = clients.id AND csn.date_of_issue BETWEEN $cycleStartExpr AND CURDATE())";
+                    $q->orderByRaw(
+                        '(' . $docsSub . ' + (CASE WHEN COALESCE(plans_sort.include_sale_notes_limit_documents, 0) = 1 THEN ' . $snSub . ' ELSE 0 END)) ' . $sortDir
+                    );
                     break;
                 case 'usuarios':
                     $q->orderByRaw('COALESCE(tmc_sort.total_users, 0) ' . $sortDir);

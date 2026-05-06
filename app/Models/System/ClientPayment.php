@@ -10,6 +10,7 @@ class ClientPayment extends Model
 
     protected $fillable = [
         'client_id',
+        'payment_order_id',
         'date_of_payment',
         'payment_method_type_id',
         'has_card',
@@ -17,6 +18,7 @@ class ClientPayment extends Model
         'reference',
         'payment',
         'state',
+        'status',
     ];
 
     protected $casts = [

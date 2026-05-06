@@ -5,7 +5,9 @@ namespace App\Http\Controllers\System;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\System\PaymentOrderCollection;
 use App\Models\System\Client;
+use App\Models\System\ClientPayment;
 use App\Models\System\Configuration;
+use App\Models\System\PaymentMethodType;
 use App\Models\System\PaymentOrder;
 use App\Models\System\PaymentOrderState;
 use App\Models\System\Plan;
@@ -135,7 +137,7 @@ class PaymentOrderController extends Controller
         ]);
 
         $order = PaymentOrder::where('client_id', $validated['client_id'])
-                    ->where('order_state_id', 1) // Pendiente   
+                    ->whereIn('order_state_id', [1, 3, 5, 6])
                     ->first();
 
         if ($order) {
@@ -161,6 +163,54 @@ class PaymentOrderController extends Controller
         
         DB::commit();
 
+        $client = Client::with('hostname')->find($validated['client_id']);
+        if ($client && $client->hostname) {
+            $client->locked_tenant = true;
+            $client->save();
+
+            $payment_method_type_id = (int) (PaymentMethodType::query()->orderBy('id')->value('id') ?? 0);
+            if ($payment_method_type_id > 0) {
+                $client_payment = ClientPayment::query()->where('payment_order_id', $or->id)->first();
+                if (!$client_payment) {
+                    $client_payment = ClientPayment::query()->create([
+                        'client_id' => $client->id,
+                        'payment_order_id' => $or->id,
+                        'date_of_payment' => $or->date_of_due,
+                        'payment_method_type_id' => $payment_method_type_id,
+                        'has_card' => false,
+                        'card_brand_id' => null,
+                        'reference' => null,
+                        'payment' => $or->amount,
+                        'state' => false,
+                        'status' => 0,
+                    ]);
+                }
+
+                $tenancy = app(Environment::class);
+                $tenancy->tenant($client->hostname->website);
+                DB::connection('tenant')->table('configurations')->where('id', 1)->update(['locked_tenant' => $client->locked_tenant]);
+
+                $exists_in_tenant = DB::connection('tenant')->table('account_payments')
+                    ->where('reference_id', $client_payment->id)
+                    ->exists();
+
+                if (!$exists_in_tenant) {
+                    DB::connection('tenant')->table('account_payments')->insert([
+                        'date_of_payment' => $client_payment->date_of_payment,
+                        'reference_id' => $client_payment->id,
+                        'payment_method_type_id' => $client_payment->payment_method_type_id,
+                        'has_card' => (bool) $client_payment->has_card,
+                        'card_brand_id' => $client_payment->card_brand_id,
+                        'reference' => $client_payment->reference,
+                        'payment' => $client_payment->payment,
+                        'state' => 0,
+                        'created_at' => now()->toDateTimeString(),
+                        'updated_at' => now()->toDateTimeString(),
+                    ]);
+                }
+            }
+        }
+
         if ($validated['notify'] && $or) {
             $this->notify($or->id);
         }
@@ -175,16 +225,48 @@ class PaymentOrderController extends Controller
     public function pays(int $id)
     {
         $model = PaymentOrder::find($id);
+        if (!$model) {
+            return [
+                'success' => false,
+                'message' => 'Orden de pago no encontrada',
+            ];
+        }
         $model->date_of_payment = now()->toDateTimeString();
         $model->order_state_id = 2;
         $model->save();
 
-        $client = $model->client;
-        $months = optional($client->period)->months ? $client->period->months : 1;
-        $ending = Carbon::parse($client->ending_billing_cycle)->addMonths($months);
-        
-        $client->ending_billing_cycle = $ending;
-        $client->save();
+        $client = Client::with(['hostname', 'period'])->find($model->client_id);
+        if ($client && $client->hostname) {
+            $client_payment = ClientPayment::query()->where('payment_order_id', $model->id)->first();
+            if ($client_payment) {
+                $client_payment->state = 1;
+                if (isset($client_payment->status)) {
+                    $client_payment->status = 2;
+                }
+                $client_payment->save();
+
+                $tenancy = app(Environment::class);
+                $tenancy->tenant($client->hostname->website);
+                DB::connection('tenant')->table('account_payments')
+                    ->where('reference_id', $client_payment->id)
+                    ->update([
+                        'state' => 1,
+                        'date_of_payment_real' => now()->toDateString(),
+                    ]);
+            }
+
+            $client->locked_tenant = false;
+
+            if (!empty($client->ending_billing_cycle)) {
+                $months = optional($client->period)->months ? $client->period->months : 1;
+                $client->ending_billing_cycle = Carbon::parse($client->ending_billing_cycle)->addMonths($months);
+            }
+            $client->save();
+
+            $tenancy = app(Environment::class);
+            $tenancy->tenant($client->hostname->website);
+            DB::connection('tenant')->table('configurations')->where('id', 1)->update(['locked_tenant' => false]);
+        }
 
 
         return [
@@ -196,9 +278,45 @@ class PaymentOrderController extends Controller
     public function cancel($id, Request $request)
     {
         $model = PaymentOrder::find($id);
+        if (!$model) {
+            return [
+                'success' => false,
+                'message' => 'Orden de pago no encontrada',
+            ];
+        }
 
         $model->order_state_id = 4;
         $model->save();
+
+        $client = Client::with('hostname')->find($model->client_id);
+        if ($client && $client->hostname) {
+            $client_payment = ClientPayment::query()->where('payment_order_id', $model->id)->first();
+            if ($client_payment) {
+                $client_payment->state = 0;
+                if (isset($client_payment->status)) {
+                    $client_payment->status = 3;
+                }
+                $client_payment->reference = null;
+                $client_payment->save();
+
+                $tenancy = app(Environment::class);
+                $tenancy->tenant($client->hostname->website);
+                DB::connection('tenant')->table('account_payments')
+                    ->where('reference_id', $client_payment->id)
+                    ->update([
+                        'state' => 0,
+                        'reference_payment' => null,
+                        'date_of_payment_real' => null,
+                    ]);
+            }
+
+            $client->locked_tenant = false;
+            $client->save();
+            $tenancy = app(Environment::class);
+            $tenancy->tenant($client->hostname->website);
+            DB::connection('tenant')->table('configurations')->where('id', 1)->update(['locked_tenant' => false]);
+        }
+
         return [
             'success' => true,
             'message' => 'Orden de pago anulada con éxito',
@@ -209,29 +327,60 @@ class PaymentOrderController extends Controller
     public function updateTable(Request $request)
     {
         $model = PaymentOrder::find($request->id);
+        if (!$model) {
+            return [
+                'success' => false,
+                'message' => 'Orden de pago no encontrada',
+            ];
+        }
+
+        $original_due_date = $model->date_of_due ? $model->date_of_due->format('Y-m-d') : null;
+        $client = Client::with('hostname')->find($model->client_id);
+        $client_payment = ClientPayment::query()->where('payment_order_id', $model->id)->first();
+
+        if (!$client_payment && $client) {
+            $payment_method_type_id = (int) (PaymentMethodType::query()->orderBy('id')->value('id') ?? 0);
+            if ($payment_method_type_id > 0) {
+                $client_payment = ClientPayment::query()->create([
+                    'client_id' => $client->id,
+                    'payment_order_id' => $model->id,
+                    'date_of_payment' => $model->date_of_due,
+                    'payment_method_type_id' => $payment_method_type_id,
+                    'has_card' => false,
+                    'card_brand_id' => null,
+                    'reference' => null,
+                    'payment' => $model->amount,
+                    'state' => false,
+                    'status' => 0,
+                ]);
+            }
+        }
 
         if ($request->date_of_due) {
             if (Carbon::parse($request->date_of_due)->greaterThan($model->date_of_due)) {
                 $model->date_of_due = $request->date_of_due;
-                $client = $model->client;
-                $client->locked_tenant = false;
-                $model->order_state_id = 1;
-                $client->save();
-                $tenancy = app(Environment::class);
-                $tenancy->tenant($client->hostname->website);
-                DB::connection('tenant')->table('configurations')->where('id', 1)->update(['locked_tenant' => $client->locked_tenant]);
+                if ($client && $client->hostname) {
+                    $client->locked_tenant = false;
+                    $client->save();
+                    $tenancy = app(Environment::class);
+                    $tenancy->tenant($client->hostname->website);
+                    DB::connection('tenant')->table('configurations')->where('id', 1)->update(['locked_tenant' => false]);
+                }
 
                 $model->order_state_id = 1;
             } else if (Carbon::parse($request->date_of_due)->lessThan($model->date_of_due))
             {
                 $model->date_of_due = $request->date_of_due;
-                $client = $model->client;
-                $client->locked_tenant = true;
-                $client->save();
+                if ($client && $client->hostname) {
+                    $client->locked_tenant = true;
+                    $client->save();
+                }
                 $model->order_state_id = 3;
-                $tenancy = app(Environment::class);
-                $tenancy->tenant($client->hostname->website);
-                DB::connection('tenant')->table('configurations')->where('id', 1)->update(['locked_tenant' => $client->locked_tenant]);
+                if ($client && $client->hostname) {
+                    $tenancy = app(Environment::class);
+                    $tenancy->tenant($client->hostname->website);
+                    DB::connection('tenant')->table('configurations')->where('id', 1)->update(['locked_tenant' => true]);
+                }
             }
         }
         if ($request->price) {
@@ -239,6 +388,57 @@ class PaymentOrderController extends Controller
         }
 
         $model->save();
+
+        if ($client_payment) {
+            $date_due_changed = (bool) $request->date_of_due && $request->date_of_due !== $original_due_date;
+            $client_payment->payment = $model->amount;
+            $client_payment->date_of_payment = $model->date_of_due;
+            if ($date_due_changed) {
+                $client_payment->state = 0;
+                if (isset($client_payment->status)) {
+                    $client_payment->status = 0;
+                }
+                $client_payment->reference = null;
+            }
+            $client_payment->save();
+
+            if ($client && $client->hostname) {
+                $tenancy = app(Environment::class);
+                $tenancy->tenant($client->hostname->website);
+
+                $exists_in_tenant = DB::connection('tenant')->table('account_payments')
+                    ->where('reference_id', $client_payment->id)
+                    ->exists();
+
+                if ($exists_in_tenant) {
+                    $update = [
+                        'date_of_payment' => $client_payment->date_of_payment,
+                        'payment' => $client_payment->payment,
+                    ];
+                    if ($date_due_changed) {
+                        $update['state'] = 0;
+                        $update['reference_payment'] = null;
+                        $update['date_of_payment_real'] = null;
+                    }
+                    DB::connection('tenant')->table('account_payments')
+                        ->where('reference_id', $client_payment->id)
+                        ->update($update);
+                } else {
+                    DB::connection('tenant')->table('account_payments')->insert([
+                        'date_of_payment' => $client_payment->date_of_payment,
+                        'reference_id' => $client_payment->id,
+                        'payment_method_type_id' => $client_payment->payment_method_type_id,
+                        'has_card' => (bool) $client_payment->has_card,
+                        'card_brand_id' => $client_payment->card_brand_id,
+                        'reference' => $client_payment->reference,
+                        'payment' => $client_payment->payment,
+                        'state' => 0,
+                        'created_at' => now()->toDateTimeString(),
+                        'updated_at' => now()->toDateTimeString(),
+                    ]);
+                }
+            }
+        }
 
         return [
             'success' => true,

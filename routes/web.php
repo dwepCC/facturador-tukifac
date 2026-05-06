@@ -773,6 +773,7 @@ if ($hostname) {
             Route::get('cuenta/payment_index', 'Tenant\AccountController@paymentIndex')->name('tenant.payment.index');
             Route::get('cuenta/configuration', 'Tenant\AccountController@index')->name('tenant.configuration.index');
             Route::get('cuenta/payment_records', 'Tenant\AccountController@paymentRecords');
+            Route::get('cuenta/payment_receipt/{id}', 'Tenant\AccountController@downloadReceipt')->name('tenant.account.payment_receipt');
             Route::get('cuenta/tables', 'Tenant\AccountController@tables');
             Route::get('cuenta/info_plan', 'Tenant\AccountController@infoPlan');
             Route::post('cuenta/update_plan', 'Tenant\AccountController@updatePlan');

@@ -937,31 +937,76 @@ function renderInfoPlan(data){
         } else {
             $('.pending-payment-section').hide();
         }
+        maybeShowPaymentReminder(data);
     }
 }
 
-function showInfoPlan(){
+function maybeShowPaymentReminder(data) {
+    if (!data || !data.show_payment_reminder) {
+        return;
+    }
+
     var userId = {!! json_encode(auth()->id()) !!};
-    var cacheKey = 'tukifac.info_plan.' + userId;
-    var ttl = 3600000;
+    var sessionNonce = {!! json_encode(csrf_token()) !!};
+    var orderStateId = (data.order_state_id === null || data.order_state_id === undefined) ? 'none' : String(data.order_state_id);
+    var reminderKey = 'tukifac.payment_reminder.' + userId + '.' + sessionNonce + '.' + orderStateId + '.' + (data.payment_date || '');
     try {
-        var cached = localStorage.getItem(cacheKey);
-        if (cached) {
-            var obj = JSON.parse(cached);
-            if (obj && obj.data && obj.cachedAt && (Date.now() - obj.cachedAt) < ttl) {
-                renderInfoPlan(obj.data);
-                return;
-            }
+        if (sessionStorage.getItem(reminderKey) === '1') {
+            return;
         }
+        sessionStorage.setItem(reminderKey, '1');
     } catch (e) {}
+
+    var supportWhatsapp = {!! json_encode($supportUser && $supportUser->whatsapp_number ? $supportUser->whatsapp_number : null) !!};
+    var supportPhone = {!! json_encode($supportUser && $supportUser->phone ? $supportUser->phone : null) !!};
+    var supportUrl = null;
+    if (supportWhatsapp) {
+        supportUrl = 'https://wa.me/' + supportWhatsapp;
+    } else if (supportPhone) {
+        supportUrl = 'tel:' + supportPhone;
+    }
+
+    var daysText = (data.days_remaining === 1) ? '1 día' : (data.days_remaining + ' días');
+    var title = 'Recordatorio de pago';
+    var html = ''
+        + '<div style="text-align:left;">'
+        + '<div style="margin-bottom:8px;">Tu próximo pago vence el <strong>' + (data.payment_date || '-') + '</strong>.</div>'
+        + '<div style="margin-bottom:8px;">Faltan <strong>' + daysText + '</strong> para tu fecha de pago.</div>'
+        + '<div style="margin-bottom:8px;">Si se vence el plazo, al día siguiente ya no podrás utilizar el sistema.</div>'
+        + '<div>Realiza el pago desde <a href="/cuenta/payment_index">Mis Pagos</a> o contáctanos si necesitas ayuda.</div>'
+        + '</div>';
+
+    if (typeof swal !== 'function') {
+        return;
+    }
+
+    swal({
+        title: title,
+        html: html,
+        type: 'warning',
+        showCancelButton: !!supportUrl,
+        confirmButtonText: 'Ir a pagos',
+        cancelButtonText: 'Soporte',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#28a745',
+        allowOutsideClick: true,
+    }).then(function(result) {
+        if (result && result.value) {
+            window.location.href = '/cuenta/payment_index';
+            return;
+        }
+        if (supportUrl) {
+            window.open(supportUrl, '_blank');
+        }
+    });
+}
+
+function showInfoPlan(){
     $.ajax({
         url: "{{ url('cuenta/info_plan') }}",
         method: 'get',
         dataType: 'JSON',
         success: function (data) {
-            try {
-                localStorage.setItem(cacheKey, JSON.stringify({data: data, cachedAt: Date.now()}));
-            } catch (e) {}
             renderInfoPlan(data);
         },
         error: function (error_data) {
@@ -973,12 +1018,17 @@ function showInfoPlan(){
 $(document).ready(function() {
     showInfoPlan();
     try {
-        var userId = {!! json_encode(auth()->id()) !!};
-        var cacheKey = 'tukifac.info_plan.' + userId;
         var forms = document.querySelectorAll('form#logout-form');
         forms.forEach(function(f){
             f.addEventListener('submit', function(){
-                try { localStorage.removeItem(cacheKey); } catch(e) {}
+                try {
+                    for (var i = sessionStorage.length - 1; i >= 0; i--) {
+                        var k = sessionStorage.key(i);
+                        if (k && k.indexOf('tukifac.payment_reminder.') === 0) {
+                            sessionStorage.removeItem(k);
+                        }
+                    }
+                } catch (e) {}
             });
         });
     } catch(e) {}

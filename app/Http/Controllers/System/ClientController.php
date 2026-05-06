@@ -21,17 +21,17 @@
     use Illuminate\Http\Request;
     use Illuminate\Support\Collection;
     use Illuminate\Support\Facades\DB;
+    use Illuminate\Support\Facades\Storage;
     use Modules\Document\Helpers\DocumentHelper;
     use Modules\MobileApp\Models\System\AppModule;
     use App\CoreFacturalo\ClientHelper;
     use Illuminate\Support\Str;
-    use Illuminate\Support\Facades\Cache;
-    use App\Helpers\GuestRegisterHelper;
 use App\Models\System\ClientPayment;
 use App\Models\System\PlanPeriod;
 use App\Services\System\CentralClientMetricsQueryService;
 use App\Services\System\TenantStoragePermissionService;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 
     class ClientController extends Controller
     {
@@ -452,7 +452,7 @@ public function records(Request $request)
                     try {
                         // Verificar que el cliente tenga hostname y website válidos
                         if (!$row->hostname || !$row->hostname->website) {
-                            \Log::warning("Cliente {$row->number} no tiene hostname válido");
+                            Log::warning("Cliente {$row->number} no tiene hostname válido");
                             continue;
                         }
 
@@ -461,7 +461,7 @@ public function records(Request $request)
                         
                         // Verificar que la conexión tenant esté disponible
                         if (!DB::connection('tenant')->getDatabaseName()) {
-                            \Log::warning("Cliente {$row->number} no tiene base de datos configurada");
+                            Log::warning("Cliente {$row->number} no tiene base de datos configurada");
                             continue;
                         }
 
@@ -483,7 +483,7 @@ public function records(Request $request)
                         }
                     } catch (\Exception $e) {
                         // Registrar el error pero continuar con los demás clientes
-                        \Log::warning("Error al procesar cliente {$row->number}: " . $e->getMessage());
+                        Log::warning("Error al procesar cliente {$row->number}: " . $e->getMessage());
                         continue;
                     }
                 }
@@ -513,7 +513,7 @@ public function records(Request $request)
                 return compact('line', 'total_documents');
                 
             } catch (\Exception $e) {
-                \Log::error("Error general en charts(): " . $e->getMessage());
+                Log::error("Error general en charts(): " . $e->getMessage());
                 
                 // Devolver datos vacíos en caso de error
                 $line = [
@@ -755,7 +755,7 @@ public function records(Request $request)
             // Establecer tiempo de ejecución manual para evitar timeout
             set_time_limit(3600); // 60 minutos
             ini_set('memory_limit', '2048M');
-            \Log::info('=== INICIO STORE CLIENT ===', ['timestamp' => now()]);
+            Log::info('=== INICIO STORE CLIENT ===', ['timestamp' => now()]);
 
             $hostname = new Hostname();
             $website = new Website();
@@ -763,12 +763,12 @@ public function records(Request $request)
             try {
                 $temp_path = $request->input('temp_path');
                 $configuration = Configuration::first();
-                \Log::info('Configuración obtenida', ['config_id' => $configuration->id ?? 'null']);
+                Log::info('Configuración obtenida', ['config_id' => $configuration->id ?? 'null']);
 
                 $name_certificate = $configuration->certificate;
 
                 if ($temp_path) {
-                    \Log::info('Procesando certificado', ['temp_path' => $temp_path]);
+                    Log::info('Procesando certificado', ['temp_path' => $temp_path]);
                     try {
                         $number = $request->input('number');
                         $password = $request->input('password_certificate');
@@ -777,10 +777,10 @@ public function records(Request $request)
                         $name = 'certificate_' . 'admin_tenant'. "_$number" . '.pem';
                         $this->persistSystemCertificatePem($pem, $name);
                         $name_certificate = $name;
-                        \Log::info('Certificado procesado exitosamente', ['name' => $name]);
+                        Log::info('Certificado procesado exitosamente', ['name' => $name]);
 
                     } catch (Exception $e) {
-                        \Log::error('Error procesando certificado', ['error' => $e->getMessage()]);
+                        Log::error('Error procesando certificado', ['error' => $e->getMessage()]);
                         return [
                             'success' => false,
                             'message' => $e->getMessage()
@@ -791,25 +791,25 @@ public function records(Request $request)
                 $subDom = strtolower($request->input('subdomain'));
                 $uuid = config('tenant.prefix_database') . '_' . $subDom;
                 $fqdn = $subDom . '.' . config('tenant.app_url_base');
-                \Log::info('Variables de tenant creadas', ['uuid' => $uuid, 'fqdn' => $fqdn]);
+                Log::info('Variables de tenant creadas', ['uuid' => $uuid, 'fqdn' => $fqdn]);
 
                 $this->validateWebsite($uuid, $website);
-                \Log::info('Validación de website completada');
+                Log::info('Validación de website completada');
 
-                \Log::info('Creando website...');
+                Log::info('Creando website...');
                 $website->uuid = $uuid;
                 app(WebsiteRepository::class)->create($website);
-                \Log::info('Website creado', ['website_id' => $website->id]);
+                Log::info('Website creado', ['website_id' => $website->id]);
 
-                \Log::info('Creando y asociando hostname...');
+                Log::info('Creando y asociando hostname...');
                 $hostname->fqdn = $fqdn;
                 $hostname = app(HostnameRepository::class)->create($hostname);
                 app(HostnameRepository::class)->attach($hostname, $website);
-                \Log::info('Hostname creado y asociado', ['hostname_id' => $hostname->id]);
+                Log::info('Hostname creado y asociado', ['hostname_id' => $hostname->id]);
 
                 $token = Str::random(50);
 
-                \Log::info('Creando cliente...');
+                Log::info('Creando cliente...');
                 $client = Client::query()->create([
                     'hostname_id' => $hostname->id,
                     'token' => $token,
@@ -827,16 +827,16 @@ public function records(Request $request)
                     'phone_ws' => $request->input('phone_ws'),
                     'contact_email' => $request->input('contact_email') ? $request->input('contact_email') : $request->input('email'),
                 ]);
-                \Log::info('Cliente creado', ['client_id' => $client->id]);
+                Log::info('Cliente creado', ['client_id' => $client->id]);
 
                 $client->createPayemtnOrder();
-                \Log::info('Configurando tenancy...');
+                Log::info('Configurando tenancy...');
                 $tenancy = app(Environment::class);
                 $tenancy->tenant($website);
-                \Log::info('Tenancy configurado');
+                Log::info('Tenancy configurado');
 
-                \Log::info('=== INICIANDO OPERACIONES EN TENANT DATABASE ===');
-                \Log::info('Insertando company...');
+                Log::info('=== INICIANDO OPERACIONES EN TENANT DATABASE ===');
+                Log::info('Insertando company...');
                 DB::connection('tenant')->table('companies')->insert([
                     'identity_document_type_id' => '6',
                     'number' => $request->input('number'),
@@ -850,7 +850,7 @@ public function records(Request $request)
                     'certificate' => $name_certificate, 
                 ]);
 
-                \Log::info('Company insertada');
+                Log::info('Company insertada');
 
             $plan = Plan::findOrFail($request->input('plan_id'));
             $http = config('tenant.force_https') == true ? 'https://' : 'http://';
@@ -858,7 +858,7 @@ public function records(Request $request)
             // Definir variable para registro de invitado
             $from_guest_register = $request->input('from_guest_register', false);
 
-            \Log::info('Insertando configuración...');
+            Log::info('Insertando configuración...');
             DB::connection('tenant')->table('configurations')->insert([
                 'send_auto' => true,
                 'locked_emission' => $request->input('locked_emission'),
@@ -899,9 +899,9 @@ public function records(Request $request)
                 'quantity_sales_notes' => 0,
                 'from_guest_register' => $from_guest_register
             ]);
-            \Log::info('Configuración insertada');
+            Log::info('Configuración insertada');
 
-            \Log::info('Insertando establishment...');
+            Log::info('Insertando establishment...');
             $establishment_id = DB::connection('tenant')->table('establishments')->insertGetId([
                 'description' => 'Oficina Principal',
                 'country_id' => 'PE',
@@ -915,9 +915,9 @@ public function records(Request $request)
                 'template_pdf' => 'default_exito',
                 'template_ticket_pdf' => 'default_exito',
             ]);
-            \Log::info('Establishment insertado', ['establishment_id' => $establishment_id]);
+            Log::info('Establishment insertado', ['establishment_id' => $establishment_id]);
 
-            \Log::info('Insertando warehouse...');
+            Log::info('Insertando warehouse...');
             // Asegurar que la conexión use UTF-8 correctamente
             DB::connection('tenant')->statement('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
             // Asegurar codificación UTF-8 correcta para la descripción
@@ -932,9 +932,9 @@ public function records(Request $request)
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            \Log::info('Warehouse insertado');
+            Log::info('Warehouse insertado');
 
-            \Log::info('Insertando series...');
+            Log::info('Insertando series...');
             DB::connection('tenant')->table('series')->insert([
                 ['establishment_id' => 1, 'document_type_id' => '01', 'number' => 'F001'],
                 ['establishment_id' => 1, 'document_type_id' => '03', 'number' => 'B001'],
@@ -953,9 +953,9 @@ public function records(Request $request)
                 ['establishment_id' => 1, 'document_type_id' => 'U3', 'number' => 'NSA1'],
                 ['establishment_id' => 1, 'document_type_id' => 'U4', 'number' => 'NTA1'],
             ]);
-            \Log::info('Series insertadas');
+            Log::info('Series insertadas');
 
-            \Log::info('Insertando usuario...');
+            Log::info('Insertando usuario...');
             $user_id = DB::connection('tenant')->table('users')->insert([
                 'name' => 'Administrador',
                 'email' => $request->input('email'),
@@ -968,9 +968,9 @@ public function records(Request $request)
                 'last_password_update' => date('Y-m-d H:i:s'),
                 'from_guest_register' => $from_guest_register
             ]);
-            \Log::info('Usuario insertado', ['user_id' => $user_id]);
+            Log::info('Usuario insertado', ['user_id' => $user_id]);
 
-            \Log::info('Configurando módulos y permisos...');
+            Log::info('Configurando módulos y permisos...');
             if ($request->input('type') == 'admin') {
                 $array_modules = [];
                 $array_levels = [];
@@ -984,26 +984,26 @@ public function records(Request $request)
                         'module_level_id' => $level, 'user_id' => $user_id
                     ]);
                 }
-                \Log::info('Insertando módulos de usuario...');
+                Log::info('Insertando módulos de usuario...');
                 DB::connection('tenant')->table('module_user')->insert($array_modules);
-                \Log::info('Insertando niveles de usuario...');
+                Log::info('Insertando niveles de usuario...');
                 DB::connection('tenant')->table('module_level_user')->insert($array_levels);
 
-                \Log::info('Insertando módulos de app...');
+                Log::info('Insertando módulos de app...');
                 $this->insertAppModules($user_id);
-                \Log::info('Módulos de app insertados');
+                Log::info('Módulos de app insertados');
 
             } else {
-                \Log::info('Insertando módulos básicos para integrator...');
+                Log::info('Insertando módulos básicos para integrator...');
                 DB::connection('tenant')->table('module_user')->insert([
                     ['module_id' => 1, 'user_id' => $user_id],
                     ['module_id' => 3, 'user_id' => $user_id],
                     ['module_id' => 5, 'user_id' => $user_id],
                 ]);
-                \Log::info('Módulos básicos insertados');
+                Log::info('Módulos básicos insertados');
             }
 
-            \Log::info('=== CLIENTE REGISTRADO EXITOSAMENTE ===', ['timestamp' => now()]);
+            Log::info('=== CLIENTE REGISTRADO EXITOSAMENTE ===', ['timestamp' => now()]);
 
             TenantStoragePermissionService::applyToTenantUuid($website->uuid);
 
@@ -1013,7 +1013,7 @@ public function records(Request $request)
             ];
 
         } catch (Exception $e) {
-            \Log::error('Error en store client', ['error' => $e->getMessage()]);
+            Log::error('Error en store client', ['error' => $e->getMessage()]);
             app(HostnameRepository::class)->delete($hostname, true);
             app(WebsiteRepository::class)->delete($website, true);
             return [
@@ -1337,34 +1337,63 @@ public function records(Request $request)
             return $this->generalResponse(true, 'Aun puede registrar más clientes');
         }
 
-    /*tikifac*/ 
-    public function recordsListPending()
+    /*tikifac*/
+    public function recordsListPending(Request $request)
     {
-        $records = DB::table('client_payments')
+        $per_page = (int) $request->get('per_page', 10);
+        if ($per_page < 5) {
+            $per_page = 5;
+        }
+        if ($per_page > 100) {
+            $per_page = 100;
+        }
+
+        $query = DB::table('client_payments')
             ->where('client_payments.state', '0')
+            ->where(function ($q) {
+                $q->where('client_payments.status', 1)
+                    ->orWhere(function ($q) {
+                        $q->whereNull('client_payments.status')
+                            ->whereNotNull('client_payments.reference');
+                    });
+            })
             ->join('clients', 'client_payments.client_id', '=', 'clients.id')
+            ->leftJoin('hostnames', 'clients.hostname_id', '=', 'hostnames.id')
             ->select(
                 'client_payments.id',
                 'client_payments.client_id',
+                'client_payments.payment_order_id',
                 'client_payments.date_of_payment',
                 'client_payments.payment',
-                'client_payments.reference', 
+                'client_payments.reference',
                 'client_payments.updated_at',
                 'clients.name as client_name',
                 'clients.number as client_ruc',
                 'clients.hostname_id',
-                'clients.email'
+                'clients.email',
+                'hostnames.fqdn as hostname'
             )
-            ->get();
+            ->orderByDesc('client_payments.updated_at')
+            ->orderByDesc('client_payments.id');
+
+        $records = $query->paginate($per_page);
 
         return response()->json([
             'success' => true,
-            'records' => $records
+            'records' => $records->items(),
+            'pagination' => [
+                'total' => $records->total(),
+                'per_page' => $records->perPage(),
+                'current_page' => $records->currentPage(),
+                'last_page' => $records->lastPage(),
+                'from' => $records->firstItem(),
+                'to' => $records->lastItem(),
+            ],
         ]);
     }
 
     // Método para aprobar pagos
-    public function approvePayment($id)
+    public function approvePayment(Request $request, $id)
     {
         try {
             // 1. Buscar el pago en la base de datos central
@@ -1387,8 +1416,27 @@ public function records(Request $request)
                 ]);
             }
 
-            // 3. Aprobar en la base de datos central
-            $payment->state = 1; // Aprobado
+            $request->validate([
+                'receipt_pdf' => 'required|file|mimes:pdf|max:5120',
+            ]);
+
+            $receiptPath = null;
+            $receiptFile = $request->file('receipt_pdf');
+            $receiptDir = 'payment_receipts/client_' . $payment->client_id;
+            $receiptName = 'payment_' . $payment->id . '_' . now()->format('Ymd_His') . '_' . Str::random(8) . '.pdf';
+            $receiptPath = Storage::disk('public')->putFileAs($receiptDir, $receiptFile, $receiptName);
+            if (!$receiptPath) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se pudo guardar el comprobante PDF. Intente nuevamente.'
+                ], 422);
+            }
+
+            $payment->state = 1;
+            if (isset($payment->status)) {
+                $payment->status = 2;
+            }
+            $payment->receipt_pdf = $receiptPath;
             $payment->save();
 
             // 4. Cambiar a la conexión del tenant y aprobar en su base de datos
@@ -1401,18 +1449,62 @@ public function records(Request $request)
                 ->table('account_payments')
                 ->where('reference_id', $payment->id)
                 //->where('date_of_payment', $payment->date_of_payment)
-                ->update(['state' => 1]);
+                ->update([
+                    'state' => 1,
+                    'date_of_payment_real' => now()->toDateString(),
+                    'receipt_pdf' => $receiptPath,
+                    'reference' => 'Su pago ha sido verificado correctamente',
+                ]);
 
             // Verificar si se actualizó algún registro en el tenant
             if ($accountPaymentUpdated === 0) {
                 // Revertir el cambio en la base de datos central si no se encontró en tenant
                 $payment->state = 0;
+                if (isset($payment->status)) {
+                    $payment->status = 1;
+                }
+                $payment->receipt_pdf = null;
                 $payment->save();
+                if (!empty($receiptPath)) {
+                    Storage::disk('public')->delete($receiptPath);
+                }
                 
                 return response()->json([
                     'success' => false,
                     'message' => 'No se encontró el pago correspondiente en la base de datos del tenant'
                 ]);
+            }
+
+            $payment_order_id = $payment->payment_order_id;
+            if (empty($payment_order_id)) {
+                $payment_order_id = \App\Models\System\PaymentOrder::query()
+                    ->where('client_id', $payment->client_id)
+                    ->whereDate('date_of_due', $payment->date_of_payment)
+                    ->orderByDesc('id')
+                    ->value('id');
+            }
+
+            if (!empty($payment_order_id)) {
+                $order = \App\Models\System\PaymentOrder::find($payment_order_id);
+                if ($order) {
+                    $order->date_of_payment = now()->toDateTimeString();
+                    $order->order_state_id = 2;
+                    $order->save();
+                }
+            }
+
+            $client->locked_tenant = false;
+            $client->save();
+
+            DB::connection('tenant')->table('configurations')->where('id', 1)->update(['locked_tenant' => false]);
+
+            if (!empty($payment_order_id)) {
+                $order = \App\Models\System\PaymentOrder::find($payment_order_id);
+                if ($order && $order->date_of_due) {
+                    $months = optional($client->period)->months ? $client->period->months : 1;
+                    $client->ending_billing_cycle = \Carbon\Carbon::parse($order->date_of_due)->addMonths($months);
+                    $client->save();
+                }
             }
 
             return response()->json([
@@ -1424,7 +1516,16 @@ public function records(Request $request)
             // Si hay error, intentar revertir cambios
             if (isset($payment) && $payment->state == 1) {
                 $payment->state = 0;
+                if (isset($payment->status)) {
+                    $payment->status = 1;
+                }
+                if (isset($payment->receipt_pdf)) {
+                    $payment->receipt_pdf = null;
+                }
                 $payment->save();
+            }
+            if (isset($receiptPath) && !empty($receiptPath)) {
+                Storage::disk('public')->delete($receiptPath);
             }
             
             return response()->json([
@@ -1435,7 +1536,7 @@ public function records(Request $request)
     }
 
     // Método para rechazar pagos
-    public function rejectPayment($id)
+    public function rejectPayment(Request $request, $id)
     {
         try {
             // 1. Buscar el pago en la base de datos central
@@ -1458,9 +1559,20 @@ public function records(Request $request)
                 ]);
             }
 
-            // 3. Rechazar en la base de datos central
-            $payment->state = '0'; // Rechazado
-            $payment->reference = null; // Rechazado
+            $request->validate([
+                'reason' => 'nullable|string|max:255',
+            ]);
+            $reason = trim((string) $request->input('reason', ''));
+            if ($reason === '') {
+                $reason = 'Su pago fue rechazado. Por favor, vuelva a enviar un comprobante válido.';
+            }
+            $voucherUrlToDelete = (string) ($payment->reference ?? '');
+
+            $payment->state = 0;
+            if (isset($payment->status)) {
+                $payment->status = 3;
+            }
+            $payment->reference = null;
             $payment->save();
 
             // 4. Cambiar a la conexión del tenant y rechazar en su base de datos
@@ -1474,20 +1586,80 @@ public function records(Request $request)
                 ->where('reference_id', $payment->id)
                 //->where('date_of_payment', $payment->date_of_payment)
                 ->update([
-                    'state' => '0', // Rechazado
-                    'reference_payment' => null // Establecer como null al rechazar
+                    'state' => 0,
+                    'reference_payment' => null,
+                    'date_of_payment_real' => null,
+                    'reference' => $reason,
                 ]);
 
             // Verificar si se actualizó algún registro en el tenant
             if ($accountPaymentUpdated === 0) {
                 // Revertir el cambio en la base de datos central si no se encontró en tenant
                 $payment->state = 0; // Volver al estado original
+                if (isset($payment->status)) {
+                    $payment->status = 1;
+                }
                 $payment->save();
                 
                 return response()->json([
                     'success' => false,
                     'message' => 'No se encontró el pago correspondiente en la base de datos del tenant'
                 ]);
+            }
+
+            $payment_order_id = $payment->payment_order_id;
+            if (empty($payment_order_id)) {
+                $payment_order_id = \App\Models\System\PaymentOrder::query()
+                    ->where('client_id', $payment->client_id)
+                    ->whereDate('date_of_due', $payment->date_of_payment)
+                    ->orderByDesc('id')
+                    ->value('id');
+            }
+
+            if (!empty($payment_order_id)) {
+                $order = \App\Models\System\PaymentOrder::find($payment_order_id);
+                if ($order) {
+                    $order->order_state_id = 6;
+                    $order->description = $reason;
+                    $order->save();
+                }
+            }
+
+            $client->locked_tenant = true;
+            if (!empty($payment_order_id)) {
+                $order = \App\Models\System\PaymentOrder::find($payment_order_id);
+                if ($order && $order->date_of_due) {
+                    $client->ending_billing_cycle = \Carbon\Carbon::parse($order->date_of_due);
+                }
+            }
+            $client->save();
+
+            DB::connection('tenant')->table('configurations')->where('id', 1)->update(['locked_tenant' => true]);
+
+            if (!empty($voucherUrlToDelete)) {
+                try {
+                    $cleanUrl = preg_replace('/\?.*$/', '', $voucherUrlToDelete);
+                    $relativePath = null;
+
+                    if (Str::startsWith($cleanUrl, ['payment_vouchers/', 'payment_vouchers\\'])) {
+                        $relativePath = $cleanUrl;
+                    } else {
+                        $pos = strpos($cleanUrl, '/storage/');
+                        if ($pos !== false) {
+                            $relativePath = substr($cleanUrl, $pos + strlen('/storage/'));
+                        } else {
+                            $pos = strpos($cleanUrl, 'storage/');
+                            if ($pos !== false) {
+                                $relativePath = substr($cleanUrl, $pos + strlen('storage/'));
+                            }
+                        }
+                    }
+
+                    if (!empty($relativePath)) {
+                        Storage::disk('public')->delete($relativePath);
+                    }
+                } catch (\Throwable $e) {
+                }
             }
 
             return response()->json([
@@ -1497,8 +1669,11 @@ public function records(Request $request)
 
         } catch (\Exception $e) {
             // Si hay error, intentar revertir cambios
-            if (isset($payment) && $payment->state == 2) {
-                $payment->state = 0; // Volver al estado original
+            if (isset($payment)) {
+                $payment->state = 0;
+                if (isset($payment->status) && (int) $payment->status === 3) {
+                    $payment->status = 1;
+                }
                 $payment->save();
             }
             

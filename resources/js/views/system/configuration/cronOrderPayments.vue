@@ -150,7 +150,7 @@ export default {
     methods: {
         submit(){
             this.loading_submit = true;
-            this.$http.post(`${this.resource}/`, this.form)
+            this.$http.post(`/${this.resource}`, this.form)
                 .then(response => {
                     if (response.data.success) {
                         return this.$message.success('Configuración guardada correctamente');
