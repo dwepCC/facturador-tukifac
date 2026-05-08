@@ -36,7 +36,7 @@ class EcommerceController extends Controller
      * @return Response
      */
     public function __construct(){
-        return view()->share('records', Item::where('apply_store', 1)->orderBy('id', 'DESC')->take(2)->get());
+    //    return view()->share('records', Item::where('apply_store', 1)->orderBy('id', 'DESC')->take(2)->get());
     }
 
     // public function index()
