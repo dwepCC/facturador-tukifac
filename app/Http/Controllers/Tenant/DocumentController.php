@@ -121,7 +121,7 @@ class DocumentController extends Controller
     {
         $records = $this->getRecords($request);
 
-        //return new DocumentCollection($records->paginate(config('tenant.items_per_page')));
+        // Igual que DOCUMENTACION_ENDPOINTS_LISTAS.md (DataTableDocuments): `limit` en query se ignora; siempre 10 por página.
         return new DocumentCollection($records->paginate(10));
     }
 
@@ -1249,6 +1249,50 @@ class DocumentController extends Controller
         ];
     }
 
+    /**
+     * Rango de fechas seguro para filtros (evita whereBetween con strings basura del cliente: "undefined", "null", etc.).
+     *
+     * @return array{0:string,1:string}|null [Y-m-d, Y-m-d]
+     */
+    protected function parseDocumentListDateRange($d_start, $d_end): ?array
+    {
+        if ($d_start === null || $d_end === null || $d_start === '' || $d_end === '') {
+            return null;
+        }
+        $junk = ['undefined', 'null', 'nil', 'nan'];
+        if (in_array(strtolower((string) $d_start), $junk, true) || in_array(strtolower((string) $d_end), $junk, true)) {
+            return null;
+        }
+        try {
+            $start = Carbon::parse($d_start)->format('Y-m-d');
+            $end = Carbon::parse($d_end)->format('Y-m-d');
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return [$start, $end];
+    }
+
+    /**
+     * Indica si el parámetro de filtro debe aplicarse. Valores tipo "all", "todos", etc. = sin filtro (mostrar todo).
+     */
+    protected function shouldApplyDocumentListFilter($value): bool
+    {
+        if ($value === null || $value === '' || $value === []) {
+            return false;
+        }
+        if (is_array($value)) {
+            $value = count($value) === 1 ? reset($value) : implode(',', $value);
+        }
+        $v = strtolower(trim((string) $value));
+        $ignored = [
+            'all', 'todos', 'todo', 'any', 'todas', 'ninguno', 'ninguna', '-1', '*',
+            'undefined', 'null', 'nil', 'nan', '',
+        ];
+
+        return ! in_array($v, $ignored, true);
+    }
+
     public function getRecords($request)
     {
         $d_end = $request->d_end;
@@ -1269,26 +1313,27 @@ class DocumentController extends Controller
 
 //        return $observations;
         $records = Document::query();
-        if ($d_start && $d_end) {
-            $records->whereBetween('date_of_issue', [$d_start, $d_end]);
+        $dateRange = $this->parseDocumentListDateRange($d_start, $d_end);
+        if ($dateRange !== null) {
+            $records->whereBetween('date_of_issue', $dateRange);
         }
-        if ($date_of_issue) {
-            $records = Document::where('date_of_issue', 'like', '%' . $date_of_issue . '%');
+        if ($this->shouldApplyDocumentListFilter($date_of_issue)) {
+            $records->where('date_of_issue', 'like', '%' . $date_of_issue . '%');
         }
         /** @var Builder $records */
-        if ($document_type_id) {
+        if ($this->shouldApplyDocumentListFilter($document_type_id)) {
             $records->where('document_type_id', 'like', '%' . $document_type_id . '%');
         }
-        if ($series) {
+        if ($this->shouldApplyDocumentListFilter($series)) {
             $records->where('series', 'like', '%' . $series . '%');
         }
-        if ($number) {
+        if ($this->shouldApplyDocumentListFilter($number)) {
             $records->where('number', $number);
         }
-        if ($state_type_id) {
+        if ($this->shouldApplyDocumentListFilter($state_type_id)) {
             $records->where('state_type_id', 'like', '%' . $state_type_id . '%');
         }
-        if ($purchase_order) {
+        if ($this->shouldApplyDocumentListFilter($purchase_order)) {
             $records->where('purchase_order', $purchase_order);
         }
         
@@ -1311,38 +1356,39 @@ class DocumentController extends Controller
             'note.affected_document:id,series,number',
             'sale_note:id,number,series,state_type_id',
         ]);
-        
-        $records->whereTypeUser()->latest();
+
+        // Misma base que GET documents/lists (API): whereTypeUser + orden por fecha de emisión.
+        $records->whereTypeUser()->orderBy('date_of_issue', 'desc');
 
         if ($pending_payment) {
             $records->where('total_canceled', false);
         }
 
-        if ($customer_id) {
+        if ($this->shouldApplyDocumentListFilter($customer_id)) {
             $records->where('customer_id', $customer_id);
         }
 
-        if ($item_id) {
+        if ($this->shouldApplyDocumentListFilter($item_id)) {
             $records->whereHas('items', function ($query) use ($item_id) {
                 $query->where('item_id', $item_id);
             });
         }
 
-        if ($category_id) {
+        if ($this->shouldApplyDocumentListFilter($category_id)) {
             $records->whereHas('items', function ($query) use ($category_id) {
                 $query->whereHas('relation_item', function ($q) use ($category_id) {
                     $q->where('category_id', $category_id);
                 });
             });
         }
-        if (!empty($guides)) {
+        if ($this->shouldApplyDocumentListFilter($guides)) {
             $records->where('guides', 'like', DB::raw("%\"number\":\"%") . $guides . DB::raw("%\"%"));
         }
-        if ($plate_numbers) {
+        if ($this->shouldApplyDocumentListFilter($plate_numbers)) {
             $records->where('plate_number', 'like', '%' . $plate_numbers . '%');
         }
 
-        if ($observations) {
+        if ($this->shouldApplyDocumentListFilter($observations)) {
             $records = $records->where('additional_information', 'like', '%' . $observations . '%');
         }
 

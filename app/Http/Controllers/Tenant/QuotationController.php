@@ -116,40 +116,47 @@ class QuotationController extends Controller
                 $q->where('name', 'like', "%{$value}%");
             })
                 ->whereTypeUser();
-        } else if ($column === 'customer') {
+        } elseif ($column === 'customer') {
             $query->whereHas('person', function ($q) use ($value) {
                 $q->where('name', 'like', "%{$value}%")
                     ->orWhere('number', 'like', "%{$value}%");
             })
                 ->whereTypeUser();
 
-        } else if ($column === 'seller_name') {
+        } elseif ($column === 'seller_name') {
             $query->whereHas('seller', function ($q) use ($value) {
                 $q->where('name', 'like', "%{$value}%");
             });
-        } else if ($column === 'observations') {
+        } elseif ($column === 'observations') {
             if (!is_null($value) && $value !== '') {
                 $query->where('description', 'like', "%{$value}%");
             }
-        } else if ($column === 'number') {
+        } elseif ($column === 'number') {
             if (!is_null($value) && $value !== '') {
                 $query->where('id', $value);
             }
-        } else {
+        } elseif ($column) {
             $query->where($column, 'like', "%{$value}%")
                 ->whereTypeUser();
+        } else {
+            $query->whereTypeUser();
         }
 
         $records = $query->latest();
 
-        $form = json_decode($request->form);
+        $form = $request->filled('form') ? json_decode($request->input('form'), false) : null;
+        if (!is_object($form)) {
+            $form = (object) [];
+        }
 
-        if ($form->date_start && $form->date_end) {
+        if (!empty($form->date_start) && !empty($form->date_end)) {
             $records = $records->whereBetween('date_of_issue', [$form->date_start, $form->date_end]);
         }
 
         $state_type_id = $form->state_type_id ?? null;
-        if ($state_type_id) $records->where('state_type_id', $state_type_id);
+        if ($state_type_id) {
+            $records->where('state_type_id', $state_type_id);
+        }
 
         return $records;
     }

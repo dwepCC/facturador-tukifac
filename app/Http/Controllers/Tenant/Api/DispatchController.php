@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Tenant\Api;
 
 use App\CoreFacturalo\Facturalo;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Tenant\DispatchCollection;
 use App\Models\Tenant\Dispatch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -133,20 +132,13 @@ class DispatchController extends Controller
         return compact('establishments', 'origin_addresses' , 'transportModeTypes', 'transferReasonTypes', 'unitTypes', 'dispatchers','transports','drivers');
     }
 
+    /**
+     * Lista paginada de guías (misma lógica que GET /dispatches/records en WEB).
+     * Parámetros: customer_id, series, number, d_start, d_end, page; opcional document_type_id (por defecto "09").
+     */
     public function records(Request $request)
     {
-        $input = $request->input;
-        $document_type_id = $request->input('document_type_id', '09');
-
-        $records = Dispatch::query()
-            ->where('document_type_id', $document_type_id)
-            ->when($input, function ($query) use ($input) {
-                return $query
-                    ->where('series', 'like', '%' . $input . '%')
-                    ->orWhere('number', 'like', '%' . $input . '%');
-            })
-            ->latest();
-        return new DispatchCollection($records->paginate(config('tenant.items_per_page')));
+        return app(\App\Http\Controllers\Tenant\DispatchController::class)->records($request);
     }
 
 }

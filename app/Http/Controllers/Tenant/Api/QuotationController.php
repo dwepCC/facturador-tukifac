@@ -17,7 +17,14 @@ use App\Http\Controllers\Tenant\EmailController;
 
 class QuotationController extends Controller
 {
-    
+    /**
+     * Lista paginada de cotizaciones (misma lógica y filtros que GET /quotations/records en WEB).
+     */
+    public function records(Request $request)
+    {
+        return app(QuotationControllerWeb::class)->records($request);
+    }
+
     /**
      * 
      * Listado de cotizaciones (app)

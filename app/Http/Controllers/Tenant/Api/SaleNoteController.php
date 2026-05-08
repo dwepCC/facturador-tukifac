@@ -54,6 +54,14 @@ class SaleNoteController extends Controller
 
     protected $company;
 
+    /**
+     * Lista paginada de notas de venta (misma lógica y filtros que GET /sale-notes/records en WEB).
+     */
+    public function records(Request $request)
+    {
+        return app(\App\Http\Controllers\Tenant\SaleNoteController::class)->records($request);
+    }
+
     public function lists(Request $request)
     {
 

@@ -30,6 +30,14 @@ class DocumentController extends Controller
         $this->middleware('input.request:document,api', ['only' => ['store', 'storeServer']]);
     }
 
+    /**
+     * Lista paginada de comprobantes (misma lógica y filtros que GET /documents/records en WEB).
+     */
+    public function records(Request $request)
+    {
+        return app(\App\Http\Controllers\Tenant\DocumentController::class)->records($request);
+    }
+
     public function store(Request $request)
     {
         // Validación de caja
@@ -505,25 +513,24 @@ class DocumentController extends Controller
         ];
     }
 
+    /**
+     * Legacy según DOCUMENTACION_ENDPOINTS_LISTAS.md: sin paginación; sin fechas en ruta = take(50);
+     * con {startDate}/{endDate} = todos los comprobantes en el rango (whereBetween), sin límite.
+     */
     public function lists($startDate = null, $endDate = null)
     {
-
-        if ($startDate == null)
-        {
+        if ($startDate === null || $endDate === null) {
             $record = Document::whereTypeUser()
-                                ->orderBy('date_of_issue', 'desc')
-                                ->take(50)
-                                ->get();
-        }
-        else
-        {
+                ->orderBy('date_of_issue', 'desc')
+                ->take(50)
+                ->get();
+        } else {
             $record = Document::whereBetween('date_of_issue', [$startDate, $endDate])
                 ->orderBy('date_of_issue', 'desc')
                 ->get();
         }
 
-        $records = new DocumentCollection($record);
-        return $records;
+        return new DocumentCollection($record);
     }
 
     public function updatestatus(Request $request)

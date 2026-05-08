@@ -509,9 +509,13 @@ class SaleNoteController extends Controller
                                 })
                                 ->latest();
 
-        }else{
-            $records->where($request->column, 'like', "%{$request->value}%")
+        } else {
+            if ($request->filled('column')) {
+                $records->where($request->column, 'like', "%{$request->value}%")
                     ->latest('id');
+            } else {
+                $records->latest('id');
+            }
         }
         if($request->series) {
             $records->where('series', 'like', '%' . $request->series . '%');

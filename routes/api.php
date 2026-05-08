@@ -24,6 +24,7 @@ if ($hostname) {
             Route::post('document/email', 'Tenant\Api\MobileController@document_email');
             Route::post('sale-note', 'Tenant\Api\SaleNoteController@store');
             Route::get('sale-note/series', 'Tenant\Api\SaleNoteController@series');
+            Route::get('sale-note/records', 'Tenant\Api\SaleNoteController@records');
             Route::get('sale-note/lists', 'Tenant\Api\SaleNoteController@lists');
             Route::get('sale-note/records', 'Tenant\Api\SaleNoteController@records');
             Route::post('item', 'Tenant\Api\MobileController@item');
@@ -40,6 +41,7 @@ if ($hostname) {
             Route::get('report', 'Tenant\Api\MobileController@report');
 
             Route::post('documents', 'Tenant\Api\DocumentController@store');
+            Route::get('documents/records', 'Tenant\Api\DocumentController@records');
             Route::get('documents/lists', 'Tenant\Api\DocumentController@lists');
             Route::get('documents/lists/{startDate}/{endDate}', 'Tenant\Api\DocumentController@lists');
             Route::post('documents/updatedocumentstatus', 'Tenant\Api\DocumentController@updatestatus');
@@ -75,6 +77,7 @@ if ($hostname) {
             Route::get('company', 'Tenant\Api\CompanyController@record');
 
             // Cotizaciones
+            Route::get('quotations/records', 'Tenant\Api\QuotationController@records');
             Route::get('quotations/list', 'Tenant\Api\QuotationController@list');
             Route::get('quotations/records', 'Tenant\Api\QuotationController@records');
             Route::post('quotations', 'Tenant\Api\QuotationController@store');
