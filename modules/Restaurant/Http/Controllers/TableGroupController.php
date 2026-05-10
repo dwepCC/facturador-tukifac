@@ -6,9 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Modules\Restaurant\Models\RestaurantTable;
 use Modules\Restaurant\Models\RestaurantTableGroup;
+use Modules\Restaurant\Http\Controllers\Concerns\BroadcastsRestaurantSocket;
 
 class TableGroupController extends Controller
 {
+    use BroadcastsRestaurantSocket;
+
     /**
      * Crea un nuevo grupo y asigna la mesa principal.
      */
@@ -51,6 +54,8 @@ class TableGroupController extends Controller
         // Mesa principal entra al grupo
         RestaurantTable::where('id', $request->main_table_id)
             ->update(['group_id' => $group->id]);
+
+        $this->restaurantSocketSync('groups', 'group_created', ['group_id' => $group->id]);
 
         return response()->json([
             'success' => true,
@@ -122,6 +127,11 @@ class TableGroupController extends Controller
         // Agregar mesa al grupo
         $table->update(['group_id' => $request->group_id]);
 
+        $this->restaurantSocketSync('groups', 'table_added_to_group', [
+            'group_id' => $request->group_id,
+            'table_id' => $table->id,
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => "Mesa {$table->label} agregada al grupo exitosamente"
@@ -184,13 +194,20 @@ class TableGroupController extends Controller
             if ($remainingTables <= 1) {
                 RestaurantTable::where('group_id', $groupId)->update(['group_id' => null]);
                 RestaurantTableGroup::where('id', $groupId)->delete();
-                
+
+                $this->restaurantSocketSync('groups', 'group_disbanded', ['former_group_id' => $groupId]);
+
                 return response()->json([
                     'success' => true,
                     'message' => "Mesa {$table->label} separada. El grupo fue disuelto automáticamente."
                 ]);
             }
         }
+
+        $this->restaurantSocketSync('groups', 'table_removed_from_group', [
+            'table_id' => $table->id,
+            'group_id' => $groupId,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -248,6 +265,8 @@ class TableGroupController extends Controller
 
         $group->delete();
 
+        $this->restaurantSocketSync('groups', 'group_disbanded_manual', ['former_group_id' => $request->group_id]);
+
         return response()->json([
             'success' => true,
             'message' => 'Grupo disuelto exitosamente'
@@ -273,6 +292,8 @@ class TableGroupController extends Controller
         $total = $group->tables()->sum('total');
 
         $group->update(['total' => $total]);
+
+        $this->restaurantSocketSync('groups', 'group_total_recalculated', ['group_id' => $group->id]);
 
         return response()->json([
             'success' => true,

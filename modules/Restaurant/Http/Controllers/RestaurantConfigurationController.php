@@ -21,10 +21,14 @@ use App\Http\Resources\Tenant\UserResource;
 use Illuminate\Support\Str;
 use Modules\Restaurant\Services\RestaurantStockService;
 use Modules\Restaurant\Services\RestaurantAuditService;
+use Modules\Restaurant\Services\RestaurantSocketBroadcaster;
+use Modules\Restaurant\Http\Controllers\Concerns\BroadcastsRestaurantSocket;
 
 
 class RestaurantConfigurationController extends Controller
 {
+    use BroadcastsRestaurantSocket;
+
     /**
      * muestra vista para utilizar en mozo
      */
@@ -60,7 +64,12 @@ class RestaurantConfigurationController extends Controller
             'success' => true,
             'data' => $configurations->getCollectionData(),
             'user' => $userPayload,
-            'info' => ['ruc' => $company->number, 'userEmail' => $user->email ?? null, 'socketServer' => config('tenant.socket_server') ?? 'http://localhost:8070'],
+            'info' => [
+                'ruc' => $company->number,
+                'userEmail' => $user->email ?? null,
+                'socketServer' => config('tenant.socket_server') ?? 'http://localhost:8070',
+                'socket_room' => app(RestaurantSocketBroadcaster::class)->tenantRoomPublicKey(),
+            ],
         ];
     }
 
@@ -303,6 +312,8 @@ class RestaurantConfigurationController extends Controller
             'delivery' => $request->delivery,
         ]);
 
+        $this->restaurantSocketSync('tables', 'table_created', ['table_id' => $table->id]);
+
         return [
             'success' => true,
             'message' => 'Mesa creada con éxito.',
@@ -394,7 +405,7 @@ class RestaurantConfigurationController extends Controller
             $data['opening_date'] = null;
         }
 
-        return DB::connection('tenant')->transaction(function () use ($table, $data, $id, $closingRequested) {
+        $response = DB::connection('tenant')->transaction(function () use ($table, $data, $id, $closingRequested) {
             $table->fill($data);
             $table->save();
 
@@ -463,6 +474,11 @@ class RestaurantConfigurationController extends Controller
                 'message' => 'Mesa actualizada.',
             ];
         });
+
+        $reason = $closingRequested ? 'table_closed' : 'table_saved';
+        $this->restaurantSocketSync('tables', $reason, ['table_id' => (int) $id]);
+
+        return $response;
     }
 
     private function deleteDeliveryTakeawayTable(RestaurantTable $table, int $id): array
@@ -472,6 +488,8 @@ class RestaurantConfigurationController extends Controller
             $itemsToDelete->delete();
         }
         $table->delete();
+        $this->restaurantSocketSync('tables', 'delivery_takeaway_deleted', ['table_id' => $id]);
+
         return [
             'success' => true,
             'message' => 'Pedido finalizado, entrega realizada',
@@ -484,6 +502,9 @@ class RestaurantConfigurationController extends Controller
         $table->label = $request->label ;
         $table->shape = $request->shape ;
         $table->save();
+
+        $this->restaurantSocketSync('tables', 'table_label_updated', ['table_id' => $table->id]);
+
         return [
             'success' => true,
             'message' => 'Mesa actualizada con éxito.',
@@ -727,13 +748,20 @@ class RestaurantConfigurationController extends Controller
         $table->is_active = !$table->is_active;
         $table->save();
 
-        return response()->json([
+        $json = response()->json([
             'success' => true,
             'is_active' => $table->is_active,
             'message' => $table->is_active
                 ? "Mesa {$table->label} activada"
                 : "Mesa {$table->label} fuera de servicio"
         ]);
+
+        $this->restaurantSocketSync('tables', 'table_toggle_active', [
+            'table_id' => $table->id,
+            'is_active' => $table->is_active,
+        ]);
+
+        return $json;
     }
 
     /**
@@ -811,6 +839,8 @@ class RestaurantConfigurationController extends Controller
 
         DB::connection('tenant')->commit();
 
+        $this->restaurantSocketSync('tables', 'table_environment_changed', ['table_id' => $mesa->id]);
+
         return response()->json([
             'success' => true,
             'message' => "Mesa {$mesa->label} movida a {$nuevoAmbiente}",
@@ -876,6 +906,8 @@ class RestaurantConfigurationController extends Controller
         $mesa->save();
 
         DB::connection('tenant')->commit();
+
+        $this->restaurantSocketSync('tables', 'table_environment_restored', ['table_id' => $mesa->id]);
 
         return response()->json([
             'success' => true,

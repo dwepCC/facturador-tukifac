@@ -10,9 +10,12 @@ use App\Models\Tenant\SaleNote;
 use App\Models\Tenant\CashDocumentCredit;
 use App\Models\Tenant\CashDocumentPayment;
 use App\Http\Resources\Tenant\CashCollection;
+use Modules\Restaurant\Http\Controllers\Concerns\BroadcastsRestaurantSocket;
 
 class CashController extends Controller
 {
+    use BroadcastsRestaurantSocket;
+
 
     public function records(Request $request)
     {
@@ -96,6 +99,8 @@ class CashController extends Controller
 
 
 
+
+        $this->restaurantSocketSync('cash', 'cash_session_recorded', ['cash_id' => $cash->id]);
 
         return [
             'success' => true,

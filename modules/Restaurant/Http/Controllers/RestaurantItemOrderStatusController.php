@@ -11,9 +11,13 @@ use App\Models\Tenant\Item;
 use Modules\Restaurant\Models\RestaurantItemOrderStatus;
 use Modules\Restaurant\Services\RestaurantStockService;
 use Modules\Restaurant\Services\RestaurantAuditService;
+use Modules\Restaurant\Services\RestaurantSocketEvents;
+use Modules\Restaurant\Http\Controllers\Concerns\BroadcastsRestaurantSocket;
 
 class RestaurantItemOrderStatusController extends Controller
 {
+    use BroadcastsRestaurantSocket;
+
     const STATUS_RECEIVED = 1;
     const STATUS_PROCESSING = 2;
     const STATUS_TO_DELIVER = 3;
@@ -37,7 +41,7 @@ class RestaurantItemOrderStatusController extends Controller
         $stockService = app(RestaurantStockService::class);
 
         try {
-            return DB::connection('tenant')->transaction(function () use ($request, $itemData, $stockService) {
+            $result = DB::connection('tenant')->transaction(function () use ($request, $itemData, $stockService) {
                 try {
                     if (isset($itemData['has_sets']) && $itemData['has_sets']) {
                         foreach ($itemData['items_sets'] as $itemSet) {
@@ -120,9 +124,24 @@ class RestaurantItemOrderStatusController extends Controller
 
                 return [
                     'success' => true,
-                    'message' => 'Producto agregado con éxito.'
+                    'message' => 'Producto agregado con éxito.',
+                    'order_status_id' => $orderStatus->id,
                 ];
             });
+
+            if (! empty($result['success'])) {
+                $this->restaurantSocketEmit(RestaurantSocketEvents::COMMAND_ITEM_CREATED, [
+                    'table_id' => $request->table_id ? (int) $request->table_id : null,
+                    'item_id' => (int) $request->item_id,
+                    'order_status_id' => $result['order_status_id'] ?? null,
+                    'quantity' => (int) $request->quantity,
+                ]);
+                $this->restaurantSocketSync('commands', 'command_item_created', [
+                    'table_id' => $request->table_id ? (int) $request->table_id : null,
+                ]);
+            }
+
+            return $result;
         } catch (\Throwable $e) {
             return [
                 'success' => false,
@@ -286,6 +305,15 @@ class RestaurantItemOrderStatusController extends Controller
             $this->releaseStockAndDeleteOrder($order);
         }
 
+        $this->restaurantSocketEmit(RestaurantSocketEvents::COMMAND_ITEM_STATUS, [
+            'order_status_id' => (int) $order->id,
+            'table_id' => $order->table_id ? (int) $order->table_id : null,
+            'status' => (int) $order->status,
+        ]);
+        $this->restaurantSocketSync('commands', 'command_status_changed', [
+            'table_id' => $order->table_id ? (int) $order->table_id : null,
+        ]);
+
         return [
             'success' => true,
             'message' => 'Estado cambiado con éxito'
@@ -422,6 +450,13 @@ class RestaurantItemOrderStatusController extends Controller
                 'message' => 'No se pudo eliminar el ítem. Intente de nuevo.',
             ];
         }
+
+        $this->restaurantSocketEmit(RestaurantSocketEvents::COMMAND_ITEM_REMOVED, [
+            'table_id' => $tableId,
+            'item_id' => $itemId,
+            'order_status_id' => (int) $id,
+        ]);
+        $this->restaurantSocketSync('commands', 'command_item_removed', ['table_id' => $tableId]);
 
         return [
             'success' => true,

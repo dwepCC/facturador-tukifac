@@ -8,26 +8,36 @@ use Illuminate\Routing\Controller;
 use Modules\Restaurant\Models\PrintOrder;
 use Modules\Restaurant\Models\RestaurantConfiguration;
 use App\Models\Tenant\User;
+use Modules\Restaurant\Http\Controllers\Concerns\BroadcastsRestaurantSocket;
+use Modules\Restaurant\Services\RestaurantSocketEvents;
 
 class PrintOrderController extends Controller
 {
+    use BroadcastsRestaurantSocket;
+
     /**
-     * Registrar una nueva orden de impresión.
+     * Registrar una nueva orden de impresi?n.
      */
     public function store(Request $request)
     {
-        // Validación básica
+        // Validaci?n b?sica
         $data = $request->validate([
             'name_printer' => 'required|string|max:255',
             'pdf_b64' => 'nullable|string',
         ]);
         $data['status'] = false;
         $order = PrintOrder::create($data);
+
+        $this->restaurantSocketEmit(RestaurantSocketEvents::PRINT_ORDER_CHANGED, [
+            'print_order_id' => $order->id,
+            'action' => 'created',
+        ]);
+
         return response()->json($order, 201);
     }
 
     /**
-     * Actualizar una orden de impresión existente.
+     * Actualizar una orden de impresi?n existente.
      */
     public function update(Request $request, $id)
     {
@@ -37,16 +47,23 @@ class PrintOrderController extends Controller
             'pdf_b64' => 'nullable|string',
         ]);
         $order->update($data);
+
+        $this->restaurantSocketEmit(RestaurantSocketEvents::PRINT_ORDER_CHANGED, [
+            'print_order_id' => $order->id,
+            'action' => 'updated',
+            'status' => (int) $order->status,
+        ]);
+
         return response()->json($order);
     }
 
     /**
-     * Emitir órdenes de impresión pendientes (status = false) vía SSE.
+     * Emitir ?rdenes de impresi?n pendientes (status = false) v?a SSE.
      *
-     * IMPORTANTE: Para el correcto funcionamiento de SSE detrás de Nginx,
-     * es necesario modificar la configuración del archivo default.conf y reiniciar el proxy y el contenedor nginx.
+     * IMPORTANTE: Para el correcto funcionamiento de SSE detr?s de Nginx,
+     * es necesario modificar la configuraci?n del archivo default.conf y reiniciar el proxy y el contenedor nginx.
      *
-     * Configuración requerida:
+     * Configuraci?n requerida:
      *
      * server {
      *     ...
@@ -73,12 +90,12 @@ class PrintOrderController extends Controller
         $user = User::where('api_token', $token)->first();
 
         if (!$user) {
-            abort(401, 'Token inválido');
+            abort(401, 'Token inv?lido');
         }
 
         $config = RestaurantConfiguration::first();
         if (!$config || !$config->enabled_server_print) {
-            abort(403, 'Impresión por servidor deshabilitada');
+            abort(403, 'Impresi?n por servidor deshabilitada');
         }
 
         $includeFailed = $request->query('include_failed', false);
@@ -106,7 +123,7 @@ class PrintOrderController extends Controller
             usleep(300000);
 
             while (true) {
-                // Consultar órdenes pendientes (status = 0) y fallidas (status = 2) si corresponde
+                // Consultar ?rdenes pendientes (status = 0) y fallidas (status = 2) si corresponde
                 $orders = $includeFailed
                     ? PrintOrder::whereIn('status', [0, 2])->get()
                     : PrintOrder::where('status', 0)->get();

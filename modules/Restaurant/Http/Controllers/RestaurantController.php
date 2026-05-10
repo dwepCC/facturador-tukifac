@@ -28,12 +28,14 @@ use Modules\Restaurant\Services\RestaurantStockService;
 use Illuminate\Support\Facades\DB;
 use Modules\ApiPeruDev\Data\ServiceData;
 use App\Models\Tenant\Person;
-
+use Modules\Restaurant\Http\Controllers\Concerns\BroadcastsRestaurantSocket;
 
 
 
 class RestaurantController extends Controller
 {
+    use BroadcastsRestaurantSocket;
+
     public function menu($name = null)
     {
         if($name) {
@@ -380,6 +382,11 @@ class RestaurantController extends Controller
                 $table_origin->update($originReset);
 
             });
+
+            $this->restaurantSocketSync('tables', 'change_table_pedido', [
+                'table_id_origin' => (int) $tableid_origin,
+                'table_id_destination' => (int) $tableid_destination,
+            ]);
 
             return ['success' => true, 'message' => 'Los datos de la mesa se han movido correctamente.'];
 

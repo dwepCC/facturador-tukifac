@@ -68,6 +68,7 @@ class MobileController extends Controller
             'establishment_id' => auth()->user()->establishment->id,
             'seriedefault' => $user->series_id,
             'token' => $user->api_token,
+            'socket_room' => app(\Modules\Restaurant\Services\RestaurantSocketBroadcaster::class)->tenantRoomPublicKey(),
             'restaurant_role_id' => $user->restaurant_role_id,
             'restaurant_role_code' => $user->restaurant_role_id ? $user->restaurant_role->code : null,
             'ruc' => $company->number,

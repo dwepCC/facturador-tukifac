@@ -16,6 +16,8 @@ $hostname = app(Hyn\Tenancy\Contracts\CurrentHostname::class);
 if ($hostname) {
     Route::domain($hostname->fqdn)->group(function() {
 
+        /** Socket auth: ver Routes/api_socket_auth.php (sin throttle del grupo api). */
+
         Route::get('/restaurant/list-waiter', 'WaiterController@listRecords');
 
         Route::middleware(['auth:api', 'locked.tenant'])->group(function() {
