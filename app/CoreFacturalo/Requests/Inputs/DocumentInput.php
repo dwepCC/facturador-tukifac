@@ -204,17 +204,27 @@ class DocumentInput
                     self::registerSeriesInvoiceXml($items_attributes, $row);
                 }
 
+                // Web envía objeto anidado completo; API solo lo tiene tras DocumentValidation para comodín.
+                $nestedItem = isset($row['item']) && is_array($row['item']) ? $row['item'] : [];
+
+                $isManualLike = ($item->description == 'REPLACE DESCRIPTION' || $item->barcode == 'VARIOUS_ITEM');
+                $manualDesc = $nestedItem['description'] ?? null;
+                $resolvedDescription = trim(
+                    $isManualLike && ($manualDesc !== null && $manualDesc !== '')
+                        ? $manualDesc
+                        : $item->description
+                );
+
                 $arayItem = [
                     'item_id' => $item->id,
                     'item' => [
-                        'description' => trim($item->description),
-                        'description' => trim($item->description == 'REPLACE DESCRIPTION' || $item->barcode == 'VARIOUS_ITEM' ? $row['item']['description'] : trim($item->description)),
+                        'description' => $resolvedDescription,
                         'item_type_id' => $item->item_type_id,
                         'internal_id' => $item->barcode == 'VARIOUS_ITEM' ? null : $item->internal_id,
                         'item_code' => trim($item->item_code),
                         'item_code_gs1' => $item->item_code_gs1,
-                        'unit_type_id' => (key_exists('item', $row)) ? $row['item']['unit_type_id'] : $item->unit_type_id,
-                        'presentation' => (key_exists('item', $row)) ? (isset($row['item']['presentation']) ? $row['item']['presentation'] : []) : [],
+                        'unit_type_id' => $nestedItem['unit_type_id'] ?? $item->unit_type_id,
+                        'presentation' => isset($nestedItem['presentation']) ? $nestedItem['presentation'] : [],
                         'amount_plastic_bag_taxes' => $item->amount_plastic_bag_taxes,
                         'is_set' => $item->is_set,
                         'lots' => self::lots($row),
@@ -223,11 +233,11 @@ class DocumentInput
                         'sanitary' => $item->sanitary,
                         'cod_digemid' => $item->cod_digemid,
                         'date_of_due' => (!empty($item->date_of_due)) ? $item->date_of_due->format('Y-m-d') : null,
-                        'has_igv' => $row['item']['has_igv'] ?? true,
+                        'has_igv' => $nestedItem['has_igv'] ?? true,
                         'unit_price' => $row['unit_price'] ?? 0,
                         'purchase_unit_price' => $item->purchase_unit_price ?? 0,
-                        'exchanged_for_points' => $row['item']['exchanged_for_points'] ?? false,
-                        'used_points_for_exchange' => $row['item']['used_points_for_exchange'] ?? null,
+                        'exchanged_for_points' => $nestedItem['exchanged_for_points'] ?? false,
+                        'used_points_for_exchange' => $nestedItem['used_points_for_exchange'] ?? null,
                     ],
                     'quantity' => $row['quantity'],
                     'unit_value' => $row['unit_value'],

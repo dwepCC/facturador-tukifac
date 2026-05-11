@@ -436,15 +436,28 @@ class MobileController extends Controller
         $category_id = $request->category_id ?? null;
         $limit = $request->limit ?? null;
 
+        $inputTerm = $request->input('input');
+
         $item_query = Item::query();
 
         if($search_by_barcode)
         {
-            $item_query->where('barcode', $request->input)->limit(1);
+            // Máximo 1 fila: precargar relaciones usadas en el transform para evitar N+1 (varias idas a BD por ítem).
+            $item_query
+                ->where('barcode', $inputTerm)
+                ->limit(1)
+                ->with([
+                    'currency_type',
+                    'brand',
+                    'category',
+                    'lots',
+                    'warehouses.warehouse',
+                    'item_unit_types',
+                ]);
         }
         else
         {
-            $item_query->where('description', 'like', "%{$request->input}%")->orWhere('internal_id', 'like', "%{$request->input}%");
+            $item_query->where('description', 'like', "%{$inputTerm}%")->orWhere('internal_id', 'like', "%{$inputTerm}%");
 
             if($limit) $item_query->limit($limit);
         }

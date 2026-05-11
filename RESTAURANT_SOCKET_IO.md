@@ -89,17 +89,6 @@ Laravel (PHP-FPM) no mantiene millones de conexiones WebSocket abiertas de forma
 
 ## En local (Laragon / Windows)
 
-**Cómo alternar desarrollo vs producción**
-
-Laravel **no infiere** automáticamente qué socket usar. Lee solo el **`.env` del servidor donde corre** (`APP_URL`, etc.):
-
-| Entorno | Archivo típico | `SOCKET_SERVER` / front | `SOCKET_BRIDGE_URL` (Laravel → Node) |
-|---------|------------------|-------------------------|--------------------------------------|
-| Desarrollo | Tu PC, `.env` local | `http://localhost:8070` | `http://127.0.0.1:8070` |
-| Producción | VPS Docker, `.env` del deploy | `https://ws.gestionweb.cloud` | `https://ws.gestionweb.cloud` |
-
-Subes código igual en ambos; **solo cambian las variables** en cada servidor. Tras editar `.env`: `php artisan config:clear`. El frontend externo debe usar la misma URL pública que `SOCKET_SERVER` (variable `VITE_SOCKET_SERVER` o equivalente por entorno).
-
 **Orden recomendado**
 
 1. **Levantar Laravel** como siempre (Apache/Nginx de Laragon + tu virtual host del tenant, ej. `https://cliente.test`).
@@ -281,41 +270,6 @@ Usa esta tabla como checklist: en cada **vista o flujo**, suscríbete a los even
 3. **Fase 3**: **Caja** y **impresión** según los roles que uses en el frontend externo.
 
 **Resumen multi-tenant**: cada cliente tiene su API en su FQDN y su BD; el socket compartido solo reparte eventos dentro de la sala `socket_room` devuelta por ese mismo tenant.
-
----
-
-## Solución de problemas: `connect_error: unauthorized`
-
-| Causa | Qué hacer |
-|-------|-----------|
-| **Throttle del API (`429`)** | Todas las validaciones salían desde la **misma IP** (servidor Node). El grupo `middleware('api')` aplica `throttle:60,1` por IP → se agotaba el cupo y Laravel respondía 429; Node lo mostraba como `unauthorized`. La ruta `POST /api/restaurant/socket/auth` está registrada **fuera** de ese throttle (`Routes/api_socket_auth.php`). Despliega este cambio en Laravel. |
-| **`tenant_origin` incorrecto** | Debe ser la URL base **exacta** del tenant donde el token es válido (mismo esquema `https`, sin barra final), ej. `https://mi-tenant.midominio.com`. |
-| **Token** | Mismo string que devuelve `/api/login` (`api_token`). Sin prefijo `Bearer` en JSON; si viene con `Bearer `, el backend ahora lo recorta. |
-| **TLS / red** | El VPS del socket debe poder hacer **HTTPS saliente** al dominio del tenant. Si el certificado es dudoso, Node puede fallar el `fetch` (revisa logs del proceso Node: `[restaurant-socket] auth failed`). |
-| **Ruta inexistente (`404`)** | El `Host` de la petición debe ser el **FQDN del tenant** registrado; si apuntas a un dominio sin tenancy, la ruta del módulo no carga. |
-
-Tras actualizar Laravel en el servidor: `php artisan route:clear` y `php artisan config:clear`.
-
-**Diagnóstico rápido (local)**  
-Desde la carpeta `socket-server`, sin abrir el navegador:
-
-```bash
-node scripts/test-auth.js "http://TU-TENANT.local.tukifac.test" "TOKEN_QUE_DEVUELVE_LOGIN"
-```
-
-- Si obtienes **200** y `"valid":true` → Laravel está bien; revisa que el front use **el mismo** `tenant_origin` y `token`, y que `io()` apunte a `http://localhost:8070` en desarrollo (no al dominio remoto).
-- Si **404** → dominio/API no coincide con las rutas tenant (FQDN mal registrado).
-- Si **401** → token incorrecto o usuario no existe en esa BD.
-- Si **fetch falló** → DNS/TLS (prueba misma URL en el navegador para `/api/login`).
-
-El proceso Node ahora escribe en consola el **motivo detallado** del rechazo (antes solo veías `unauthorized`).
-
-**Desarrollo local (`*.local`, `*.test`) + socket en la nube (`wss://ws.gestionweb.cloud`)**  
-El servidor Node **no está en tu PC**: al validar, hace `fetch(tenant_origin + '/api/restaurant/socket/auth')` **desde internet**. URLs como `http://cliente1.local.tukifac.test` **no existen** para ese servidor → siempre fallará con `unauthorized` aunque el WebSocket abra bien (`101 Switching Protocol`). Opciones:
-
-1. Usar **socket local** (`SOCKET_SERVER=http://localhost:8070`) mientras el API es `.test`.
-2. Exponer tu Laravel con una URL pública (**ngrok**, Cloudflare Tunnel, etc.) y usar **esa** URL como `tenant_origin`.
-3. Probar contra un **tenant ya público** en tu VPS (dominio real HTTPS).
 
 ---
 

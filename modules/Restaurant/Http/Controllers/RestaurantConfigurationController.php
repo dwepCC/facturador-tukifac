@@ -75,51 +75,76 @@ class RestaurantConfigurationController extends Controller
 
     public function tablesAndEnv()
     {
-        $tables = RestaurantTable::whereNotNull('environment')->get()->transform(function ($row) {
+        // Eager load `group` para evitar N+1 (antes: RestaurantTableGroup::find por cada mesa con group_id).
+        $tables = RestaurantTable::query()
+            ->with('group')
+            ->whereNotNull('environment')
+            ->get()
+            ->transform(function ($row) {
+                $isMainTable = false;
+                if ($row->group_id && $row->group) {
+                    $isMainTable = (int) $row->group->main_table_id === (int) $row->id;
+                }
 
-            // Verificar si es la mesa principal del grupo
-            $isMainTable = false;
-            if ($row->group_id) {
-                $group = RestaurantTableGroup::find($row->group_id);
-                $isMainTable = $group && $group->main_table_id === $row->id;
-            }
+                $products = (array) $row->products;
 
-            return (object)[
-                'id' => $row->id,
-                'status' => $row->status,
-                'products' => (array)$row->products,
-                'total' => (float)$row->total,
-                'personas' => $row->personas,
-                'cliente' => $row->cliente,
-                'label' => $row->label,
-                'shape' => $row->shape,
-                'environment' => $row->environment,
-                'waiter' => $row->waiter,
-                'open' => false,
-                'close' => false,
-                'group_id' => $row->group_id,
-                'is_main_table' => $isMainTable, // Agregar la lógica de verificación antes
-                'is_active' => (bool)$row->is_active,
-                'original_environment' => $row->original_environment,
-                'quantityOrders' => (count((array)$row->products)>0)?$this->getQuantityOrdersByTable((array)$row->products):0,
-                'timeOpening' => ($row->opening_date)?$this->getTimeByDateOpening($row->opening_date):null,
-                'order_status' => $row->order_status,
-                'is_paid' => (bool)$row->is_paid,
-                'delivery' => $row->delivery,
-                'sale_note_id' => $row->sale_note_id,
-                'document_id' => $row->document_id,
-            ];
-        });
+                return (object) [
+                    'id' => $row->id,
+                    'status' => $row->status,
+                    'products' => $products,
+                    'total' => (float) $row->total,
+                    'personas' => $row->personas,
+                    'cliente' => $row->cliente,
+                    'label' => $row->label,
+                    'shape' => $row->shape,
+                    'environment' => $row->environment,
+                    'waiter' => $row->waiter,
+                    'open' => false,
+                    'close' => false,
+                    'group_id' => $row->group_id,
+                    'is_main_table' => $isMainTable,
+                    'is_active' => (bool) $row->is_active,
+                    'original_environment' => $row->original_environment,
+                    'quantityOrders' => count($products) > 0 ? $this->getQuantityOrdersByTable($products) : 0,
+                    'timeOpening' => $row->opening_date ? $this->getTimeByDateOpening($row->opening_date) : null,
+                    'order_status' => $row->order_status,
+                    'is_paid' => (bool) $row->is_paid,
+                    'delivery' => $row->delivery,
+                    'sale_note_id' => $row->sale_note_id,
+                    'document_id' => $row->document_id,
+                ];
+            });
 
         $configuration = RestaurantConfiguration::first();
 
+        // Una sola consulta para nombres de ambientes 1–4 (antes: 4 queries idénticas).
+        $environmentNames = RestaurantTableEnv::query()
+            ->whereIn('id', [1, 2, 3, 4])
+            ->pluck('name', 'id');
+
         return [
             'tables' => $tables,
-            'enabled_environment_1' => (object)['active' => (bool)$configuration->enabled_environment_1, 'tablesQuantity' => $configuration->tables_quantity,'name'=> RestaurantTableEnv::where('id', 1)->pluck('name')->first()],
-            'enabled_environment_2' => (object)['active' => (bool)$configuration->enabled_environment_2, 'tablesQuantity' => $configuration->tables_quantity_environment_2,'name'=> RestaurantTableEnv::where('id', 2)->pluck('name')->first()],
-            'enabled_environment_3' => (object)['active' => (bool)$configuration->enabled_environment_3, 'tablesQuantity' => $configuration->tables_quantity_environment_3,'name'=> RestaurantTableEnv::where('id', 3)->pluck('name')->first()],
-            'enabled_environment_4' => (object)['active' => (bool)$configuration->enabled_environment_4, 'tablesQuantity' => $configuration->tables_quantity_environment_4,'name'=> RestaurantTableEnv::where('id', 4)->pluck('name')->first()],
-            'environments' => RestaurantTableEnv::where('active', true)->get()
+            'enabled_environment_1' => (object) [
+                'active' => (bool) $configuration->enabled_environment_1,
+                'tablesQuantity' => $configuration->tables_quantity,
+                'name' => $environmentNames->get(1),
+            ],
+            'enabled_environment_2' => (object) [
+                'active' => (bool) $configuration->enabled_environment_2,
+                'tablesQuantity' => $configuration->tables_quantity_environment_2,
+                'name' => $environmentNames->get(2),
+            ],
+            'enabled_environment_3' => (object) [
+                'active' => (bool) $configuration->enabled_environment_3,
+                'tablesQuantity' => $configuration->tables_quantity_environment_3,
+                'name' => $environmentNames->get(3),
+            ],
+            'enabled_environment_4' => (object) [
+                'active' => (bool) $configuration->enabled_environment_4,
+                'tablesQuantity' => $configuration->tables_quantity_environment_4,
+                'name' => $environmentNames->get(4),
+            ],
+            'environments' => RestaurantTableEnv::where('active', true)->orderBy('id')->get(),
         ];
     }
 

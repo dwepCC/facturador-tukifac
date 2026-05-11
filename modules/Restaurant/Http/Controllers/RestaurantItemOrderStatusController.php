@@ -9,10 +9,12 @@ use Exception;
 use Illuminate\Support\Facades\DB;
 use App\Models\Tenant\Item;
 use Modules\Restaurant\Models\RestaurantItemOrderStatus;
+use Modules\Restaurant\Models\RestaurantTable;
 use Modules\Restaurant\Services\RestaurantStockService;
 use Modules\Restaurant\Services\RestaurantAuditService;
 use Modules\Restaurant\Services\RestaurantSocketEvents;
 use Modules\Restaurant\Http\Controllers\Concerns\BroadcastsRestaurantSocket;
+use Illuminate\Support\Collection;
 
 class RestaurantItemOrderStatusController extends Controller
 {
@@ -150,19 +152,132 @@ class RestaurantItemOrderStatusController extends Controller
         }
     }
 
-    public function getStatusItems($id)
+    /**
+     * Pedidos por estado + lista plana `items`.
+     * - `{id}` **> 0**: solo esa mesa.
+     * - `{id}` **0**: **todas** las líneas de comanda (mesas + pedidos rápidos `table_id` null + cualquier otro dato en BD).
+     * Query **only_quick=1** (solo con id **0**): únicamente pedido rápido = `whereNull(table_id)` (sin mesa). No es lo mismo que id 0 sin este flag.
+     * Query flat=1 o grouped=0 → solo clave `items` en `data`.
+     */
+    public function getStatusItems(Request $request, $id)
     {
-        $productsStatusReceived = $this->getItemsByStatus(self::STATUS_RECEIVED, $id);
-        $productsStatusProcessing = $this->getItemsByStatus(self::STATUS_PROCESSING, $id);
-        $productsStatusToDeliver = $this->getItemsByStatus(self::STATUS_TO_DELIVER, $id);
-        $productsStatusDelivered = $this->getItemsByStatus(self::STATUS_DELIVERED, $id, 20, 'desc');
+        $tableId = (int) $id;
+        $flatOnly = $this->wantsFlatOnlyGroupedPayload($request);
+        $onlyQuick = $request->boolean('only_quick') && $tableId === 0;
 
-        $allItemsRaw = $productsStatusReceived
-            ->concat($productsStatusProcessing)
-            ->concat($productsStatusToDeliver)
-            ->concat($productsStatusDelivered);
+        $transformedRows = $this->fetchOrderModelsForTable($tableId, $onlyQuick)
+            ->map(fn ($order) => $this->transformOrderData($order));
 
-        $items = $allItemsRaw->map(function (array $row) {
+        $received = $transformedRows->filter(fn (array $r) => (int) $r['status'] === self::STATUS_RECEIVED)->values();
+        $processing = $transformedRows->filter(fn (array $r) => (int) $r['status'] === self::STATUS_PROCESSING)->values();
+        $toDeliver = $transformedRows->filter(fn (array $r) => (int) $r['status'] === self::STATUS_TO_DELIVER)->values();
+        $delivered = $transformedRows->filter(fn (array $r) => (int) $r['status'] === self::STATUS_DELIVERED)->values();
+
+        $allItemsRaw = $received->concat($processing)->concat($toDeliver)->concat($delivered);
+        $items = $this->mergeRawIntoItemsCollection($allItemsRaw);
+
+        $meta = [
+            'table_filter' => $tableId > 0 ? 'mesa_' . $tableId : 'todas',
+            'only_quick' => $onlyQuick,
+        ];
+
+        if ($flatOnly) {
+            return [
+                'success' => true,
+                'data' => [
+                    'items' => $items->values()->all(),
+                ],
+                'message' => 'Listado de productos (modo plano).',
+                'id' => $tableId,
+                'meta' => $meta,
+            ];
+        }
+
+        $data = [
+            'productsStatusReceived' => $this->stripRawItemFromRows($received)->values()->all(),
+            'productsStatusProcessing' => $this->stripRawItemFromRows($processing)->values()->all(),
+            'productsStatusToDeliver' => $this->stripRawItemFromRows($toDeliver)->values()->all(),
+            'productsStatusDelivered' => $this->stripRawItemFromRows($delivered)->values()->all(),
+            'items' => $items->values()->all(),
+        ];
+
+        return [
+            'success' => true,
+            'data' => $data,
+            'message' => 'Listado de productos por estados.',
+            'id' => $tableId,
+            'meta' => $meta,
+        ];
+    }
+
+    /**
+     * flat=1 / true o grouped=0 → solo clave `items` en la respuesta (menos trabajo y payload).
+     */
+    private function wantsFlatOnlyGroupedPayload(Request $request): bool
+    {
+        if ($request->boolean('flat')) {
+            return true;
+        }
+
+        $grouped = $request->query('grouped');
+
+        return $grouped === '0' || $grouped === 0;
+    }
+
+    /**
+     * Estados 1–3 completos + estado 4 limitado a 20 (mismo criterio que el antiguo getItemsByStatus).
+     *
+     * - $tableId > 0: solo esa mesa (excluye pedidos rápidos con table_id null).
+     * - $tableId <= 0 y !$onlyQuick: todas las líneas (mesas + rápidos null + demás).
+     * - $tableId <= 0 y $onlyQuick: **solo** pedido rápido (`table_id` **NULL**; no es “todo”).
+     */
+    private function fetchOrderModelsForTable(int $tableId, bool $onlyQuick = false): Collection
+    {
+        $with = ['table', 'itemModel.preparationArea'];
+
+        $applyTableScope = function ($query) use ($tableId, $onlyQuick) {
+            if ($tableId > 0) {
+                return $query->where('table_id', $tableId);
+            }
+            if ($onlyQuick) {
+                return $query->whereNull('table_id');
+            }
+
+            return $query;
+        };
+
+        $openQuery = RestaurantItemOrderStatus::query()
+            ->whereIn('status', [
+                self::STATUS_RECEIVED,
+                self::STATUS_PROCESSING,
+                self::STATUS_TO_DELIVER,
+            ])
+            ->with($with)
+            ->orderBy('updated_at');
+
+        $openQuery = $applyTableScope($openQuery);
+
+        $open = $openQuery->get();
+
+        $deliveredQuery = RestaurantItemOrderStatus::query()
+            ->where('status', self::STATUS_DELIVERED)
+            ->with($with)
+            ->orderBy('updated_at', 'desc')
+            ->limit(20);
+
+        $deliveredQuery = $applyTableScope($deliveredQuery);
+
+        $delivered = $deliveredQuery->get();
+
+        return $open->concat($delivered);
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>>  $allItemsRaw
+     */
+    private function mergeRawIntoItemsCollection(Collection $allItemsRaw): Collection
+    {
+        return $allItemsRaw->map(function (array $row) {
             $raw = $row['raw_item'] ?? [];
             unset($row['raw_item']);
 
@@ -187,59 +302,18 @@ class RestaurantItemOrderStatusController extends Controller
                 ]
             );
         });
-
-        $productsStatusReceived = $productsStatusReceived->map(function (array $row) {
-            unset($row['raw_item']);
-            return $row;
-        });
-        $productsStatusProcessing = $productsStatusProcessing->map(function (array $row) {
-            unset($row['raw_item']);
-            return $row;
-        });
-        $productsStatusToDeliver = $productsStatusToDeliver->map(function (array $row) {
-            unset($row['raw_item']);
-            return $row;
-        });
-        $productsStatusDelivered = $productsStatusDelivered->map(function (array $row) {
-            unset($row['raw_item']);
-            return $row;
-        });
-
-        $data = [
-            'productsStatusReceived' => $productsStatusReceived->values()->all(),
-            'productsStatusProcessing' => $productsStatusProcessing->values()->all(),
-            'productsStatusToDeliver' => $productsStatusToDeliver->values()->all(),
-            'productsStatusDelivered' => $productsStatusDelivered->values()->all(),
-            'items' => $items->values()->all(),
-        ];
-
-        return [
-            'success' => true,
-            'data' => $data,
-            'message' => 'Listado de productos por estados.',
-            'id' => $id,
-        ];
     }
 
-    private function getItemsByStatus($status, $table_id = 0, $limit = null, $desc = null)
+    /**
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function stripRawItemFromRows(Collection $rows): Collection
     {
-        $query = RestaurantItemOrderStatus::where('status', $status)
-            ->with(['table', 'itemModel.preparationArea']);
+        return $rows->map(function (array $row) {
+            unset($row['raw_item']);
 
-        if ($table_id>0) {
-            $query->where('table_id',$table_id);
-        }
-
-        if ($limit) {
-            $query->take($limit);
-        }
-
-        if ($desc) {
-            $query->orderBy('updated_at',$desc);
-        }
-
-        return $query->get()->transform(function ($order) {
-            return $this->transformOrderData($order);
+            return $row;
         });
     }
 
@@ -254,6 +328,54 @@ class RestaurantItemOrderStatusController extends Controller
         return $notCompleted === 0;
     }
 
+    /**
+     * Mesas que tienen al menos una línea en comanda (cualquier estado).
+     * Al cobrar/generar venta las líneas se eliminan: si la mesa no tiene filas en restaurant_item_order_statuses, no aparece aquí.
+     * Pedido rápido = solo `table_id` **NULL** (sin mesa).
+     */
+    public function tablesWithPendingCommands()
+    {
+        $quickCount = RestaurantItemOrderStatus::query()
+            ->whereNull('table_id')
+            ->count();
+
+        $aggregates = RestaurantItemOrderStatus::query()
+            ->selectRaw('table_id, COUNT(*) as command_items_count')
+            ->whereNotNull('table_id')
+            ->where('table_id', '>', 0)
+            ->groupBy('table_id')
+            ->orderBy('table_id')
+            ->get();
+
+        $tableModels = $aggregates->isEmpty()
+            ? collect()
+            : RestaurantTable::whereIn('id', $aggregates->pluck('table_id')->all())->get()->keyBy('id');
+
+        $tables = $aggregates->map(function ($row) use ($tableModels) {
+            $t = $tableModels->get($row->table_id);
+
+            return [
+                'table_id' => (int) $row->table_id,
+                'label' => $t->label ?? '',
+                'environment' => $t->environment ?? null,
+                'command_items_count' => (int) $row->command_items_count,
+            ];
+        })->values();
+
+        return [
+            'success' => true,
+            'data' => [
+                'tables' => $tables,
+                'quick_orders_without_table' => [
+                    'command_items_count' => $quickCount,
+                    'description' => 'Solo pedidos rápidos (table_id NULL). Listado: GET .../command-status/items/0?only_quick=1. Todo el mundo: GET .../items/0 sin only_quick.',
+                ],
+            ],
+            'meta' => [
+                'rule' => 'Cualquier estado; solo existen filas no borradas por cobro.',
+            ],
+        ];
+    }
 
     private function transformOrderData($order)
     {

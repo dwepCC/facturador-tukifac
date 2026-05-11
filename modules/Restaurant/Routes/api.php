@@ -52,6 +52,7 @@ if ($hostname) {
                 Route::post('/command-item/save', 'RestaurantItemOrderStatusController@saveItemOrder');
                 Route::post('/command-item/remove/{id}', 'RestaurantItemOrderStatusController@removeComandaItem');
                 Route::get('/command-status/items/{id}', 'RestaurantItemOrderStatusController@getStatusItems');
+                Route::get('/command-status/tables-with-pending-commands', 'RestaurantItemOrderStatusController@tablesWithPendingCommands');
                 Route::get('/command-status/served/{tableId}', 'RestaurantItemOrderStatusController@isProductsCommandStatusServer');
                 Route::get('/command-status/set/{id}', 'RestaurantItemOrderStatusController@setStatusItem');
 
