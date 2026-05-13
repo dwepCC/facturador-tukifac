@@ -1160,6 +1160,10 @@ import queryString from "query-string";
 import TableItems from "./partials/table.vue";
 import ItemUnitTypes from "./partials/item_unit_types.vue";
 import { mapState, mapActions } from "vuex/dist/vuex.mjs";
+import axios from "axios";
+
+/** Retraso tras dejar de escribir antes de llamar a `search_items_cat` (menos carga en FPM/MySQL). */
+const POS_SEARCH_DEBOUNCE_MS = 350;
 
 export default {
     props: [
@@ -1245,10 +1249,16 @@ export default {
                     description: "Precio 3"
                 }
             ],
-            selected_option_price: null
+            selected_option_price: null,
+            posSearchCatCancelSource: null,
+            /** Peticiones HTTP del POS que muestran overlay: cada begin incrementa; el overlay se oculta cuando el contador vuelve a 0. */
+            _posOverlayDepth: 0
         };
     },
     async created() {
+        this.debouncedSearchItemsCat = _.debounce(() => {
+            this.fetchSearchItemsCat();
+        }, POS_SEARCH_DEBOUNCE_MS);
         this.selected_option_price = this.price_options[0];
         this.loadConfiguration();
         this.$store.commit("setConfiguration", this.configuration2);
@@ -1276,6 +1286,19 @@ export default {
         await this.selectDefaultCustomer();
         await this.enabledSearchItemByBarcode();
         this.enabledCategoriesProductsView();
+    },
+    beforeDestroy() {
+        if (
+            this.debouncedSearchItemsCat &&
+            typeof this.debouncedSearchItemsCat.cancel === "function"
+        ) {
+            this.debouncedSearchItemsCat.cancel();
+        }
+        if (this.posSearchCatCancelSource) {
+            this.posSearchCatCancelSource.cancel("component-destroyed");
+            this.posSearchCatCancelSource = null;
+        }
+        this._resetPosOverlay();
     },
 
     computed: {
@@ -1433,8 +1456,11 @@ export default {
 
             this.setFocusInInputSearch();
         },
-        getRecords() {
-            this.loading = true;
+        getRecords(page) {
+            if (typeof page === "number" && page > 0) {
+                this.pagination.current_page = page;
+            }
+            this._beginPosOverlay();
             return this.$http
                 .get(
                     `/${this.resource}/items?${this.getQueryParameters()}&cat=${
@@ -1448,13 +1474,16 @@ export default {
                     this.pagination.per_page = parseInt(
                         response.data.meta.per_page
                     );
-                    this.loading = false;
                     if (response.data.meta.total > 0) {
                         this.pagination.total = response.data.meta.total;
                     } else {
                         this.pagination.total = 0;
                     }
                     this.fixItems();
+                })
+                .catch(() => {})
+                .finally(() => {
+                    this._endPosOverlay();
                 });
         },
         getQueryParameters() {
@@ -1896,13 +1925,28 @@ export default {
             if (!this.form.items[0])
                 return this.$message.error("Seleccione un producto");
             this.form.establishment_id = this.establishment.id;
-            this.loading = true;
-            await this.sleep(800);
-            this.is_payment = true;
-            this.loading = false;
+            this._beginPosOverlay();
+            try {
+                await this.sleep(800);
+                this.is_payment = true;
+            } finally {
+                this._endPosOverlay();
+            }
         },
         sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
+        },
+        _beginPosOverlay() {
+            this._posOverlayDepth += 1;
+            this.loading = true;
+        },
+        _endPosOverlay() {
+            this._posOverlayDepth = Math.max(0, this._posOverlayDepth - 1);
+            this.loading = this._posOverlayDepth > 0;
+        },
+        _resetPosOverlay() {
+            this._posOverlayDepth = 0;
+            this.loading = false;
         },
         clickDeleteCustomer() {
             this.form.customer_id = null;
@@ -1935,7 +1979,7 @@ export default {
                 return;
             }
 
-            this.loading = true;
+            this._beginPosOverlay();
             let exchangeRateSale = this.form.exchange_rate_sale;
             let presentation = item.presentation;
 
@@ -1974,7 +2018,7 @@ export default {
                     );
                     if (!response.success) {
                         item.item.aux_quantity = item.quantity;
-                        this.loading = false;
+                        this._endPosOverlay();
                         return this.$message.error(response.message);
                     }
 
@@ -1985,7 +2029,7 @@ export default {
                         parseFloat(exist_item.item.aux_quantity) + 1
                     );
                     if (!response.success) {
-                        this.loading = false;
+                        this._endPosOverlay();
                         return this.$message.error(response.message);
                     }
 
@@ -2051,7 +2095,7 @@ export default {
                     presentation ? parseInt(presentation.quantity_unit) : 1
                 );
                 if (!response.success) {
-                    this.loading = false;
+                    this._endPosOverlay();
                     return this.$message.error(response.message);
                 }
 
@@ -2134,7 +2178,7 @@ export default {
             // console.log(this.row)
             // console.log(this.form.items)
             await this.calculateTotal();
-            this.loading = false;
+            this._endPosOverlay();
 
             await this.setFormPosLocalStorage();
 
@@ -2371,35 +2415,69 @@ export default {
                 color: "#2C8DE3"
             });
         },
-        async searchItems() {
-            if (this.input_item.length > 0) {
-                this.loading = true;
-                let parameters = `input_item=${this.input_item}&cat=${
-                    this.category_selected
-                }`;
-
-                await this.$http
-                    .get(`/${this.resource}/search_items_cat?${parameters}`)
-                    .then(response => {
-                        this.all_items = response.data.data;
-
-                        if (response.data.data.length > 0) {
-                            // this.all_items = response.data.data;
-                            this.filterItems();
-                            this.pagination = response.data.meta;
-                            this.pagination.per_page = parseInt(
-                                response.data.meta.per_page
-                            );
-                            this.fixItems();
-                            this.loading = false;
-                        } else {
-                            this.loading = false;
-                            this.filterItems();
-                        }
-                    });
-            } else {
+        searchItems() {
+            const raw = this.input_item;
+            const q =
+                raw === null || raw === undefined ? "" : String(raw).trim();
+            if (q.length === 0) {
+                if (
+                    this.debouncedSearchItemsCat &&
+                    typeof this.debouncedSearchItemsCat.cancel === "function"
+                ) {
+                    this.debouncedSearchItemsCat.cancel();
+                }
+                if (this.posSearchCatCancelSource) {
+                    this.posSearchCatCancelSource.cancel("cleared-query");
+                    this.posSearchCatCancelSource = null;
+                }
+                this._resetPosOverlay();
                 this.getRecords();
                 this.filterItems();
+                return;
+            }
+            this.debouncedSearchItemsCat();
+        },
+        async fetchSearchItemsCat() {
+            const raw = this.input_item;
+            const q =
+                raw === null || raw === undefined ? "" : String(raw).trim();
+            if (q.length === 0) {
+                return;
+            }
+
+            if (this.posSearchCatCancelSource) {
+                this.posSearchCatCancelSource.cancel("superseded");
+                this.posSearchCatCancelSource = null;
+            }
+            this.posSearchCatCancelSource = axios.CancelToken.source();
+
+            this._beginPosOverlay();
+            const parameters = `input_item=${this.input_item}&cat=${this.category_selected}`;
+
+            try {
+                const response = await this.$http.get(
+                    `/${this.resource}/search_items_cat?${parameters}`,
+                    { cancelToken: this.posSearchCatCancelSource.token }
+                );
+                this.all_items = response.data.data;
+
+                if (response.data.data.length > 0) {
+                    this.filterItems();
+                    this.pagination = response.data.meta;
+                    this.pagination.per_page = parseInt(
+                        response.data.meta.per_page
+                    );
+                    this.fixItems();
+                } else {
+                    this.filterItems();
+                }
+            } catch (e) {
+                if (!axios.isCancel(e)) {
+                    // Evitar overlay colgado; el listado puede quedar vacío si falla la red.
+                }
+            } finally {
+                this.posSearchCatCancelSource = null;
+                this._endPosOverlay();
             }
         },
         getResponseValidate(success, message) {
@@ -2498,22 +2576,27 @@ export default {
             };
         },
         async searchItemsBarcode() {
-            if (this.input_item.length > 1) {
-                this.loading = true;
-                let parameters = `input_item=${
-                    this.input_item
-                }&search_item_by_barcode_presentation=${
-                    this.search_item_by_barcode_presentation
-                }`;
+            if (this.input_item.length <= 1) {
+                await this.filterItems();
+                return;
+            }
 
+            this._beginPosOverlay();
+            let parameters = `input_item=${
+                this.input_item
+            }&search_item_by_barcode_presentation=${
+                this.search_item_by_barcode_presentation
+            }`;
+
+            try {
                 if (this.electronic_scale_barcode) {
                     const check_electronic_scale_data = this.setDataToElectronicScaleData();
 
                     if (!check_electronic_scale_data.success) {
-                        this.loading = false;
-                        return this.$message.error(
+                        this.$message.error(
                             check_electronic_scale_data.message
                         );
+                        return;
                     }
 
                     parameters = `input_item=${
@@ -2523,36 +2606,32 @@ export default {
                     }`;
                 }
 
-                await this.$http
-                    .get(`/${this.resource}/search_items?${parameters}`)
-                    .then(response => {
-                        // console.log("buah");
-                        if (response.data.items.length > 0) {
-                            
-                            let presentation = response.data.items[0].unit_type.length > 0 ? true: false
-                        
-                            if (presentation && this.barcode_stop_presentation) {
-                                this.items = response.data.items;
-                                this.loading = false;
-                                return    
-                            }
+                const response = await this.$http.get(
+                    `/${this.resource}/search_items?${parameters}`
+                );
 
-                            this.items = response.data.items;
-                            this.enabledSearchItemsBarcode();
-                            this.loading = false;
-                            if (this.items.length == 0) {
-                                this.filterItems();
-                            }
-                            
-                        } else {
-                            this.$message.error('No se encontro el codigo de barra');
-                            this.cleanInput();
-                            this.loading = false;
-                        }
+                if (response.data.items.length > 0) {
+                    const presentation =
+                        response.data.items[0].unit_type.length > 0;
 
-                    });
-            } else {
-                await this.filterItems();
+                    if (presentation && this.barcode_stop_presentation) {
+                        this.items = response.data.items;
+                        return;
+                    }
+
+                    this.items = response.data.items;
+                    this.enabledSearchItemsBarcode();
+                    if (this.items.length == 0) {
+                        this.filterItems();
+                    }
+                } else {
+                    this.$message.error('No se encontro el codigo de barra');
+                    this.cleanInput();
+                }
+            } catch (e) {
+                // Error de red / servidor: no dejar el overlay colgado.
+            } finally {
+                this._endPosOverlay();
             }
         },
         fixItems() {
@@ -2671,15 +2750,37 @@ export default {
         back() {
             this.all_items = [];
             this.place = "cat";
-            this.loading = false;
+            this._resetPosOverlay();
         },
         async setView(view) {
             this.place = view;
 
             if (view == "cat3") {
+                if (
+                    this.debouncedSearchItemsCat &&
+                    typeof this.debouncedSearchItemsCat.cancel === "function"
+                ) {
+                    this.debouncedSearchItemsCat.cancel();
+                }
+                if (this.posSearchCatCancelSource) {
+                    this.posSearchCatCancelSource.cancel("view-cat3");
+                    this.posSearchCatCancelSource = null;
+                }
                 this.category_selected = "";
+                this._resetPosOverlay();
                 await this.getRecords();
-                this.$refs.table_items.reset();
+                this.$nextTick(() => {
+                    if (
+                        this.$refs.table_items &&
+                        typeof this.$refs.table_items.reset === "function"
+                    ) {
+                        try {
+                            this.$refs.table_items.reset();
+                        } catch (e) {
+                            /* evita bloquear la UI si la tabla aún no está lista */
+                        }
+                    }
+                });
             }
 
             this.setFocusInInputSearch();

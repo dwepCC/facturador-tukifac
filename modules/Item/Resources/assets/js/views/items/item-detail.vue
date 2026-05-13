@@ -1839,27 +1839,25 @@ this.activeName =  'first'
             this.form.attributes.splice(index, 1)
         },
         async searchRemoteItems(input) {
-            if (input.length > 2) {
-                this.loading_search = true
-                const params = {
-                    'input': input,
-                    'search_by_barcode': this.search_item_by_barcode ? 1 : 0,
-                    'production':1
-                }
-                await this.$http.get(`/${this.resource}/search-items/`, {params})
-                    .then(response => {
-                        this.items = response.data.items
-                        this.loading_search = false
-                        // this.enabledSearchItemsBarcode()
-                        // this.enabledSearchItemBySeries()
-                        if (this.items.length == 0) {
-                            // this.filterItems()
-                        }
-                    })
-            } else {
-                // await this.filterItems()
+            const q = input === undefined || input === null ? '' : String(input);
+            if (q.length <= 2) {
+                this.loading_search = false;
+                return;
             }
-
+            this.loading_search = true;
+            const params = {
+                input: q,
+                search_by_barcode: this.search_item_by_barcode ? 1 : 0,
+                production: 1,
+            };
+            try {
+                const response = await this.$http.get(`/${this.resource}/search-items/`, { params });
+                this.items = response.data.items;
+            } catch (e) {
+                this.items = [];
+            } finally {
+                this.loading_search = false;
+            }
         },
         getItems() {
             this.$http.get(`/${this.resource}/item/tables`).then(response => {

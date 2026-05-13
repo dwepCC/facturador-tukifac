@@ -321,6 +321,16 @@ public function records(Request $request)
             return new ClientCollection($records);
         }
 
+        /**
+         * Listado mínimo desde BD central (sin conexión por tenant).
+         * Usado por vistas que solo necesitan id, nombre, documento y plan (p. ej. paquetes de comprobantes).
+         */
+        public function recordsLite(Request $request)
+        {
+            $payload = app(CentralClientMetricsQueryService::class)->directoryClientsFromCentral($request);
+
+            return response()->json($payload);
+        }
 
         /**
          *

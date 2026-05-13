@@ -614,4 +614,49 @@ class CentralClientMetricsQueryService
 
         return $map[$id] ?? ($id ? 'Estado ' . $id : '—');
     }
+
+    /**
+     * Directorio de clientes leyendo solo la BD central (clients + plan), sin métricas ni conexión por tenant.
+     * Los filtros de texto, FQDN y plan coinciden con {@see self::paginateClients} para no duplicar reglas.
+     *
+     * @return array{data: list<array{id: int, name: string, number: string, plan: string}>}
+     */
+    public function directoryClientsFromCentral(Request $request): array
+    {
+        $q = Client::query()
+            ->without('hostname')
+            ->select(['clients.id', 'clients.name', 'clients.number', 'clients.plan_id'])
+            ->with(['plan:id,name']);
+
+        if ($search = $request->input('search')) {
+            $search = trim((string) $search);
+            if ($search !== '') {
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('clients.name', 'like', '%' . $search . '%')
+                        ->orWhere('clients.number', 'like', '%' . $search . '%')
+                        ->orWhere('clients.email', 'like', '%' . $search . '%')
+                        ->orWhereHas('hostname', function ($h) use ($search) {
+                            $h->where('fqdn', 'like', '%' . $search . '%');
+                        });
+                });
+            }
+        }
+
+        if ($request->filled('plan_id')) {
+            $q->where('clients.plan_id', (int) $request->input('plan_id'));
+        }
+
+        $q->orderByDesc('clients.id');
+
+        $data = $q->get()->map(function (Client $row) {
+            return [
+                'id' => (int) $row->id,
+                'name' => (string) $row->name,
+                'number' => (string) $row->number,
+                'plan' => $row->plan ? (string) $row->plan->name : '',
+            ];
+        })->values()->all();
+
+        return ['data' => $data];
+    }
 }

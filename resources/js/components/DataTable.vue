@@ -319,6 +319,8 @@ export default {
             showDisabledValue: 'all',
             warehouse_id: 'all',
             warehouses: [],
+            /** Peticiones GET /records solapadas: el overlay solo se apaga cuando todas terminan. */
+            _recordsInflight: 0,
         };
     },
     computed: {
@@ -454,7 +456,11 @@ export default {
                 1
             );
         },
-        getRecords() {
+        getRecords(page) {
+            if (typeof page === 'number' && page > 0) {
+                this.pagination.current_page = page;
+            }
+            this._recordsInflight += 1;
             this.loading_submit = true;
             return this.$http
                 .get(`/${this.resource}/records?${this.getQueryParameters()}`)
@@ -467,9 +473,10 @@ export default {
 
                     this.$emit('records-changed', this.records);
                 })
-                .catch(error => {})
+                .catch(() => {})
                 .then(() => {
-                    this.loading_submit = false;
+                    this._recordsInflight = Math.max(0, this._recordsInflight - 1);
+                    this.loading_submit = this._recordsInflight > 0;
                 });
         },
         getQueryParameters() {

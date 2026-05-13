@@ -923,6 +923,9 @@ import queryString from "query-string";
 import TableItems from "./partials/table.vue";
 import ItemUnitTypes from "./partials/item_unit_types.vue";
 import { mapActions, mapState } from "vuex/dist/vuex.mjs";
+import axios from "axios";
+
+const POS_SEARCH_DEBOUNCE_MS = 350;
 
 export default {
     props: [
@@ -986,10 +989,15 @@ export default {
             show_fast_payment_garage: false,
             itemUnitTypes: [],
             affectations_exonerated_igv: ["10", "20"],
-            searchFromBarcode: false
+            searchFromBarcode: false,
+            posSearchCatCancelSource: null,
+            _posOverlayDepth: 0
         };
     },
     async created() {
+        this.debouncedSearchItemsCat = _.debounce(() => {
+            this.fetchSearchItemsCat();
+        }, POS_SEARCH_DEBOUNCE_MS);
         this.loadConfiguration();
 
         this.show_fast_payment_garage = false;
@@ -1009,6 +1017,19 @@ export default {
         this.form.establishment_id = this.establishment.id;
 
         this.enabledSearchItemByBarcode();
+    },
+    beforeDestroy() {
+        if (
+            this.debouncedSearchItemsCat &&
+            typeof this.debouncedSearchItemsCat.cancel === "function"
+        ) {
+            this.debouncedSearchItemsCat.cancel();
+        }
+        if (this.posSearchCatCancelSource) {
+            this.posSearchCatCancelSource.cancel("component-destroyed");
+            this.posSearchCatCancelSource = null;
+        }
+        this._resetPosOverlay();
     },
 
     computed: {
@@ -1191,8 +1212,11 @@ export default {
                 this.place = "prod";
             }
         },
-        getRecords() {
-            this.loading = true;
+        getRecords(page) {
+            if (typeof page === "number" && page > 0) {
+                this.pagination.current_page = page;
+            }
+            this._beginPosOverlay();
             return this.$http
                 .get(`/${this.resource}/items?${this.getQueryParameters()}`)
                 .then(response => {
@@ -1202,13 +1226,16 @@ export default {
                     this.pagination.per_page = parseInt(
                         response.data.meta.per_page
                     );
-                    this.loading = false;
                     if (response.data.meta.total > 0) {
                         this.pagination.total = response.data.meta.total;
                     } else {
                         this.pagination.total = 0;
                     }
                     this.fixItems();
+                })
+                .catch(() => {})
+                .finally(() => {
+                    this._endPosOverlay();
                 });
         },
         getQueryParameters() {
@@ -1642,13 +1669,28 @@ export default {
             if (!this.form.items[0])
                 return this.$message.error("Seleccione un producto");
             this.form.establishment_id = this.establishment.id;
-            this.loading = true;
-            await this.sleep(800);
-            this.is_payment = true;
-            this.loading = false;
+            this._beginPosOverlay();
+            try {
+                await this.sleep(800);
+                this.is_payment = true;
+            } finally {
+                this._endPosOverlay();
+            }
         },
         sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
+        },
+        _beginPosOverlay() {
+            this._posOverlayDepth += 1;
+            this.loading = true;
+        },
+        _endPosOverlay() {
+            this._posOverlayDepth = Math.max(0, this._posOverlayDepth - 1);
+            this.loading = this._posOverlayDepth > 0;
+        },
+        _resetPosOverlay() {
+            this._posOverlayDepth = 0;
+            this.loading = false;
         },
         clickDeleteCustomer() {
             this.form.customer_id = null;
@@ -1663,11 +1705,10 @@ export default {
                 this.$message.error(
                     "El precio del producto debe ser mayor a 0.1"
                 );
-                this.loading = false;
                 return;
             }
 
-            this.loading = true;
+            this._beginPosOverlay();
             let exchangeRateSale = this.form.exchange_rate_sale;
 
             // console.log(item.unit_type_id)
@@ -1692,7 +1733,7 @@ export default {
                     );
                     if (!response.success) {
                         item.item.aux_quantity = item.quantity;
-                        this.loading = false;
+                        this._endPosOverlay();
                         return this.$message.error(response.message);
                     }
 
@@ -1703,7 +1744,7 @@ export default {
                         parseFloat(exist_item.item.aux_quantity) + 1
                     );
                     if (!response.success) {
-                        this.loading = false;
+                        this._endPosOverlay();
                         return this.$message.error(response.message);
                     }
 
@@ -1750,7 +1791,7 @@ export default {
                         : 1
                 );
                 if (!response.success) {
-                    this.loading = false;
+                    this._endPosOverlay();
                     return this.$message.error(response.message);
                 }
 
@@ -1820,7 +1861,7 @@ export default {
             // console.log(this.row)
             // console.log(this.form.items)
             await this.calculateTotal();
-            this.loading = false;
+            this._endPosOverlay();
 
             await this.setFormPosLocalStorage();
 
@@ -1994,57 +2035,93 @@ export default {
                 color: "#2C8DE3"
             });
         },
-        async searchItems() {
-            if (this.input_item.length > 0) {
-                this.loading = true;
-                let parameters = `input_item=${this.input_item}&cat=${
-                    this.category_selected
-                }&garage=1`;
-
-                await this.$http
-                    .get(`/${this.resource}/search_items_cat?${parameters}`)
-                    .then(response => {
-                        this.all_items = response.data.data;
-
-                        if (response.data.data.length > 0) {
-                            // this.all_items = response.data.data;
-                            this.filterItems();
-                            this.pagination = response.data.meta;
-                            this.pagination.per_page = parseInt(
-                                response.data.meta.per_page
-                            );
-                            this.fixItems();
-                            this.loading = false;
-                        } else {
-                            this.loading = false;
-                            this.filterItems();
-                        }
-                    });
-            } else {
+        searchItems() {
+            const raw = this.input_item;
+            const q =
+                raw === null || raw === undefined ? "" : String(raw).trim();
+            if (q.length === 0) {
+                if (
+                    this.debouncedSearchItemsCat &&
+                    typeof this.debouncedSearchItemsCat.cancel === "function"
+                ) {
+                    this.debouncedSearchItemsCat.cancel();
+                }
+                if (this.posSearchCatCancelSource) {
+                    this.posSearchCatCancelSource.cancel("cleared-query");
+                    this.posSearchCatCancelSource = null;
+                }
+                this._resetPosOverlay();
                 this.getRecords();
                 this.filterItems();
+                return;
+            }
+            this.debouncedSearchItemsCat();
+        },
+        async fetchSearchItemsCat() {
+            const raw = this.input_item;
+            const q =
+                raw === null || raw === undefined ? "" : String(raw).trim();
+            if (q.length === 0) {
+                return;
+            }
+
+            if (this.posSearchCatCancelSource) {
+                this.posSearchCatCancelSource.cancel("superseded");
+                this.posSearchCatCancelSource = null;
+            }
+            this.posSearchCatCancelSource = axios.CancelToken.source();
+
+            this._beginPosOverlay();
+            const parameters = `input_item=${this.input_item}&cat=${this.category_selected}&garage=1`;
+
+            try {
+                const response = await this.$http.get(
+                    `/${this.resource}/search_items_cat?${parameters}`,
+                    { cancelToken: this.posSearchCatCancelSource.token }
+                );
+                this.all_items = response.data.data;
+
+                if (response.data.data.length > 0) {
+                    this.filterItems();
+                    this.pagination = response.data.meta;
+                    this.pagination.per_page = parseInt(
+                        response.data.meta.per_page
+                    );
+                    this.fixItems();
+                } else {
+                    this.filterItems();
+                }
+            } catch (e) {
+                if (!axios.isCancel(e)) {
+                    //
+                }
+            } finally {
+                this.posSearchCatCancelSource = null;
+                this._endPosOverlay();
             }
         },
         async searchItemsBarcode() {
-            // console.log(query)
-            // console.log("in:" + this.input_item)
-            if (this.input_item.length > 1) {
-                this.loading = true;
-                let parameters = `input_item=${this.input_item}`;
-
-                await this.$http
-                    .get(`/${this.resource}/search_items?${parameters}`)
-                    .then(response => {
-                        console.log("buah");
-                        this.items = response.data.items;
-                        this.enabledSearchItemsBarcode();
-                        this.loading = false;
-                        if (this.items.length == 0) {
-                            this.filterItems();
-                        }
-                    });
-            } else {
+            if (this.input_item.length <= 1) {
                 await this.filterItems();
+                return;
+            }
+
+            this._beginPosOverlay();
+            const parameters = `input_item=${this.input_item}`;
+
+            try {
+                const response = await this.$http.get(
+                    `/${this.resource}/search_items?${parameters}`
+                );
+                this.items = response.data.items;
+                this.enabledSearchItemsBarcode();
+                if (this.items.length == 0) {
+                    this.filterItems();
+                }
+            } catch (e) {
+                //
+            } finally {
+                this._endPosOverlay();
             }
         },
         fixItems() {
@@ -2150,15 +2227,37 @@ export default {
         back() {
             this.all_items = [];
             this.place = "cat";
-            this.loading = false;
+            this._resetPosOverlay();
         },
         async setView(view) {
             this.place = view;
 
             if (view == "cat3") {
+                if (
+                    this.debouncedSearchItemsCat &&
+                    typeof this.debouncedSearchItemsCat.cancel === "function"
+                ) {
+                    this.debouncedSearchItemsCat.cancel();
+                }
+                if (this.posSearchCatCancelSource) {
+                    this.posSearchCatCancelSource.cancel("view-cat3");
+                    this.posSearchCatCancelSource = null;
+                }
                 this.category_selected = "";
+                this._resetPosOverlay();
                 await this.getRecords();
-                this.$refs.table_items.reset();
+                this.$nextTick(() => {
+                    if (
+                        this.$refs.table_items &&
+                        typeof this.$refs.table_items.reset === "function"
+                    ) {
+                        try {
+                            this.$refs.table_items.reset();
+                        } catch (e) {
+                            //
+                        }
+                    }
+                });
             }
         },
         nameSets(id) {

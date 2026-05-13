@@ -23,7 +23,7 @@
                         <h2 class="card-title">Clientes</h2>
                     </header>
                     <div class="card-body">
-                        <el-input placeholder="Buscar por nombre o RUC" v-model="searchQuery" clearable @input="filterClients"></el-input>
+                        <el-input placeholder="Buscar por nombre, RUC, correo o dominio" v-model="searchQuery" clearable @input="scheduleClientSearch"></el-input>
                         <div class="table-responsive mt-3" style="max-height: 420px; overflow-y: auto;">
                             <table class="table table-hover">
                                 <thead>
@@ -36,7 +36,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="(row, idx) in filteredRecords" :key="row.id">
+                                    <tr v-for="(row, idx) in records" :key="row.id">
                                         <td>{{ idx + 1 }}</td>
                                         <td>{{ row.name }}</td>
                                         <td>{{ row.number }}</td>
@@ -45,7 +45,7 @@
                                             <el-button type="primary" size="mini" @click="selectClient(row.id)">Gestionar</el-button>
                                         </td>
                                     </tr>
-                                    <tr v-if="filteredRecords.length === 0">
+                                    <tr v-if="records.length === 0">
                                         <td colspan="5" class="text-center text-muted">Sin resultados</td>
                                     </tr>
                                 </tbody>
@@ -142,7 +142,7 @@ export default {
             resource: 'clients',
             loading: false,
             records: [],
-            filteredRecords: [],
+            clientSearchTimer: null,
             searchQuery: '',
             clientId: null,
             summary: {
@@ -166,6 +166,12 @@ export default {
     created() {
         this.fetchClients();
     },
+    beforeDestroy() {
+        if (this.clientSearchTimer) {
+            clearTimeout(this.clientSearchTimer);
+            this.clientSearchTimer = null;
+        }
+    },
     watch: {
         'form.units'() {
             this.form.price = this.priceMap[this.form.units] || 0;
@@ -186,12 +192,25 @@ export default {
             const safe = Number.isFinite(num) ? num : 0;
             return `S/ ${safe.toFixed(2)}`;
         },
+        scheduleClientSearch() {
+            if (this.clientSearchTimer) {
+                clearTimeout(this.clientSearchTimer);
+            }
+            this.clientSearchTimer = setTimeout(() => {
+                this.clientSearchTimer = null;
+                this.fetchClients();
+            }, 350);
+        },
         async fetchClients() {
             this.loading = true;
             try {
-                const response = await this.$http.get(`/${this.resource}/records`);
+                const params = {};
+                const s = (this.searchQuery || '').trim();
+                if (s) {
+                    params.search = s;
+                }
+                const response = await this.$http.get(`/${this.resource}/records-lite`, { params });
                 this.records = response.data.data || [];
-                this.filteredRecords = this.records;
             } catch (e) {
                 this.$message.error('Error al cargar clientes');
             } finally {
@@ -208,13 +227,6 @@ export default {
             const raw = params.get('client_id');
             const id = raw ? parseInt(raw, 10) : 0;
             return id > 0 ? id : null;
-        },
-        filterClients() {
-            const q = (this.searchQuery || '').toLowerCase();
-            this.filteredRecords = this.records.filter(r => {
-                return (r.name && r.name.toLowerCase().includes(q)) ||
-                       (r.number && r.number.toLowerCase().includes(q));
-            });
         },
         async selectClient(id) {
             this.clientId = id;

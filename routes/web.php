@@ -878,6 +878,7 @@ if ($hostname) {
             Route::get('clientes-metricas-central/document-events', 'System\ClientController@centralDocumentEvents');
             Route::get('document-packages', 'System\ClientDocumentPackageController@index')->name('system.document-packages.index');
             Route::get('clients/records', 'System\ClientController@records');
+            Route::get('clients/records-lite', 'System\ClientController@recordsLite');
             Route::get('clients/record/{client}', 'System\ClientController@record');
             Route::get('clients/records/list', 'System\ClientController@recordsListPending');//tukifac
             Route::post('clients/payment/approve/{id}', 'System\ClientController@approvePayment');//tukifac

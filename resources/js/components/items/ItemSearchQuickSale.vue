@@ -83,9 +83,13 @@
 
 <script>
 
+    import axios from 'axios';
     import WarehousesStock from './partials/WarehousesStock.vue'
     import { ItemOptionDescription } from '@helpers/modal_item'
     import ItemDetailForm from '@views/items/form.vue'
+
+    /** Retraso entre la última tecla y la petición al buscador remoto (reduce tormenta de requests al servidor). */
+    const SEARCH_REMOTE_DEBOUNCE_MS = 350;
 
     export default {
         props: {
@@ -128,10 +132,17 @@
                 searchOnEnter: false,
                 search_item_by_barcode:false,
                 inputEnter: '',
+                /** CancelToken de la petición GET /search-items en curso (evita competir con búsquedas obsoletas). */
+                searchItemsCancelSource: null,
+                /** Contador para no apagar `loading_search` si una respuesta vieja llega tarde. */
+                _searchRequestSeq: 0,
             }
         },
         async created()
         {
+            this.debouncedFetchSearchRemote = _.debounce((query) => {
+                this.fetchSearchRemoteItems(query);
+            }, SEARCH_REMOTE_DEBOUNCE_MS);
             await this.initialItems()
         },
         mounted()
@@ -141,6 +152,15 @@
             const storedSearchByBarcode = localStorage.getItem('search_item_by_barcode');
             if (storedSearchByBarcode !== null) {
                 this.search_item_by_barcode = JSON.parse(storedSearchByBarcode);
+            }
+        },
+        beforeDestroy() {
+            if (this.debouncedFetchSearchRemote && typeof this.debouncedFetchSearchRemote.cancel === 'function') {
+                this.debouncedFetchSearchRemote.cancel();
+            }
+            if (this.searchItemsCancelSource) {
+                this.searchItemsCancelSource.cancel('component-destroyed');
+                this.searchItemsCancelSource = null;
             }
         },
         methods:
@@ -211,36 +231,80 @@
             {
                 return ItemOptionDescription(row)
             },
-            async searchRemoteItems(input)
-            {
+            /**
+             * Element UI `remote-method`: se dispara en cada cambio de query.
+             * Aquí solo encolamos con debounce; la petición real va en {@see fetchSearchRemoteItems}.
+             */
+            searchRemoteItems(input) {
                 if (this.searchOnEnter) {
                     return;
                 }
 
-                if (input.length > 2)
-                {
-                    this.loading_search = true
+                const q = input === undefined || input === null ? '' : String(input).trim();
 
-                    const params = {
-                        input: input,
-                        search_by_barcode: (this.search_item_by_barcode)?1:0,
-                        search_item_by_barcode_presentation: 0,
-                        search_factory_code_items: 0
+                if (q.length <= 2) {
+                    if (this.debouncedFetchSearchRemote && typeof this.debouncedFetchSearchRemote.cancel === 'function') {
+                        this.debouncedFetchSearchRemote.cancel();
                     }
-                    await this.$http.get(`/${this.resource}/search-items`, { params })
-                            .then(response => {
-                                this.items = response.data.items
-                                this.loading_search = false
-                                this.enabledSearchItemsBarcode(input)
-                                if (this.items.length == 0){
-                                    this.filterItems();
-                                    this.items=[];
-                                }
-                            })
-
-                    return
+                    if (this.searchItemsCancelSource) {
+                        this.searchItemsCancelSource.cancel('query-too-short');
+                        this.searchItemsCancelSource = null;
+                    }
+                    this.loading_search = false;
+                    this.filterItems();
+                    return;
                 }
-                await this.filterItems()
+
+                this.debouncedFetchSearchRemote(q);
+            },
+            async fetchSearchRemoteItems(query) {
+                if (this.searchOnEnter) {
+                    return;
+                }
+
+                const q = (query || '').toString().trim();
+                if (q.length <= 2) {
+                    return;
+                }
+
+                if (this.searchItemsCancelSource) {
+                    this.searchItemsCancelSource.cancel('superseded');
+                    this.searchItemsCancelSource = null;
+                }
+                this.searchItemsCancelSource = axios.CancelToken.source();
+
+                const reqId = ++this._searchRequestSeq;
+                this.loading_search = true;
+
+                const params = {
+                    input: q,
+                    search_by_barcode: (this.search_item_by_barcode) ? 1 : 0,
+                    search_item_by_barcode_presentation: 0,
+                    search_factory_code_items: 0,
+                };
+
+                try {
+                    const response = await this.$http.get(`/${this.resource}/search-items`, {
+                        params,
+                        cancelToken: this.searchItemsCancelSource.token,
+                    });
+                    this.items = response.data.items;
+                    this.enabledSearchItemsBarcode(q);
+                    if (this.items.length === 0) {
+                        this.filterItems();
+                        this.items = [];
+                    }
+                } catch (e) {
+                    if (axios.isCancel(e)) {
+                        return;
+                    }
+                    throw e;
+                } finally {
+                    this.searchItemsCancelSource = null;
+                    if (reqId === this._searchRequestSeq) {
+                        this.loading_search = false;
+                    }
+                }
             },
             async searchRemoteItemsWithEnter(){
                 if(this.inputEnter.length > 2 && this.searchOnEnter){
@@ -251,16 +315,19 @@
                         search_item_by_barcode_presentation: 0,
                         search_factory_code_items: 0
                     }
-                    await this.$http.get(`/${this.resource}/search-items`, { params })
-                            .then(response => {
-                                this.items = response.data.items
-                                this.loading_search = false
-                                this.enabledSearchItemsBarcode(this.inputEnter)
-                                if (this.items.length == 0){
-                                    this.filterItems();
-                                    this.items=[];
-                                }
-                            })
+                    try {
+                        const response = await this.$http.get(`/${this.resource}/search-items`, { params })
+                        this.items = response.data.items
+                        this.enabledSearchItemsBarcode(this.inputEnter)
+                        if (this.items.length == 0){
+                            this.filterItems();
+                            this.items=[];
+                        }
+                    } catch (e) {
+                        this.items = [];
+                    } finally {
+                        this.loading_search = false
+                    }
                     return
                 }
             },
