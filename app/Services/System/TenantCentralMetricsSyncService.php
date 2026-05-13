@@ -14,6 +14,7 @@ use App\Models\Tenant\SaleNote;
 use App\Models\Tenant\User;
 use Carbon\Carbon;
 use Hyn\Tenancy\Environment;
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Document\Helpers\DocumentHelper;
@@ -251,6 +252,10 @@ class TenantCentralMetricsSyncService
 
     /**
      * Recalcula agregados en tenant_metrics_current a partir de los índices centrales.
+     *
+     * Optimización: una sola pasada SQL para contadores sobre client_central_documents,
+     * sumatoria de ventas del ciclo con agregados SQL (equivalente a computeSalesTotalCached en PHP),
+     * y lectura única de tenant_metrics_current para usuarios/sucursales/soap.
      */
     public function refreshAggregatesForClient(int $clientId): void
     {
@@ -276,38 +281,55 @@ class TenantCentralMetricsSyncService
                 : (string) $range['end_date'];
         }
 
-        $docBase = DB::connection('system')->table('client_central_documents')->where('client_id', $clientId);
+        $sys = DB::connection('system');
 
-        $totalDocuments = (clone $docBase)->count();
-        $totalPse = (clone $docBase)->where('send_to_pse', 1)->count();
-        $currentMonthDocuments = (clone $docBase)
-            ->whereBetween('date_of_issue', [$monthStart, $monthEnd])
-            ->count();
+        $agg = $sys->selectOne(
+            'SELECT COUNT(*) AS total_documents, '
+            . 'COALESCE(SUM(CASE WHEN send_to_pse = 1 THEN 1 ELSE 0 END), 0) AS total_documents_pse, '
+            . 'COALESCE(SUM(CASE WHEN date_of_issue BETWEEN ? AND ? THEN 1 ELSE 0 END), 0) AS current_month_documents, '
+            . 'COALESCE(SUM(CASE WHEN state_type_id = ? AND regularize_shipping = 1 THEN 1 ELSE 0 END), 0) AS pending_regularize_shipping, '
+            . 'COALESCE(SUM(CASE WHEN state_type_id IN (?, ?) AND date_of_issue <= ? THEN 1 ELSE 0 END), 0) AS pending_not_sent, '
+            . 'COALESCE(SUM(CASE WHEN state_type_id = ? THEN 1 ELSE 0 END), 0) AS pending_to_be_canceled, '
+            . 'COALESCE(SUM(CASE WHEN state_type_id = ? THEN 1 ELSE 0 END), 0) AS pending_rejected, '
+            . 'COALESCE(SUM(CASE WHEN state_type_id = ? THEN 1 ELSE 0 END), 0) AS pending_observed '
+            . 'FROM client_central_documents WHERE client_id = ?',
+            [
+                $monthStart,
+                $monthEnd,
+                '01',
+                '01',
+                '03',
+                $today,
+                '13',
+                '09',
+                '07',
+                $clientId,
+            ]
+        );
 
-        $pendingRegularize = (clone $docBase)
-            ->where('state_type_id', '01')
-            ->where('regularize_shipping', 1)
-            ->count();
+        $totalDocuments = (int) ($agg->total_documents ?? 0);
+        $totalPse = (int) ($agg->total_documents_pse ?? 0);
+        $currentMonthDocuments = (int) ($agg->current_month_documents ?? 0);
+        $pendingRegularize = (int) ($agg->pending_regularize_shipping ?? 0);
+        $pendingNotSent = (int) ($agg->pending_not_sent ?? 0);
+        $pendingCanceled = (int) ($agg->pending_to_be_canceled ?? 0);
+        $pendingRejected = (int) ($agg->pending_rejected ?? 0);
+        $pendingObserved = (int) ($agg->pending_observed ?? 0);
 
-        $pendingNotSent = (clone $docBase)
-            ->whereIn('state_type_id', ['01', '03'])
-            ->where('date_of_issue', '<=', $today)
-            ->count();
-
-        $pendingCanceled = (clone $docBase)->where('state_type_id', '13')->count();
-        $pendingRejected = (clone $docBase)->where('state_type_id', '09')->count();
-        $pendingObserved = (clone $docBase)->where('state_type_id', '07')->count();
-
-        $totalSaleNotes = DB::connection('system')
-            ->table('client_central_sale_notes')
+        $totalSaleNotes = (int) $sys->table('client_central_sale_notes')
             ->where('client_id', $clientId)
             ->count();
 
-        $salesCached = $this->computeSalesTotalCached($clientId, $cycleStart, $cycleEnd, $includeNvSales);
+        $salesCached = $this->computeSalesTotalCachedUsingSql($sys, $clientId, $cycleStart, $cycleEnd, $includeNvSales);
 
-        $users = TenantMetricsCurrent::query()->where('client_id', $clientId)->value('total_users');
-        $establishments = TenantMetricsCurrent::query()->where('client_id', $clientId)->value('total_establishments');
-        $soap = TenantMetricsCurrent::query()->where('client_id', $clientId)->value('soap_type_id');
+        $existingMetrics = $sys->table('tenant_metrics_current')
+            ->where('client_id', $clientId)
+            ->select(['total_users', 'total_establishments', 'soap_type_id'])
+            ->first();
+
+        $users = (int) ($existingMetrics?->total_users ?? 0);
+        $establishments = (int) ($existingMetrics?->total_establishments ?? 0);
+        $soap = $existingMetrics?->soap_type_id;
 
         TenantMetricsCurrent::query()->updateOrInsert(
             ['client_id' => $clientId],
@@ -323,8 +345,8 @@ class TenantCentralMetricsSyncService
                 'pending_observed' => $pendingObserved,
                 'monthly_sales_total_cached' => $salesCached,
                 'metrics_last_synced_at' => $now,
-                'total_users' => $users ?? 0,
-                'total_establishments' => $establishments ?? 0,
+                'total_users' => $users,
+                'total_establishments' => $establishments,
                 'soap_type_id' => $soap,
                 'updated_at' => $now,
                 'created_at' => $now,
@@ -333,48 +355,48 @@ class TenantCentralMetricsSyncService
     }
 
     /**
-     * Aproximación al total de ventas del ciclo usando solo índice central (sin payments por línea).
+     * Misma regla que el histórico computeSalesTotalCached en PHP: documentos 01/03/08 suman,
+     * 07 resta (NC), conversión USD con exchange_rate_sale (PHP trataba 0/null como 1); NV opcional.
      */
-    protected function computeSalesTotalCached(int $clientId, string $cycleStart, string $cycleEnd, bool $includeSaleNotes): float
-    {
-        $states = ['01', '03', '05', '07', '13'];
-        $typesMain = ['01', '03', '08'];
+    private function computeSalesTotalCachedUsingSql(
+        Connection $sys,
+        int $clientId,
+        string $cycleStart,
+        string $cycleEnd,
+        bool $includeSaleNotes
+    ): float {
+        $docRow = $sys->selectOne(
+            'SELECT COALESCE(SUM('
+            . 'CASE '
+            . "WHEN document_type_id = '07' THEN "
+            . '-(CASE WHEN currency_type_id = ? THEN total * IFNULL(NULLIF(exchange_rate_sale, 0), 1) ELSE total END) '
+            . "WHEN document_type_id IN ('01', '03', '08') THEN "
+            . '(CASE WHEN currency_type_id = ? THEN total * IFNULL(NULLIF(exchange_rate_sale, 0), 1) ELSE total END) '
+            . 'ELSE 0 END'
+            . '), 0) AS s '
+            . 'FROM client_central_documents '
+            . 'WHERE client_id = ? '
+            . 'AND date_of_issue BETWEEN ? AND ? '
+            . "AND state_type_id IN ('01','03','05','07','13') "
+            . "AND document_type_id IN ('01','03','08','07')",
+            ['USD', 'USD', $clientId, $cycleStart, $cycleEnd]
+        );
 
-        $rows = ClientCentralDocument::query()
-            ->where('client_id', $clientId)
-            ->whereBetween('date_of_issue', [$cycleStart, $cycleEnd])
-            ->whereIn('state_type_id', $states)
-            ->whereIn('document_type_id', array_merge($typesMain, ['07']))
-            ->get(['document_type_id', 'currency_type_id', 'total', 'exchange_rate_sale']);
-
-        $sum = 0.0;
-        foreach ($rows as $r) {
-            $amount = (float) $r->total;
-            if ($r->currency_type_id === 'USD') {
-                $amount *= (float) ($r->exchange_rate_sale ?: 1);
-            }
-            if ($r->document_type_id === '07') {
-                $sum -= $amount;
-            } elseif (in_array($r->document_type_id, $typesMain, true)) {
-                $sum += $amount;
-            }
-        }
+        $sum = (float) ($docRow->s ?? 0);
 
         if ($includeSaleNotes) {
-            $nvRows = ClientCentralSaleNote::query()
-                ->where('client_id', $clientId)
-                ->where('changed', false)
-                ->whereBetween('date_of_issue', [$cycleStart, $cycleEnd])
-                ->whereIn('state_type_id', ['01', '03', '05', '07', '13'])
-                ->get(['currency_type_id', 'total', 'exchange_rate_sale']);
-
-            foreach ($nvRows as $r) {
-                $amount = (float) $r->total;
-                if ($r->currency_type_id === 'USD') {
-                    $amount *= (float) ($r->exchange_rate_sale ?: 1);
-                }
-                $sum += $amount;
-            }
+            $nvRow = $sys->selectOne(
+                'SELECT COALESCE(SUM('
+                . '(CASE WHEN currency_type_id = ? THEN total * IFNULL(NULLIF(exchange_rate_sale, 0), 1) ELSE total END)'
+                . '), 0) AS s '
+                . 'FROM client_central_sale_notes '
+                . 'WHERE client_id = ? '
+                . 'AND changed = 0 '
+                . 'AND date_of_issue BETWEEN ? AND ? '
+                . "AND state_type_id IN ('01','03','05','07','13')",
+                ['USD', $clientId, $cycleStart, $cycleEnd]
+            );
+            $sum += (float) ($nvRow->s ?? 0);
         }
 
         return round($sum, 2);
