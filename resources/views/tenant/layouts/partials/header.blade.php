@@ -1002,11 +1002,30 @@ function maybeShowPaymentReminder(data) {
 }
 
 function showInfoPlan(){
+    var infoPlanUserId = {!! json_encode(auth()->id()) !!};
+    var infoPlanStorageKey = 'tukifac.info_plan.v1.' + String(infoPlanUserId || '0');
+
+    try {
+        var cached = sessionStorage.getItem(infoPlanStorageKey);
+        if (cached) {
+            var parsed = JSON.parse(cached);
+            if (parsed && parsed.success === true) {
+                renderInfoPlan(parsed);
+                return;
+            }
+        }
+    } catch (e) {}
+
     $.ajax({
         url: "{{ url('cuenta/info_plan') }}",
         method: 'get',
         dataType: 'JSON',
         success: function (data) {
+            if (data && data.success === true) {
+                try {
+                    sessionStorage.setItem(infoPlanStorageKey, JSON.stringify(data));
+                } catch (e) {}
+            }
             renderInfoPlan(data);
         },
         error: function (error_data) {
@@ -1024,7 +1043,7 @@ $(document).ready(function() {
                 try {
                     for (var i = sessionStorage.length - 1; i >= 0; i--) {
                         var k = sessionStorage.key(i);
-                        if (k && k.indexOf('tukifac.payment_reminder.') === 0) {
+                        if (k && (k.indexOf('tukifac.payment_reminder.') === 0 || k.indexOf('tukifac.info_plan.') === 0)) {
                             sessionStorage.removeItem(k);
                         }
                     }

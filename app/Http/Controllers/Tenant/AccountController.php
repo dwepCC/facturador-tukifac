@@ -28,6 +28,17 @@ use Illuminate\Validation\ValidationException;
 
 class AccountController extends Controller
 {
+    /** Clave de sesión para cachear la respuesta de info_plan (por usuario; se invalida al cerrar sesión). */
+    private function infoPlanSessionKey(): string
+    {
+        return 'tenant_ui_info_plan_v1_u' . (auth()->id() ?? 0);
+    }
+
+    private function forgetCachedInfoPlan(): void
+    {
+        session()->forget($this->infoPlanSessionKey());
+    }
+
     public function index()
     {
         return view('tenant.account.configuration' );
@@ -89,6 +100,8 @@ class AccountController extends Controller
 
             $client->plan_id = $request->plan_id;
             $client->save();
+
+            $this->forgetCachedInfoPlan();
 
             return [
                 'success' => true,
@@ -216,6 +229,8 @@ class AccountController extends Controller
             Mail::to($customer_email)->send(new CulqiEmail($document));
         }*/
 
+            $this->forgetCachedInfoPlan();
+
             return [
                 'success' => true,
                 'culqui' => $charge,
@@ -226,6 +241,11 @@ class AccountController extends Controller
 //tukifac
     public function infoPlan()
     {
+        $sessionKey = $this->infoPlanSessionKey();
+        if (session()->has($sessionKey)) {
+            return session($sessionKey);
+        }
+
         $client = null;
         $hostname = app(Environment::class)->hostname();
         if ($hostname) {
@@ -359,6 +379,8 @@ class AccountController extends Controller
             'order_state_id' => $activeOrderStateId,
         ];
 
+        session()->put($sessionKey, $response);
+
         return $response;
     }
 
@@ -451,6 +473,8 @@ class AccountController extends Controller
                     'message' => 'No se encontró el registro de pago en la base de datos central'
                 ], 404);
             }
+
+            $this->forgetCachedInfoPlan();
 
             return response()->json([
                 'success' => true,

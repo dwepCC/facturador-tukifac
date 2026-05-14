@@ -312,10 +312,41 @@ export default {
     }
   },
   created() {
-    this.$http.get('/profile/record').then(r => { if (r.data && r.data.user) this.user = r.data.user })
-    this.$http.get('/cuenta/info_plan').then(r => { if (r.data && r.data.success) this.plan = r.data })
-    //this.$http.get('/cuenta/payment_records').then(r => { if (r.data && r.data.data) this.payments = r.data.data })
+    this.$http.get('/profile/record').then(r => {
+      if (r.data && r.data.user) {
+        this.user = r.data.user
+      }
+      this.loadInfoPlanFromCacheOrApi()
+    })
     this.$http.get('/companies/record').then(r => { if (r.data) this.company = r.data })
+  },
+  methods: {
+    loadInfoPlanFromCacheOrApi() {
+      const uid = this.user && this.user.id ? this.user.id : null
+      const key = 'tukifac.info_plan.v1.' + String(uid || '0')
+      if (uid) {
+        try {
+          const raw = sessionStorage.getItem(key)
+          if (raw) {
+            const d = JSON.parse(raw)
+            if (d && d.success) {
+              this.plan = d
+              return
+            }
+          }
+        } catch (e) {}
+      }
+      this.$http.get('/cuenta/info_plan').then(r => {
+        if (r.data && r.data.success) {
+          this.plan = r.data
+          if (uid) {
+            try {
+              sessionStorage.setItem(key, JSON.stringify(r.data))
+            } catch (e) {}
+          }
+        }
+      })
+    }
   },
   computed: {
     daysRemaining() {
