@@ -608,19 +608,23 @@
 </style>
 
 <script>
-import { io } from 'socket.io-client'
+// --- Socket.IO cliente desactivado: descomenta import + io(...) y elimina el stub SOCKET ---
+// import { io } from 'socket.io-client'
 import {deletable} from '@mixins/deletable'
 import Notas from '../notes/index.vue'
 import UsersForm from './partials/form.vue'
 import Environments from './partials/environments.vue'
 // import qz from 'qz-tray'
 
-const url = 'https://milanmario.com'
-const SOCKET = io(url, {
-  reconnectionDelayMax: 100,
-  transports: ['polling'],
-  autoConnect: false,
-})
+// const url = 'https://milanmario.com'
+// const SOCKET = io(url, {
+//   reconnectionDelayMax: 100,
+//   transports: ['polling'],
+//   autoConnect: false,
+// })
+
+/** Stub: sendCompany / resetTablensAndEnvClients / sendUserUpdate siguen llamando SOCKET.emit sin error */
+const SOCKET = { emit() {} }
 
 // connect()
 

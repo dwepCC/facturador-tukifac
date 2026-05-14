@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Mail\Tenant\CulqiEmail;
 use stdClass;
 use App\Models\System\Configuration as ConfigurationAdmin;
+use App\Services\Tenant\TenantReadThroughCache;
 
 
 
@@ -37,6 +38,7 @@ class AccountController extends Controller
     private function forgetCachedInfoPlan(): void
     {
         session()->forget($this->infoPlanSessionKey());
+        TenantReadThroughCache::forgetInfoPlan();
     }
 
     public function index()
@@ -246,13 +248,29 @@ class AccountController extends Controller
             return session($sessionKey);
         }
 
+        $response = TenantReadThroughCache::remember(
+            TenantReadThroughCache::KEY_INFO_PLAN,
+            TenantReadThroughCache::TTL_INFO_PLAN_SECONDS,
+            fn () => $this->buildInfoPlanPayload()
+        );
+
+        session()->put($sessionKey, $response);
+
+        return $response;
+    }
+
+    /**
+     * Carga plan / vencimiento desde BD central (sin sesión ni Redis).
+     */
+    private function buildInfoPlanPayload(): array
+    {
         $client = null;
         $hostname = app(Environment::class)->hostname();
         if ($hostname) {
             $client = Client::with(['plan'])->where('hostname_id', $hostname->id)->first();
         }
 
-        if (!$client) {
+        if (! $client) {
             $company = Company::active();
             if ($company && $company->number) {
                 $client = Client::with(['plan'])->where('number', $company->number)->first();
@@ -302,7 +320,7 @@ class AccountController extends Controller
             if ($nextDueDate->greaterThan($today)) {
                 if ($activeOrder && ((int) $activeOrder->order_state_id === 1 || (int) $activeOrder->order_state_id === 3)) {
                     $statusPlan = 'Pago pendiente';
-                } elseif (!$activeOrder) {
+                } elseif (! $activeOrder) {
                     $statusPlan = 'Estás al día en tus pagos';
                 }
                 $daysRemaining = $today->diffInDays($nextDueDate);
@@ -319,7 +337,7 @@ class AccountController extends Controller
                     $daysIndicatorClass = $daysOverdue > 0 ? 'text-danger' : 'text-warning';
                 }
 
-                if (!$activeOrder) {
+                if (! $activeOrder) {
                     $statusPlan = $daysOverdue > 0 ? 'Pago vencido' : 'Pago pendiente';
                 } elseif ((int) $activeOrder->order_state_id === 1 || (int) $activeOrder->order_state_id === 3) {
                     $statusPlan = $daysOverdue > 0 ? 'Pago vencido' : 'Pago pendiente';
@@ -328,16 +346,17 @@ class AccountController extends Controller
         }
 
         // Función auxiliar para limpiar UTF-8 y eliminar caracteres mal formados
-        $cleanUtf8 = function($string) {
-            if (is_null($string) || !is_string($string)) {
+        $cleanUtf8 = function ($string) {
+            if (is_null($string) || ! is_string($string)) {
                 return is_string($string) ? $string : '';
             }
             // Asegurar que sea UTF-8 válido, eliminando caracteres inválidos
-            if (!mb_check_encoding($string, 'UTF-8')) {
+            if (! mb_check_encoding($string, 'UTF-8')) {
                 $string = mb_convert_encoding($string, 'UTF-8', 'UTF-8//IGNORE');
             }
             // Filtrar caracteres de control no válidos
             $string = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $string);
+
             return $string;
         };
 
@@ -364,24 +383,19 @@ class AccountController extends Controller
 
         $activeOrderStateId = $activeOrder ? (int) $activeOrder->order_state_id : null;
 
-        // Formatear datos para la vista asegurando codificación UTF-8 correcta
-        $response = [
+        return [
             'success' => true,
             'plan_name' => $planName,
             'status_plan' => $cleanUtf8($statusPlan),
             'payment_date' => $cleanUtf8($paymentDateText),
-            'days_overdue' => (int)$daysOverdue,
-            'days_remaining' => (int)$daysRemaining,
+            'days_overdue' => (int) $daysOverdue,
+            'days_remaining' => (int) $daysRemaining,
             'has_pending_payment' => $hasPendingPayment,
             'days_indicator_class' => $daysIndicatorClass,
             'reminder_days' => $reminderDays,
             'show_payment_reminder' => $showPaymentReminder,
             'order_state_id' => $activeOrderStateId,
         ];
-
-        session()->put($sessionKey, $response);
-
-        return $response;
     }
 
     public function paymentManual(Request $request)

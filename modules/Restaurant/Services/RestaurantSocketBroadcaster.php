@@ -32,9 +32,16 @@ class RestaurantSocketBroadcaster
 
     /**
      * Emite un evento a todos los clientes conectados al room del tenant actual.
+     *
+     * --- Socket.IO / puente Node desactivado temporalmente ---
+     * Quita el `return` de abajo y descomenta el bloque para volver a enviar POST al bridge.
+     * `tenantRoom()` / `tenantRoomPublicKey()` siguen activos (API devuelve socket_room sin llamar a Node).
      */
     public function emit(string $event, array $payload = []): void
     {
+        return;
+
+        /*
         if (! config('restaurant_socket.enabled')) {
             return;
         }
@@ -77,5 +84,6 @@ class RestaurantSocketBroadcaster
         } catch (\Throwable $e) {
             Log::warning('Restaurant socket bridge failed: ' . $e->getMessage());
         }
+        */
     }
 }

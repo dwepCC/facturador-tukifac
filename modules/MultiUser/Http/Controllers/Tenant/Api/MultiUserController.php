@@ -9,6 +9,7 @@ use Modules\MultiUser\Traits\Tenant\MultiUserTrait;
 use Modules\MultiUser\Helpers\Tenant\AutoLoginHelper;
 use Modules\MultiUser\Http\Controllers\Tenant\MultiUserController as WebMultiUserController;
 use Modules\MultiUser\Http\Requests\Tenant\Api\ChangeClientRequest;
+use App\Services\Tenant\TenantReadThroughCache;
 
 
 class MultiUserController extends Controller
@@ -52,7 +53,15 @@ class MultiUserController extends Controller
      */
     public function records()
     {
-        return app(WebMultiUserController::class)->records();
+        $current_client = $this->getCurrentClient();
+
+        $origin_client_id = $current_client->id;
+
+        return TenantReadThroughCache::remember(
+            TenantReadThroughCache::multiUsersRecordsClientKey((int) $origin_client_id),
+            TenantReadThroughCache::TTL_MULTI_USERS_RECORDS_SECONDS,
+            fn () => app(WebMultiUserController::class)->getTableMultiUsers($origin_client_id, $current_client)
+        );
     }
 
 }

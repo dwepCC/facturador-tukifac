@@ -4,6 +4,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Socket.IO — puente Laravel → Node (deshabilitado en código)
+    |--------------------------------------------------------------------------
+    | La emisión real está comentada en RestaurantSocketBroadcaster::emit().
+    | Aunque 'enabled' sea true, no se llamará al Node hasta reactivar ese método.
+    */
+
+    /*
+    |--------------------------------------------------------------------------
     | Habilitar emisión hacia el puente Socket.IO (servidor Node)
     |--------------------------------------------------------------------------
     */

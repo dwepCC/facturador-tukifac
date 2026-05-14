@@ -807,9 +807,29 @@ public function records(Request $request)
                 Log::info('Validación de website completada');
 
                 Log::info('Creando website...');
-                $website->uuid = $uuid;
-                app(WebsiteRepository::class)->create($website);
-                Log::info('Website creado', ['website_id' => $website->id]);
+                //$website->uuid = $uuid;
+                try {
+
+                    $website->uuid = $uuid;
+                    app(WebsiteRepository::class)->create($website);
+                
+                    Log::info('Website creado', [
+                        'website_id' => $website->id
+                    ]);
+                
+                } catch (\Throwable $e) {
+                
+                    Log::error('ERROR CREANDO WEBSITE', [
+                        'message' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                
+                    throw $e;
+                }
+                //app(WebsiteRepository::class)->create($website);
+                //Log::info('Website creado', ['website_id' => $website->id]);
 
                 Log::info('Creando y asociando hostname...');
                 $hostname->fqdn = $fqdn;
