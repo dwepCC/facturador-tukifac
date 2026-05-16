@@ -302,6 +302,7 @@ return [
 		'summary_status_type_id' => 'tipo de estado',
 
 		'send_document_to_pse' => 'envío documento a pse',
+		'auto_send_document_to_pse' => 'envío automático al PSE',
 		'url_signature_pse' => 'url firma digital del documento',
 		'url_send_cdr_pse' => 'url envio CDR',
 

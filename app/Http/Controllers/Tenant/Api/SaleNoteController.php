@@ -838,7 +838,7 @@ class SaleNoteController extends Controller
             $facturalo->updateQr();
             $facturalo->createPdf();
             $facturalo->sendEmail();
-            $facturalo->senderXmlSignedBill();
+            $facturalo->senderXmlSignedBillOnCreate();
 
             return $facturalo;
         });

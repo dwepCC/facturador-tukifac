@@ -2,9 +2,8 @@
 
 namespace Modules\Services\Http\Controllers;
 
-use App\Http\Controllers\Tenant\Api\ServiceController as ApiServiceController;
-use App\Services\Tenant\TenantReadThroughCache;
 use Illuminate\Routing\Controller;
+use App\Http\Controllers\Tenant\Api\ServiceController as ApiServiceController;
 use Modules\ApiPeruDev\Http\Controllers\ServiceController as ApiPeruDevServiceController;
 
 class ServiceController extends Controller
@@ -19,20 +18,11 @@ class ServiceController extends Controller
      */
     public function exchange($date)
     {
-        $date = is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)
-            ? $date
-            : date('Y-m-d', strtotime((string) $date));
+        $res = (new ApiServiceController())->exchangeRateTest($date);
+        if($res['sale'] === 0) {
+            $res = (new ApiPeruDevServiceController())->exchange($date);
+        }
 
-        $key = TenantReadThroughCache::exchangeKey($date);
-        $ttl = TenantReadThroughCache::exchangeTtlSeconds($date);
-
-        return TenantReadThroughCache::remember($key, $ttl, function () use ($date) {
-            $res = (new ApiServiceController())->exchangeRateTest($date);
-            if ($res['sale'] === 0) {
-                $res = (new ApiPeruDevServiceController())->exchange($date);
-            }
-
-            return $res;
-        });
+        return $res;
     }
 }

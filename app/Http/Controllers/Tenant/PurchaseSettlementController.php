@@ -85,7 +85,7 @@ class PurchaseSettlementController extends Controller
             $facturalo->signXmlUnsigned();
             $facturalo->updateHash();
             $facturalo->createPdf();
-            $facturalo->senderXmlSignedBill();
+            $facturalo->senderXmlSignedBillOnCreate();
 
             return $facturalo;
         });

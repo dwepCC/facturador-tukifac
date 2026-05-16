@@ -62,7 +62,7 @@ class Dispatch2Controller extends Controller
             $facturalo->createXmlUnsigned();
             $facturalo->signXmlUnsigned();
             $facturalo->createPdf();
-            $facturalo->senderXmlSignedBill();
+            $facturalo->senderXmlSignedBillOnCreate();
 
             return $facturalo;
         });

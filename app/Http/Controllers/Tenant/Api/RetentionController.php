@@ -24,7 +24,7 @@ class RetentionController extends Controller
             $facturalo->signXmlUnsigned();
             $facturalo->createPdf();
             $facturalo->sendEmail();
-            $facturalo->senderXmlSignedBill();
+            $facturalo->senderXmlSignedBillOnCreate();
 
             return $facturalo;
         });

@@ -772,6 +772,9 @@ class DocumentController extends Controller
                 $facturalo->updateHash($service_pse_xml['hash']);
                 $facturalo->updateQr();
                 $facturalo->createPdf();
+                if ($facturalo->shouldAutoSendToPse()) {
+                    $facturalo->senderXmlSignedBill($service_pse_xml['code'] ?? null);
+                }
                 return $facturalo;
             });
 

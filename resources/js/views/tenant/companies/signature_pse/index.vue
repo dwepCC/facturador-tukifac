@@ -30,6 +30,25 @@
                     </div>
 
                     <template v-if="form.send_document_to_pse">
+                        <div class="col-md-12 mt-3">
+                            <div class="form-group" :class="{'has-danger': errors.auto_send_document_to_pse}">
+                                <label class="control-label">Envío automático al PSE</label>
+                                <div class="transfer-data-table pt-3 ps-3 pb-2">
+                                    <el-switch v-model="form.auto_send_document_to_pse"
+                                        active-text="Automático"
+                                        inactive-text="Manual"></el-switch>
+                                </div>
+                                <div class="sub-title text-muted">
+                                    <small>
+                                        Automático: al generar factura/boleta se envía al PSE de inmediato.
+                                        Manual: se firma con PSE y debe enviarse desde el listado o POST /api/documents/send.
+                                    </small>
+                                </div>
+                                <small v-if="errors.auto_send_document_to_pse"
+                                    class="form-control-feedback"
+                                    v-text="errors.auto_send_document_to_pse[0]"></small>
+                            </div>
+                        </div>
                         <!-- <div class="col-md-3 mt-3">
                             <div class="form-group" :class="{'has-danger': errors.client_id_pse}">
                                 <label class="control-label">ID Cliente <span class="text-danger">*</span>
@@ -144,6 +163,7 @@ export default {
 
             this.form = {
                 send_document_to_pse : false,
+                auto_send_document_to_pse: true,
                 pse_provider_id: null, // Campo para el proveedor PSE
                 url_signature_pse : null,
                 url_send_cdr_pse : null,

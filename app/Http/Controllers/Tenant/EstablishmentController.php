@@ -13,7 +13,6 @@ use App\Http\Resources\Tenant\EstablishmentCollection;
 use App\Models\Tenant\Warehouse;
 use App\Models\Tenant\Person;
 use Modules\Finance\Helpers\UploadFileHelper;
-use App\Services\Tenant\TenantReadThroughCache;
 use Exception;
 
 
@@ -88,10 +87,6 @@ class EstablishmentController extends Controller
             $establishment->email = $request->email;
             $establishment->save();
             
-            if (auth()->check()) {
-                TenantReadThroughCache::forgetEstablishmentActiveForUser((int) auth()->id());
-            }
-            
             if(!$id) {
                 $warehouse = new Warehouse();
                 $warehouse->establishment_id = $establishment->id;
@@ -146,22 +141,11 @@ class EstablishmentController extends Controller
 
     public function getEstablishmentActive()
     {
-        $userId = (int) auth()->id();
-
-        $payload = TenantReadThroughCache::remember(
-            TenantReadThroughCache::establishmentActiveUserKey($userId),
-            TenantReadThroughCache::TTL_ESTABLISHMENT_ACTIVE_SECONDS,
-            function () {
-                $establishment = auth()->user()->establishment;
-
-                return [
-                    'success' => true,
-                    'establishment' => $establishment,
-                ];
-            }
-        );
-
-        return $payload;
+        $establishment = auth()->user()->establishment;
+        return [
+            'success' => true,
+            'establishment' => $establishment
+        ];
     }
 
     public function getCodes()

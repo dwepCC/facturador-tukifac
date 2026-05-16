@@ -201,6 +201,11 @@ class CompanyController extends Controller
     {
         $company = Company::firstOrFail();
         $company->send_document_to_pse = $request->send_document_to_pse;
+        if ($request->send_document_to_pse) {
+            $company->auto_send_document_to_pse = $request->boolean('auto_send_document_to_pse', true);
+        } else {
+            $company->auto_send_document_to_pse = false;
+        }
         $company->pse_provider_id = $request->pse_provider_id; // Guardar el proveedor seleccionado
         $company->url_signature_pse = $request->url_signature_pse;
         $company->url_send_cdr_pse = $request->url_send_cdr_pse;
@@ -230,6 +235,7 @@ class CompanyController extends Controller
 
         return [
             'send_document_to_pse' => $company->send_document_to_pse,
+            'auto_send_document_to_pse' => (bool) $company->auto_send_document_to_pse,
             'pse_provider_id' => $company->pse_provider_id,
             'url_signature_pse' => $company->url_signature_pse,
             'url_send_cdr_pse' => $company->url_send_cdr_pse,

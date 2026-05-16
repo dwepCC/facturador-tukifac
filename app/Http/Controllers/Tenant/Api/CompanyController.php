@@ -11,30 +11,20 @@ use App\Models\Tenant\Company;
 use App\Models\Tenant\Person;
 use App\Models\Tenant\PaymentMethodType;
 use Modules\Finance\Traits\FinanceTrait;
-use App\Services\Tenant\TenantReadThroughCache;
 
 class CompanyController extends Controller
 {
    
     use FinanceTrait;
 
-    public function record(Request $request)
-    {
-        $user = \Auth::user() ?: new User();
-        if (! $user->id) {
-            return $this->buildCompanyApiRecord($user);
+    public function record(Request $request) {
+
+        $user = new User();
+        if(\Auth::user()){
+            $user = \Auth::user();
         }
 
-        return TenantReadThroughCache::remember(
-            TenantReadThroughCache::apiCompanyUserKey((int) $user->id),
-            TenantReadThroughCache::TTL_API_COMPANY_SECONDS,
-            fn () => $this->buildCompanyApiRecord($user)
-        );
-    }
-
-    private function buildCompanyApiRecord(User $user): array
-    {
-        $establishment_id = $user->establishment_id;
+        $establishment_id =  $user->establishment_id;
         $establishments = Establishment::without(['country', 'department', 'province', 'district'])->where('id', $establishment_id)->get();
         $series = collect($user->getSeries())->values()->all();
         $customers = Person::without(['country', 'department', 'province', 'district'])
@@ -59,14 +49,14 @@ class CompanyController extends Controller
         where('id', '!=', '07')->get();
 
         $payment_destinations = $this->getPaymentDestinations();
-
         return [
             'series' => $series,
             'establishments' => $establishments,
-            'company' => Company::active(),
+            'company' =>  Company::active(),
             'customers' => $customers,
             'payment_method_types' => $payment_method_types,
-            'payment_destinations' => $payment_destinations,
+            'payment_destinations' => $payment_destinations
         ];
+
     }
 }

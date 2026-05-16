@@ -29,7 +29,6 @@ use App\Models\Tenant\Skin;
 use Modules\Finance\Helpers\UploadFileHelper;
 use App\Models\Tenant\ConfigurationEcommerce;
 use App\Models\Tenant\TemplateColumnsConfig;
-use App\Services\Tenant\TenantReadThroughCache;
 
 
 class ConfigurationController extends Controller
@@ -372,29 +371,28 @@ class ConfigurationController extends Controller
 
     public function record()
     {
-        return TenantReadThroughCache::remember(
-            TenantReadThroughCache::KEY_CONFIGURATION_RECORD,
-            TenantReadThroughCache::TTL_CONFIGURATION_RECORD_SECONDS,
-            function () {
-                $configuration = Configuration::first();
-                $is_restaurant_active = DB::connection('tenant')->table('business_turns')
-                    ->where('id', 3)
-                    ->where('active', 1)
-                    ->exists();
+        $configuration = Configuration::first();
+        $is_restaurant_active = DB::connection('tenant')->table('business_turns')
+            ->where('id', 3)
+            ->where('active', 1)
+            ->exists();
 
-                return [
-                    'data' => array_merge(
-                        $configuration->getCollectionData(),
-                        [
-                            'default_image' => $configuration->product_default_image,
-                            'restaurant_tip_factor' => $configuration->restaurant_tip_factor,
-                            'is_restaurant_active' => $is_restaurant_active,
-                            'sidebar_mode' => $configuration->sidebar_mode ?? 'light',
-                        ]
-                    ),
-                ];
-            }
-        );
+        $data = $configuration->toArray();
+        $data['is_restaurant_active'] = $is_restaurant_active;
+        return [
+            'data' => array_merge(
+                $configuration->getCollectionData(),
+                [
+                    'default_image' => $configuration->product_default_image,
+                    'restaurant_tip_factor' => $configuration->restaurant_tip_factor,
+                    'is_restaurant_active' => $is_restaurant_active,
+                    'sidebar_mode' => $configuration->sidebar_mode ?? 'light',
+                ]
+            )
+        ];
+        $record = new ConfigurationResource($configuration);
+
+        return  $record;
     }
 
     public function store(ConfigurationRequest $request)
@@ -407,8 +405,6 @@ class ConfigurationController extends Controller
         $configuration = Configuration::find($id);
         $configuration->fill($request->all());
         $configuration->save();
-
-        TenantReadThroughCache::forgetConfigurationRecord();
 
         Cache::forget("{$cp->number}_token_sunat");
 
@@ -449,8 +445,6 @@ class ConfigurationController extends Controller
 
         $configuration->save();
 
-        TenantReadThroughCache::forgetConfigurationRecord();
-
         return [
             'success' => true,
             'configuration' => $configuration->getCollectionData(),
@@ -473,8 +467,6 @@ class ConfigurationController extends Controller
                 $item->update();
             }
         });
-
-        TenantReadThroughCache::forgetConfigurationRecord();
 
         return [
             'success' => true,

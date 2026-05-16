@@ -946,6 +946,46 @@ class Facturalo
         return $this->company->send_document_to_pse;
     }
 
+    /**
+     * Envío automático al PSE al crear comprobante (solo aplica con PSE habilitado).
+     */
+    public function shouldAutoSendToPse(): bool
+    {
+        if (!$this->company->send_document_to_pse) {
+            return false;
+        }
+
+        return (bool) ($this->company->auto_send_document_to_pse ?? true);
+    }
+
+    /**
+     * Envía el XML firmado al crear el documento, respetando envío automático PSE.
+     */
+    public function senderXmlSignedBillOnCreate($service_pse_code = null)
+    {
+        if ($this->company->send_document_to_pse && !$this->shouldAutoSendToPse()) {
+            $this->response = ['sent' => false];
+
+            return $this;
+        }
+
+        return $this->senderXmlSignedBill($service_pse_code);
+    }
+
+    /**
+     * Envía resúmenes/anulaciones al crear, respetando envío automático PSE.
+     */
+    public function senderXmlSignedSummaryOnCreate()
+    {
+        if ($this->company->send_document_to_pse && !$this->shouldAutoSendToPse()) {
+            $this->response = ['sent' => false];
+
+            return $this;
+        }
+
+        return $this->senderXmlSignedSummary();
+    }
+
 
     /**
      * deprecated

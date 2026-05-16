@@ -54,6 +54,7 @@ class Company extends ModelTenant
         'sire_username',
         'sire_password',
         'send_document_to_pse',
+        'auto_send_document_to_pse',
         'pse_provider_id',
         'pse_username',
         'pse_password',
@@ -66,6 +67,7 @@ class Company extends ModelTenant
 
     protected $casts = [
         'send_document_to_pse' => 'bool',
+        'auto_send_document_to_pse' => 'bool',
         'qr_api_enable_ws' => 'bool'
     ];
 
