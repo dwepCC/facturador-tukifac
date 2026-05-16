@@ -443,6 +443,7 @@ import SaleNotesOptions from '../../sale_notes/partials/options.vue'
 import OptionsForm from './options.vue'
 import MultiplePaymentForm from './multiple_payment_garage.vue'
 import PersonForm from '../../../tenant/persons/form.vue'
+import {canSendDocumentImmediately} from '@helpers/pseSend'
 
 export default {
     components: {OptionsForm, CardBrandsForm, SaleNotesOptions, MultiplePaymentForm, Keypress, PersonForm},
@@ -563,7 +564,10 @@ export default {
         disabledDiscountForSeller()
         {
             return this.configuration.restrict_seller_discount && this.typeUser === 'seller';
-        }
+        },
+        companyForPse() {
+            return this.$store?.state?.company || this.soapCompany || {}
+        },
     },
     methods: {
         openPlateNumberDialog() {
@@ -1263,7 +1267,7 @@ export default {
                     } else {
                         this.documentNewId = response.data.data.id;
                         
-                        if(this.configuration.send_auto && this.form.document_type_id === '01') {
+                        if(this.configuration.send_auto && canSendDocumentImmediately(this.companyForPse) && this.form.document_type_id === '01') {
                             response_sent = await this.sendDocument(this.documentNewId); 
                         } else if (this.configuration.ticket_single_shipment && this.form.document_type_id === '03') {
                             response_sent = await this.sendDocument(this.documentNewId); 

@@ -767,10 +767,7 @@ class DocumentController extends Controller
                 $facturalo = new Facturalo();                
                 $facturalo->save($data);
                 $facturalo->createXmlUnsigned();
-                $service_pse_xml = $facturalo->servicePseSendXml();
-                $facturalo->signXmlUnsigned($service_pse_xml['xml_signed']);
-                $facturalo->updateHash($service_pse_xml['hash']);
-                $facturalo->updateQr();
+                $service_pse_xml = $facturalo->signDocumentOnCreate();
                 $facturalo->createPdf();
                 if ($facturalo->shouldAutoSendToPse()) {
                     $facturalo->senderXmlSignedBill($service_pse_xml['code'] ?? null);
@@ -888,10 +885,7 @@ class DocumentController extends Controller
             $facturalo = new Facturalo();
             $facturalo->update($request->all(), $id);
             $facturalo->createXmlUnsigned();
-            $service_pse_xml = $facturalo->servicePseSendXml();
-            $facturalo->signXmlUnsigned($service_pse_xml['xml_signed']);
-            $facturalo->updateHash($service_pse_xml['hash']);
-            $facturalo->updateQr();
+            $facturalo->signDocumentOnCreate();
             $facturalo->createPdf();
 
             return $facturalo;
@@ -955,10 +949,7 @@ class DocumentController extends Controller
             $facturalo->setDocument($document);
             $facturalo->setType($type);
             $facturalo->createXmlUnsigned();
-            $service_pse_xml = $facturalo->servicePseSendXml();
-            $facturalo->signXmlUnsigned($service_pse_xml['xml_signed']);
-            $facturalo->updateHash($service_pse_xml['hash']);
-            $facturalo->updateQr();
+            $facturalo->signDocumentOnCreate();
             $facturalo->updateSoap('02', $type);
             $facturalo->updateState('01');
             $facturalo->createPdf($document, $type, 'ticket');
@@ -1007,6 +998,7 @@ class DocumentController extends Controller
         $fact = DB::connection('tenant')->transaction(function () use ($document) {
             $facturalo = new Facturalo();
             $facturalo->setDocument($document);
+            $facturalo->signWithPseBeforeManualSend();
             $facturalo->loadXmlSigned();
             $hasSendPse = $facturalo->hasPseSend() ? '200' : null;
             $facturalo->onlySenderXmlSignedBill($hasSendPse);

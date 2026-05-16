@@ -565,6 +565,7 @@ import OptionsForm from './options.vue'
 import MultiplePaymentForm from './multiple_payment.vue'
 import {pointSystemFunctions} from '@mixins/functions'
 import {calculateRowItem} from "@helpers/functions"
+import {canSendDocumentImmediately} from '@helpers/pseSend'
 import DiscountPermissionForm from './discount_permission.vue'
 import SearchAgent from '@components/SearchAgent.vue'
 
@@ -688,7 +689,10 @@ export default {
         disabledDiscountForSeller()
         {
             return this.configuration.restrict_seller_discount && this.typeUser === 'seller';
-        }
+        },
+        companyForPse() {
+            return this.$store?.state?.company || this.soapCompany || {}
+        },
     },
     methods:
     {
@@ -1439,7 +1443,7 @@ export default {
                         this.form_cash_document.sale_note_id = response.data.data.id;
 
                     } else {
-                        if (this.configuration.send_auto && this.form.document_type_id === '01') {
+                        if (this.configuration.send_auto && canSendDocumentImmediately(this.companyForPse) && this.form.document_type_id === '01') {
                             response_sent = await this.sendDocument(response.data.data.id); 
                             this.statusDocument = response_sent.data.response
                         } else if (this.configuration.ticket_single_shipment && this.form.document_type_id === '03') {
@@ -1495,7 +1499,7 @@ export default {
                 }
                 else
                 {
-                    if(this.configuration.send_auto)
+                    if(this.configuration.send_auto && canSendDocumentImmediately(this.companyForPse))
                     {
                         this.$message.success(response_data.message)
                     }

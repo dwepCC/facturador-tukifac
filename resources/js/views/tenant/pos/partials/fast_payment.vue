@@ -248,6 +248,7 @@ import CardBrandsForm from '../../card_brands/form.vue'
 import SaleNotesOptions from '../../sale_notes/partials/options.vue'
 import OptionsForm from './options.vue'
 import MultiplePaymentForm from './multiple_payment.vue'
+import {canSendDocumentImmediately} from '@helpers/pseSend'
 
 export default {
     components: {OptionsForm, CardBrandsForm, SaleNotesOptions, MultiplePaymentForm, Keypress},
@@ -285,6 +286,11 @@ export default {
             payments: [],
             locked_submit: false
         }
+    },
+    computed: {
+        companyForPse() {
+            return this.$store?.state?.company || this.soapCompany || {}
+        },
     },
     async created() {
 
@@ -800,7 +806,7 @@ export default {
 
                     } else {
 
-                        if (this.configuration.send_auto && this.form.document_type_id === '01') {
+                        if (this.configuration.send_auto && canSendDocumentImmediately(this.companyForPse) && this.form.document_type_id === '01') {
                             response_sent = await this.sendDocument(response.data.data.id); 
                             this.statusDocument = response_sent.data.response
                         } else if (this.configuration.ticket_single_shipment && this.form.document_type_id === '03') {

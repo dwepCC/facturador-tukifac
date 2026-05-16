@@ -21,8 +21,10 @@ class SummaryController extends Controller
             $facturalo = new Facturalo();
             $facturalo->save($request->all());
             $facturalo->createXmlUnsigned();
-            $service_pse_xml = $facturalo->servicePseSendXml();
-            $facturalo->signXmlUnsigned($service_pse_xml['xml_signed']);
+            if (!$facturalo->shouldDeferPseSigningOnCreate()) {
+                $service_pse_xml = $facturalo->servicePseSendXml();
+                $facturalo->signXmlUnsigned($service_pse_xml['xml_signed']);
+            }
             $facturalo->senderXmlSignedSummaryOnCreate();
 
             return $facturalo;

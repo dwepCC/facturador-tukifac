@@ -262,7 +262,14 @@ class Facturalo
             // if $this->sendToPse(); // deprecated
             $this->xmlSigned = base64_decode($pse_xml_signed);
 
-        }else{
+        } elseif ($this->shouldDeferPseSigningOnCreate()) {
+            // PSE manual: sin certificado local; la firma se hace al enviar al PSE
+            return $this;
+
+        } elseif ($this->hasPseSend() && !$this->hasLocalCertificate()) {
+            return $this;
+
+        } else {
 
             $this->setPathCertificate();
             $this->signer->setCertificateFromFile($this->pathCertificate);
@@ -276,8 +283,10 @@ class Facturalo
 
     /*
      * envio de xml a serivicio pse gior
+     *
+     * @param bool $forcePse Forzar llamada al PSE (p. ej. envío manual tras crear sin PSE)
      */
-    public function servicePseSendXml()
+    public function servicePseSendXml($forcePse = false)
     {
         $company = Company::first();
         if ($company->pse_provider_id == 4) {
@@ -285,7 +294,7 @@ class Facturalo
         } else {
             $service = new GiorService();
         }
-        if($this->hasPseSend()) {
+        if ($this->hasPseSend() && ($forcePse || $this->shouldAutoSendToPse())) {
             $service->getToken();
             $response = $service->sendXml($this->xmlUnsigned, $this->document->filename);
             if(!$response['success']) {
@@ -302,8 +311,95 @@ class Facturalo
         }
     }
 
+    /**
+     * Empresa con PSE habilitado y envío manual: no firmar ni llamar al PSE al crear.
+     */
+    public function shouldDeferPseSigningOnCreate(): bool
+    {
+        return $this->hasPseSend() && !$this->shouldAutoSendToPse();
+    }
+
+    /**
+     * Certificado digital local disponible (empresas sin PSE o respaldo con .pem).
+     */
+    public function hasLocalCertificate(): bool
+    {
+        if ($this->isDemo) {
+            return true;
+        }
+
+        $certificate = $this->company->certificate ?? null;
+        if (empty($certificate)) {
+            return false;
+        }
+
+        return \Illuminate\Support\Facades\Storage::exists(
+            'certificates' . DIRECTORY_SEPARATOR . $certificate
+        );
+    }
+
+    /**
+     * Firma el comprobante al crearlo (PSE solo si envío automático está activo).
+     */
+    public function signDocumentOnCreate(): array
+    {
+        if ($this->shouldDeferPseSigningOnCreate()) {
+            return [
+                'xml_signed' => null,
+                'hash' => null,
+                'code' => null,
+            ];
+        }
+
+        $service_pse_xml = $this->servicePseSendXml();
+        $this->signXmlUnsigned($service_pse_xml['xml_signed']);
+        $this->updateHash($service_pse_xml['hash']);
+        $this->updateQr();
+
+        return $service_pse_xml;
+    }
+
+    /**
+     * Resuelve el tipo Facturalo a partir del documento cargado.
+     */
+    public function resolveTypeFromDocument($document = null): string
+    {
+        $document = $document ?? $this->document;
+
+        switch ($document->document_type_id) {
+            case '07':
+                return 'credit';
+            case '08':
+                return 'debit';
+            default:
+                return 'invoice';
+        }
+    }
+
+    /**
+     * Modo manual PSE: firma con el proveedor antes de enviar a SUNAT.
+     */
+    public function signWithPseBeforeManualSend(): void
+    {
+        if (!$this->hasPseSend() || $this->shouldAutoSendToPse()) {
+            return;
+        }
+
+        $this->setType($this->resolveTypeFromDocument());
+        $this->createXmlUnsigned();
+        $service_pse_xml = $this->servicePseSendXml(true);
+        $this->signXmlUnsigned($service_pse_xml['xml_signed']);
+        $this->updateHash($service_pse_xml['hash']);
+        $this->updateQr();
+        $this->createPdf();
+    }
+
     public function updateHash($pse_hash = null)
     {
+        if ($pse_hash == null && empty($this->xmlSigned)) {
+            return $this;
+        }
+
         if($pse_hash == null){
             $this->document->update([
                 'hash' => $this->getHash(),
@@ -317,6 +413,10 @@ class Facturalo
 
     public function updateQr()
     {
+        if (empty($this->document->hash)) {
+            return $this;
+        }
+
         if(config('tenant.save_qrcode')) {
             $this->document->update([
                 'qr' => $this->getQr(),

@@ -53,10 +53,7 @@ class DocumentController extends Controller
             $facturalo = new Facturalo();
             $facturalo->save($request->all());
             $facturalo->createXmlUnsigned();
-            $service_pse_xml = $facturalo->servicePseSendXml();
-            $facturalo->signXmlUnsigned($service_pse_xml['xml_signed']);
-            $facturalo->updateHash($service_pse_xml['hash']);
-            $facturalo->updateQr();
+            $service_pse_xml = $facturalo->signDocumentOnCreate();
             // $facturalo->createPdf();
             $facturalo->senderXmlSignedBillOnCreate($service_pse_xml['code']);
             // $facturalo->sendEmail();
@@ -119,8 +116,10 @@ class DocumentController extends Controller
             }
             $fact = new Facturalo();
             $fact->setDocument($document);
+            $fact->signWithPseBeforeManualSend();
             $fact->loadXmlSigned();
-            $fact->onlySenderXmlSignedBill();
+            $hasSendPse = $fact->hasPseSend() ? '200' : null;
+            $fact->onlySenderXmlSignedBill($hasSendPse);
             $response = $fact->getResponse();
             return [
                 'success' => true,

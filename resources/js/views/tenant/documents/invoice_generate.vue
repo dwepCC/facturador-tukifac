@@ -3940,6 +3940,7 @@ import Keypress from "vue-keypress";
 import StoreItemSeriesIndex from "../Store/ItemSeriesIndex.vue";
 import DocumentReportCustomer from "./partials/report_customer.vue";
 import SetTip from "@components/SetTip.vue";
+import {canSendDocumentImmediately} from '@helpers/pseSend'
 
 import LotsForm from "./partials/lots.vue";
 import { editableRowItems } from "@mixins/editable-row-items";
@@ -7011,7 +7012,7 @@ export default {
                         let response_sent = response
                         this.documentNewId = response.data.data.id;
 
-                        if(this.config.send_auto && this.form.document_type_id === '01') {
+                        if(this.config.send_auto && canSendDocumentImmediately(this.company) && this.form.document_type_id === '01') {
                             response_sent = await this.sendDocument(this.documentNewId); 
                         } else if (this.config.ticket_single_shipment && this.form.document_type_id === '03') {
                             response_sent = await this.sendDocument(this.documentNewId); 
@@ -7051,7 +7052,7 @@ export default {
             if (this.hidePreviewPdf) {
                 const response_data = response.data;
 
-                if (this.config.send_auto || this.config.ticket_single_shipment) {
+                if ((this.config.send_auto && canSendDocumentImmediately(this.company)) || this.config.ticket_single_shipment) {
                     this.$message.success(response_data.message);
                 } else {
                     this.$message.success(

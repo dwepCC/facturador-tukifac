@@ -299,8 +299,10 @@ class DispatchCarrierController extends Controller
                 $document = $facturalo->getDocument();
                 $data = (new ServiceDispatchController())->getData($document->id);
                 $facturalo->setXmlUnsigned((new ServiceDispatchController())->createXmlUnsigned($data));
-                $service_pse_xml = $facturalo->servicePseSendXml();
-                $facturalo->signXmlUnsigned($service_pse_xml['xml_signed']);
+                if (!$facturalo->shouldDeferPseSigningOnCreate()) {
+                    $service_pse_xml = $facturalo->servicePseSendXml();
+                    $facturalo->signXmlUnsigned($service_pse_xml['xml_signed']);
+                }
                 $facturalo->createPdf();
 
                 return $facturalo;
